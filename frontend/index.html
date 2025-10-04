@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>InfoFuturist</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
+    <meta property="twitter:card" content="summary_large_image" />
+    <style data-tag="reset-style-sheet">
+      html { line-height: 1.15; }
+      body { margin: 0; }
+      * { box-sizing: border-box; border-width: 0; border-style: solid; -webkit-font-smoothing: antialiased; }
+      p,li,ul,pre,div,h1,h2,h3,h4,h5,h6,figure,blockquote,figcaption { margin: 0; padding: 0; }
+      button { background-color: transparent; }
+      button,input,optgroup,select,textarea { font-family: inherit; font-size: 100%; line-height: 1.15; margin: 0; }
+      button,select { text-transform: none; }
+      button,[type="button"],[type="reset"],[type="submit"] {
+        appearance: button; /* Thêm thuộc tính chuẩn */
+        -webkit-appearance: button; /* Giữ cho tương thích WebKit */
+        color: inherit;
+      }
+      button::-moz-focus-inner,[type="button"]::-moz-focus-inner,[type="reset"]::-moz-focus-inner,[type="submit"]::-moz-focus-inner {
+        border-style: none; padding: 0;
+      }
+      button:-moz-focus,[type="button"]:-moz-focus,[type="reset"]:-moz-focus,[type="submit"]:-moz-focus {
+        outline: 1px dotted ButtonText;
+      }
+      a { color: inherit; text-decoration: inherit; }
+      pre { white-space: normal; }
+      input { padding: 2px 4px; }
+      img { display: block; }
+      details { display: block; margin: 0; padding: 0; }
+      summary::-webkit-details-marker { display: none; }
+      [data-thq="accordion"] [data-thq="accordion-content"] {
+        max-height: 0; overflow: hidden; transition: max-height 0.3s ease-in-out; padding: 0;
+      }
+      [data-thq="accordion"] details[data-thq="accordion-trigger"][open] + [data-thq="accordion-content"] {
+        max-height: 1000vh;
+      }
+      details[data-thq="accordion-trigger"][open] summary [data-thq="accordion-icon"] {
+        transform: rotate(180deg);
+      }
+      html { scroll-behavior: smooth; }
+    </style>
+    <style data-tag="default-style-sheet">
+      :root {
+        --focus-ring: 0 0 0 3px color-mix(in oklab, var(--color-primary) 24%, transparent);
+        --spacing-lg: 1rem;
+        --spacing-md: 0.75rem;
+        --spacing-sm: 0.5rem;
+        --spacing-xl: 1.5rem;
+        --spacing-xs: 0.25rem;
+        --spacing-2xl: 2rem;
+        --spacing-3xl: 3rem;
+        --spacing-4xl: 4rem;
+        --color-scrim: rgba(0, 0, 0, 0.45);
+        --section-gap: clamp(2rem, 5vw, 6rem);
+        --color-accent: #e11d2b;
+        --color-border: color-mix(in oklab, #6b7280 30%, transparent);
+        --font-size-lg: 1.25rem;
+        --font-size-md: 1.125rem;
+        --font-size-sm: 0.875rem;
+        --font-size-xl: 1.5rem;
+        --font-size-xs: 0.75rem;
+        --glass-border: 1px solid color-mix(in oklab, #ffd400 18%, transparent);
+        --color-neutral: #6b7280;
+        --color-outline: color-mix(in oklab, #ffd400 50%, #0b0b0c);
+        --color-overlay: rgba(11, 11, 12, 0.6);
+        --color-primary: #ffd400;
+        --color-surface: #ffffff;
+        --font-size-2xl: 2rem;
+        --font-size-3xl: 2.5rem;
+        --font-size-4xl: 3rem;
+        --font-size-base: 1rem;
+        --shadow-level-1: 0 0 8px rgba(0, 255, 200, 0.15);
+        --shadow-level-2: 0 0 18px rgba(0, 255, 200, 0.25);
+        --shadow-level-3: 0 0 36px rgba(0, 255, 200, 0.35);
+        --color-accent-90: color-mix(in oklab, #e11d2b 90%, black);
+        --color-backplate: rgba(11, 11, 12, 0.85);
+        --color-secondary: #0b6b3a;
+        --border-radius-lg: 12px;
+        --border-radius-md: 8px;
+        --border-radius-sm: 4px;
+        --border-radius-xl: 16px;
+        --color-neutral-80: color-mix(in oklab, #6b7280 80%, black);
+        --color-on-primary: #0b0b0c;
+        --color-on-surface: #0b0b0c;
+        --color-primary-70: color-mix(in oklab, #ffd400 70%, black);
+        --color-primary-90: color-mix(in oklab, #ffd400 90%, black);
+        --font-family-body: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+        --font-family-heading: "Orbitron", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+        --font-weight-bold: 700;
+        --font-weight-medium: 500;
+        --font-weight-regular: 400;
+        --font-weight-semibold: 600;
+        --content-max-width: 78rem;
+        --control-height-lg: 3rem;
+        --control-height-md: 2.5rem;
+        --control-height-sm: 2rem;
+        --line-height-loose: 1.4;
+        --line-height-tight: 1.05;
+        --line-height-normal: 1.2;
+        --border-radius-full: 9999px;
+        --border-radius-none: 0px;
+        --color-secondary-90: color-mix(in oklab, #0b6b3a 90%, black);
+        --letter-spacing-wide: 0.08em;
+        --letter-spacing-tight: -0.01em;
+        --letter-spacing-normal: 0.02em;
+        --color-surface-elevated: color-mix(in oklab, #ffffff 92%, #f4f4f5);
+        --animation-curve-primary: cubic-bezier(0.25, 1, 0.3, 1);
+        --animation-duration-fast: 110ms;
+        --animation-duration-standard: 180ms;
+        --animation-duration-slow: 260ms;
+        --color-on-surface-secondary: #4b5563;
+      }
+      html {
+        font-family: Inter;
+        font-size: 1rem;
+      }
+      body {
+        font-weight: 400;
+        font-style: normal;
+        text-decoration: none;
+        text-transform: none;
+        letter-spacing: normal;
+        line-height: 1.55;
+        color: var(--color-on-surface);
+        background: var(--color-surface);
+        fill: var(--color-on-surface);
+      }
+    </style>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/animate.css@4.1.1/animate.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+      data-tag="font"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+      data-tag="font"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap"
+      data-tag="font"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap"
+      data-tag="font"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/@teleporthq/teleport-custom-scripts/dist/style.css"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
