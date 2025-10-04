@@ -1,0 +1,190 @@
+.homepage {
+  color: var(--color-on-surface);
+  background: var(--color-surface);
+  overflow-x: hidden;
+  font-family: var(--font-family-body);
+}
+ 
+.hero {
+  display: flex;
+  padding: clamp(2rem, 5vw, 6rem) var(--spacing-lg);
+  position: relative;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+}
+ 
+.hero-background {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  position: absolute;
+}
+ 
+.hero-content {
+  width: 100%;
+  z-index: 3;
+  position: relative;
+  max-width: var(--content-max-width);
+  text-align: center;
+}
+ 
+.hero-floating-elements {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  position: absolute;
+  pointer-events: none;
+}
+ 
+.hero-video {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  position: absolute;
+  object-fit: cover;
+}
+ 
+.hero-overlay {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  position: absolute;
+  background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-primary) 20%, transparent) 0%,
+      color-mix(in srgb, var(--color-surface) 95%, transparent) 100%
+    );
+}
+ 
+.hero-grid-pattern {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  position: absolute;
+  animation: gridPulse 4s ease-in-out infinite;
+  background-size: 50px 50px;
+  background-image: linear-gradient(
+        color-mix(in srgb, var(--color-accent) 10%, transparent) 1px,
+        transparent 1px
+      ),linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--color-accent) 10%, transparent) 1px,
+        transparent 1px
+      );
+}
+ 
+.hero-brand {
+  gap: var(--spacing-sm);
+  display: flex;
+  animation: fadeInUp 1s var(--animation-curve-primary);
+  align-items: center;
+  margin-bottom: var(--spacing-xl);
+  justify-content: center;
+}
+ 
+.hero-actions {
+  gap: var(--spacing-lg);
+  display: flex;
+  animation: fadeInUp 1s var(--animation-curve-primary) 0.6s both;
+  margin-bottom: var(--spacing-2xl);
+  justify-content: center;
+}
+ 
+.hero-stats {
+  gap: var(--spacing-2xl);
+  display: flex;
+  animation: fadeInUp 1s var(--animation-curve-primary) 0.8s both;
+  justify-content: center;
+}
+ 
+.floating-card {
+  gap: var(--spacing-md);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+  display: flex;
+  padding: var(--spacing-lg);
+  position: absolute;
+  animation: float 6s ease-in-out infinite;
+  background: color-mix(
+      in srgb,
+      var(--color-surface-elevated) 90%,
+      transparent
+    );
+  box-shadow: var(--shadow-level-2);
+  align-items: center;
+  border-radius: var(--border-radius-lg);
+  backdrop-filter: blur(20px);
+}
+ 
+
+ 
+
+ 
+
+ 
+.hero-title-accent {
+  animation: textGlow 2s ease-in-out infinite alternate;
+  background: linear-gradient(
+      135deg,
+      var(--color-accent),
+      var(--color-primary)
+    );
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+ 
+.brand-icon {
+  color: var(--color-on-primary);
+  width: 48px;
+  height: 48px;
+  display: flex;
+  animation: iconGlow 3s ease-in-out infinite;
+  background: linear-gradient(
+      135deg,
+      var(--color-primary),
+      var(--color-accent)
+    );
+  box-shadow: var(--shadow-level-3),
+      0 0 20px color-mix(in srgb, var(--color-primary) 50%, transparent);
+  align-items: center;
+  border-radius: var(--border-radius-lg);
+  justify-content: center;
+}
+ 
+.brand-text {
+  color: var(--color-on-surface);
+  font-size: var(--font-size-xl);
+  font-family: var(--font-family-heading);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+ 
+.floating-card.card-1 {
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+}
+ 
+.floating-card.card-2 {
+  top: 60%;
+  right: 15%;
+  animation-delay: 2s;
+}
+ 
+.floating-card.card-3 {
+  top: 30%;
+  right: 10%;
+  animation-delay: 4s;
+}
