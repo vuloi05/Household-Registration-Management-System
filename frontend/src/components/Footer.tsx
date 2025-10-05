@@ -349,7 +349,7 @@ const Footer: React.FC = () => {
                       <circle r="3" cx="12" cy="10" />
                     </g>
                   </svg>
-                  <span>123 Đường Công Nghệ, Quận 1, TP.HCM</span>
+                  <span>Đại học Bách Khoa Hà Nội, TP.Hà Nội</span>
                 </div>
                 <div className="footer-contact-item">
                   <svg width="24" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24">
@@ -362,7 +362,7 @@ const Footer: React.FC = () => {
                       strokeLinejoin="round"
                     />
                   </svg>
-                  <span>+84 123 456 789</span>
+                  <span>+84 389 891 942</span>
                 </div>
                 <div className="footer-contact-item">
                   <svg width="24" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24">
