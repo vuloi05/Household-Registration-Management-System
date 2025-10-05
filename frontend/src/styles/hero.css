@@ -172,19 +172,19 @@
 }
  
 .floating-card.card-1 {
-  top: 20%;
+  top: 45%;
   left: 10%;
   animation-delay: 0s;
 }
  
 .floating-card.card-2 {
-  top: 60%;
+  top: 70%;
   right: 15%;
   animation-delay: 2s;
 }
  
 .floating-card.card-3 {
-  top: 30%;
+  top: 40%;
   right: 10%;
   animation-delay: 4s;
 }
