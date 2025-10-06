@@ -16,10 +16,7 @@ const LoginSection: React.FC = () => {
     },
     {
       icon: (
-        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-          <rect width="40" height="40" rx="8" fill="#228B22"/>
-          <polygon points="20,10 23,18 33,18 25,24 28,34 20,28 12,34 15,24 7,18 17,18" fill="#FFD700"/>
-        </svg>
+        <img src="/vneid.png" width={40} height={40} alt="VNeID" />
       ),
       title: "Tài khoản Định danh",
       subtitle: "điện tử cấp bởi Bộ",
@@ -28,10 +25,7 @@ const LoginSection: React.FC = () => {
     },
     {
       icon: (
-        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-          <rect width="40" height="40" rx="8" fill="#228B22"/>
-          <polygon points="20,10 23,18 33,18 25,24 28,34 20,28 12,34 15,24 7,18 17,18" fill="#FFD700"/>
-        </svg>
+        <img src="/vneid.png" width={40} height={40} alt="VNeID" />
       ),
       title: "Tài khoản Định danh",
       subtitle: "điện tử cấp bởi Bộ",
