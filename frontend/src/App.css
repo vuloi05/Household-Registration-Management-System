@@ -1,0 +1,27 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  max-width: 768px;
+  margin: 0 auto;
+}
+
+.main-content {
+  flex: 1;
+  padding: 40px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+@media (min-width: 769px) {
+  .app {
+    max-width: 1200px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app {
+    max-width: 1400px;
+  }
+}
