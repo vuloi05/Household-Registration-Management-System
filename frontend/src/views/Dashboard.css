@@ -82,11 +82,11 @@
   padding-right: 20px;
 }
 
-.metrics-grid {
+/* .metrics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 24px;
-}
+} */
 
 .metric-card {
   background: rgba(255, 255, 255, 0.05);
@@ -160,6 +160,34 @@
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
 
+/* Lưới chứa các metric-card */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); 
+  gap: 20px; 
+  width: 100%;
+  align-items: stretch;
+}
+
+/* Responsive - tự co lại khi màn hình nhỏ hơn */
+@media (max-width: 1200px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr); 
+  }
+}
+
+@media (max-width: 768px) {
+  .metrics-grid {
+    grid-template-columns: 1fr; 
+  }
+}
+/* Tùy chọn: làm card gọn hơn một chút */
+.metric-card {
+  padding: 16px;        
+  border-radius: 12px;  
+  min-height: 130px;    
+}
+
 .metric-change {
   font-size: 0.9rem;
   font-weight: 500;
@@ -172,6 +200,9 @@
 .metric-change.negative {
   color: #f87171;
 }
+
+
+
 
 /* Dashboard Content */
 .dashboard-content {
@@ -557,10 +588,10 @@
     grid-template-columns: 1fr;
   }
   
-  .features-grid {
+  /* .features-grid {
     grid-template-columns: 1fr;
     gap: 20px;
-  }
+  } */
   
   .feature-number {
     font-size: 2.5rem;

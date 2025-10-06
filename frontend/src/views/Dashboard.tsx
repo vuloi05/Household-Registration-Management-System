@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import { Link } from 'react-router-dom';
+// import { Link } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import Footer from '../components/Footer';
 import './Dashboard.css';
@@ -157,7 +157,7 @@ const Dashboard: React.FC = () => {
         <section className="dashboard-content">
           <div className="dashboard-grid">
             {/* Quick Actions */}
-            <div className="dashboard-card quick-actions">
+            {/* <div className="dashboard-card quick-actions">
               <div className="card-header">
                 <h3 className="card-title">Thao tác nhanh</h3>
                 <div className="dashboard-icon">
@@ -210,7 +210,7 @@ const Dashboard: React.FC = () => {
                   </Link>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* Recent Activity */}
             <div className="dashboard-card recent-activity">
