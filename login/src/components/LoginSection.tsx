@@ -1,6 +1,5 @@
 import React from 'react'
 import AccountCard from './AccountCard'
-import NotificationBox from './NotificationBox'
 import './LoginSection.css'
 
 const LoginSection: React.FC = () => {
@@ -48,8 +47,6 @@ const LoginSection: React.FC = () => {
             <AccountCard key={index} {...account} />
           ))}
         </div>
-        
-        <NotificationBox />
       </div>
     </div>
   )
