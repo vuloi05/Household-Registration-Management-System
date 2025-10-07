@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './Navigation.css';
 
 const Navigation: React.FC = () => {
+  const navigate = useNavigate();
   useEffect(() => {
     const navigation = document.getElementById('navigation') as HTMLElement | null;
     const mobileToggle = document.getElementById('navigation-mobile-toggle') as HTMLButtonElement | null;
@@ -123,6 +124,10 @@ const Navigation: React.FC = () => {
     };
   }, []);
 
+  const handleLogin = () => {
+    navigate('/login');
+  };
+
   return (
     <div className="navigation-container1">
       <nav id="navigation" className="navigation">
@@ -196,7 +201,7 @@ const Navigation: React.FC = () => {
               </li>
             </ul>
             <div className="navigation__actions">
-              <button className="btn-outline navigation__login btn">Đăng nhập</button>
+              <button onClick={handleLogin} className="btn-outline navigation__login btn">Đăng nhập</button>
               <button className="btn-primary navigation__signup btn">Đăng ký</button>
             </div>
           </div>

@@ -1,0 +1,50 @@
+.header {
+  padding: 30px 20px;
+  text-align: center;
+}
+
+.header-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.logo svg {
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.header-text h1 {
+  color: #8B4513;
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+
+.header-text p {
+  color: #6c757d;
+  font-size: 14px;
+  font-style: italic;
+  margin-left: 20px;  /* Add margin to move text to the right */
+}
+
+@media (min-width: 769px) {
+  .header-content {
+    flex-direction: row;
+    justify-content: center;
+  }
+  
+  .header-text {
+    text-align: left;
+    margin-left: 20px;
+  }
+  
+  .header-text h1 {
+    font-size: 28px;
+  }
+  
+  .header-text p {
+    font-size: 16px;
+  }
+}
