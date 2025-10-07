@@ -36,8 +36,9 @@
 }
 
 .account-cards {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: stretch;
   gap: var(--spacing-xl);
   margin-bottom: var(--spacing-2xl);
 }
@@ -48,7 +49,6 @@
   }
   
   .account-cards {
-    flex-direction: row;
-    justify-content: space-between;
+    grid-template-columns: repeat(3, 1fr);
   }
 }

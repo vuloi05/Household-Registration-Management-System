@@ -11,7 +11,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  height: 100%; /* fill grid cell */
   opacity: 0;
   transform: translateY(30px);
   position: relative;
