@@ -2,44 +2,49 @@
   width: 100%;
   display: flex;
   justify-content: center;
+  padding: var(--section-gap) var(--spacing-lg);
+  background: radial-gradient(1000px 600px at 50% -200px, color-mix(in oklab, var(--color-primary) 14%, transparent), transparent) fixed;
 }
 
 .login-container {
-  background: white;
-  border-radius: 12px;
-  padding: 40px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  max-width: 600px;
+  background: color-mix(in oklab, var(--color-surface) 92%, #f4f4f5);
+  border-radius: var(--border-radius-xl);
+  padding: var(--spacing-3xl);
+  box-shadow: 0 8px 32px color-mix(in oklab, var(--color-primary) 6%, transparent);
+  max-width: 960px;
   width: 100%;
+  border: var(--glass-border);
 }
 
 .login-container h2 {
   text-align: center;
-  color: #333;
-  font-size: 24px;
-  margin-bottom: 12px;
-  font-weight: 600;
+  color: var(--color-on-surface);
+  font-size: var(--font-size-3xl);
+  margin-bottom: var(--spacing-sm);
+  font-family: var(--font-family-heading);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
 }
 
 .login-subtitle {
   text-align: center;
-  color: #007bff;
-  font-size: 14px;
-  margin-bottom: 30px;
-  line-height: 1.5;
+  color: var(--color-on-surface-secondary);
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--spacing-3xl);
+  line-height: var(--line-height-loose);
+  font-family: var(--font-family-body);
 }
 
 .account-cards {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  margin-bottom: 30px;
+  gap: var(--spacing-xl);
+  margin-bottom: var(--spacing-2xl);
 }
 
 @media (min-width: 769px) {
   .login-container {
-    max-width: 800px;
-    padding: 50px;
+    padding: var(--spacing-4xl);
   }
   
   .account-cards {
