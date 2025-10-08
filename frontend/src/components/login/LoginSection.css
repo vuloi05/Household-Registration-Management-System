@@ -1,3 +1,15 @@
+/* Login page layout */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-content {
+  flex: 1;
+  padding-top: 80px; /* Account for fixed navigation height */
+}
+
 .login-section {
   width: 100%;
   display: flex;
@@ -41,6 +53,12 @@
   align-items: stretch;
   gap: var(--spacing-xl);
   margin-bottom: var(--spacing-2xl);
+}
+
+@media (max-width: 768px) {
+  .login-content {
+    padding-top: 70px; /* Smaller padding for mobile */
+  }
 }
 
 @media (min-width: 769px) {

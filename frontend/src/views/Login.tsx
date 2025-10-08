@@ -6,14 +6,16 @@ import Footer from '../components/Footer';
 
 const Login: React.FC = () => {
   return (
-    <>
+    <div className="login-page">
       <Navigation />
-      <Header />
-      <LoginSection />
-      <div style={{ marginTop: '40px' }}>
-        <Footer />
+      <div className="login-content">
+        <Header />
+        <LoginSection />
+        <div style={{ marginTop: '40px' }}>
+          <Footer />
+        </div>
       </div>
-    </>
+    </div>
   );
 };
 

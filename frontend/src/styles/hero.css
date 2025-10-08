@@ -3,6 +3,7 @@
   background: var(--color-surface);
   overflow-x: hidden;
   font-family: var(--font-family-body);
+  padding-top: 80px; /* Account for fixed navigation */
 }
  
 .hero {
@@ -187,4 +188,11 @@
   top: 40%;
   right: 10%;
   animation-delay: 4s;
+}
+
+/* Responsive padding for fixed navigation */
+@media (max-width: 768px) {
+  .homepage {
+    padding-top: 70px; /* Smaller padding for mobile */
+  }
 }
