@@ -1,0 +1,44 @@
+# ==================================
+# Files and directories from IDEs
+# ==================================
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# ==================================
+# General build files
+# ==================================
+build/
+out/
+
+# ==================================
+# Frontend (Node.js / Vite / React)
+# ==================================
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.*
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# ==================================
+# Backend (Java / Maven)
+# ==================================
+backend/api/target/
+backend/api/pom.xml.tag
+backend/api/pom.xml.releaseBackup
+backend/api/pom.xml.versionsBackup
+backend/api/pom.xml.next
+backend/api/release.properties
+backend/api/dependency-reduced-pom.xml
+backend/api/build-log.txt
+
+# ==================================
+# Operating System files
+# ==================================
+.DS_Store
+Thumbs.db
