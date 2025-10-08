@@ -1,4 +1,5 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import './AccountCard.css'
 
 interface AccountCardProps {
@@ -16,8 +17,21 @@ const AccountCard: React.FC<AccountCardProps> = ({
   description,
   target
 }) => {
+  const navigate = useNavigate()
+
+  const handleClick = () => {
+    if (
+      title === 'Tài khoản cấp bởi' &&
+      subtitle === 'Quản lý thông minh' &&
+      description === 'quốc gia dành cho' &&
+      target === 'Doanh nghiệp/Tổ chức'
+    ) {
+      navigate('/login/admin')
+    }
+  }
+
   return (
-    <div className="account-card">
+    <div className="account-card" onClick={handleClick} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(); } }}>
       <div className="card-icon">
         {icon}
       </div>
