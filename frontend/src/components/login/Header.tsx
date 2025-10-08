@@ -10,7 +10,7 @@ const Header: React.FC = () => {
         </div>
         <div className="header-text">
           <h1>QUẢN LÝ THÔNG MINH</h1>
-          <p>Kết nối, cung cấp thông tin và dịch vụ công mọi lúc, mọi nơi</p>
+          <p>Kết nối, cung cấp thông tin và dịch vụ mọi lúc, mọi nơi</p>
         </div>
       </div>
     </header>

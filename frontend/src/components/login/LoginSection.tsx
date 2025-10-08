@@ -9,7 +9,7 @@ const LoginSection: React.FC = () => {
         <img src="/login/quoc_huy.svg" width={40} height={40} alt="Quốc huy" />
       ),
       title: "Tài khoản cấp bởi",
-      subtitle: "Cổng dịch vụ công",
+      subtitle: "Quản lý thông minh",
       description: "quốc gia dành cho",
       target: "Doanh nghiệp/Tổ chức"
     },
@@ -129,7 +129,7 @@ const LoginSection: React.FC = () => {
         <h2>Đăng nhập</h2>
         <p className="login-subtitle">
           Chọn loại tài khoản bạn muốn sử dụng đăng nhập<br />
-          Cổng dịch vụ công Quốc gia
+          Quản lý thông tin tương lai
         </p>
         <div className="account-cards">
           {accountTypes.map((account, index) => (
