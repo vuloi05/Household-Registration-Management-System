@@ -7,52 +7,52 @@ import './Dashboard.css';
 
 const Dashboard: React.FC = () => {
   useEffect(() => {
-    // Intersection Observer for animations
+    // Intersection Observer for animations - Observer để tạo hiệu ứng animation
     const observerOptions: IntersectionObserverInit = {
-      threshold: 0.1,
-      rootMargin: '0px 0px -50px 0px',
+      threshold: 0.1, // Trigger when 10% visible - Kích hoạt khi 10% hiển thị
+      rootMargin: '0px 0px -50px 0px', // Bottom margin - Khoảng cách dưới
     };
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting) { // When element is visible - Khi phần tử hiển thị
           const target = entry.target as HTMLElement;
-          target.style.opacity = '1';
-          target.style.transform = 'translateY(0)';
+          target.style.opacity = '1'; // Make visible - Làm cho hiển thị
+          target.style.transform = 'translateY(0)'; // Reset position - Đặt lại vị trí
         }
       });
     }, observerOptions);
 
-    // Observe elements for scroll animations
+    // Observe elements for scroll animations - Quan sát các phần tử để tạo hiệu ứng cuộn
     const dashboardCards = document.querySelectorAll('.dashboard-card') as NodeListOf<HTMLElement>;
     dashboardCards.forEach((el) => {
-      el.style.opacity = '0';
-      el.style.transform = 'translateY(30px)';
-      el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-      observer.observe(el);
+      el.style.opacity = '0'; // Initially hidden - Ban đầu ẩn
+      el.style.transform = 'translateY(30px)'; // Start below - Bắt đầu ở dưới
+      el.style.transition = 'opacity 0.6s ease, transform 0.6s ease'; // Smooth transition - Chuyển tiếp mượt mà
+      observer.observe(el); // Start observing - Bắt đầu quan sát
     });
 
-    // Dashboard card hover effects
+    // Dashboard card hover effects - Hiệu ứng hover cho các card dashboard
     const handleMouseEnterCard = (card: HTMLElement) => {
       const icon = card.querySelector('.dashboard-icon') as HTMLElement | null;
       if (icon) {
         icon.style.boxShadow = '0 0 30px rgba(255, 165, 0, 0.6), 0 0 60px rgba(255, 165, 0, 0.4)';
-        icon.style.transform = 'scale(1.1)';
+        icon.style.transform = 'scale(1.1)'; // Scale up - Phóng to
       }
     };
     const handleMouseLeaveCard = (card: HTMLElement) => {
       const icon = card.querySelector('.dashboard-icon') as HTMLElement | null;
       if (icon) {
-        icon.style.boxShadow = '';
-        icon.style.transform = '';
+        icon.style.boxShadow = ''; // Remove glow - Loại bỏ hiệu ứng phát sáng
+        icon.style.transform = ''; // Reset scale - Đặt lại kích thước
       }
     };
     dashboardCards.forEach((card) => {
-      card.addEventListener('mouseenter', () => handleMouseEnterCard(card));
-      card.addEventListener('mouseleave', () => handleMouseLeaveCard(card));
+      card.addEventListener('mouseenter', () => handleMouseEnterCard(card)); 
+      card.addEventListener('mouseleave', () => handleMouseLeaveCard(card)); 
     });
 
-    // Cleanup
+    // Cleanup - Dọn dẹp
     return () => {
       dashboardCards.forEach((el) => observer.unobserve(el));
       dashboardCards.forEach((card) => {
@@ -153,10 +153,10 @@ const Dashboard: React.FC = () => {
           </div>
         </section>
 
-        {/* Dashboard Content Grid */}
+        {/* Dashboard Content Grid - Lưới nội dung dashboard */}
         <section className="dashboard-content">
           <div className="dashboard-grid">
-            {/* Quick Actions */}
+            {/* Quick Actions - Thao tác nhanh */}
             {/* <div className="dashboard-card quick-actions">
               <div className="card-header">
                 <h3 className="card-title">Thao tác nhanh</h3>
@@ -212,7 +212,7 @@ const Dashboard: React.FC = () => {
               </div>
             </div> */}
 
-            {/* Recent Activity */}
+            {/* Recent Activity - Hoạt động gần đây */}
             <div className="dashboard-card recent-activity">
               <div className="card-header">
                 <h3 className="card-title">Hoạt động gần đây</h3>
@@ -273,7 +273,7 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* System Status */}
+            {/* System Status - Trạng thái hệ thống */}
             <div className="dashboard-card system-status">
               <div className="card-header">
                 <h3 className="card-title">Trạng thái hệ thống</h3>
@@ -313,7 +313,7 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Performance Chart Placeholder */}
+            {/* Performance Chart Placeholder - Biểu đồ hiệu suất */}
             <div className="dashboard-card performance-chart">
               <div className="card-header">
                 <h3 className="card-title">Hiệu suất hệ thống</h3>
@@ -351,19 +351,19 @@ const Dashboard: React.FC = () => {
           </div>
         </section>
 
-        {/* Key Features */}
+        {/* Key Features - Tính năng chính */}
         <section className="dashboard-features">
           <div className="features-grid">
             <div className="feature-item">
-              <div className="feature-number">50K+</div>
+              <div className="feature-number">50K+</div> {/* Household count - Số lượng hộ gia đình */}
               <div className="feature-label">HỘ GIA ĐÌNH</div>
             </div>
             <div className="feature-item">
-              <div className="feature-number">99.9%</div>
+              <div className="feature-number">99.9%</div> {/* Accuracy rate - Tỷ lệ chính xác */}
               <div className="feature-label">ĐỘ CHÍNH XÁC</div>
             </div>
             <div className="feature-item">
-              <div className="feature-number">24/7</div>
+              <div className="feature-number">24/7</div> {/* Support availability - Tính khả dụng hỗ trợ */}
               <div className="feature-label">HỖ TRỢ</div>
             </div>
           </div>

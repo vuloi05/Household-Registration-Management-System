@@ -1,85 +1,85 @@
-/* Dashboard Container */
+/* Dashboard Container - Container trang dashboard */
 .dashboard-container {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+  min-height: 100vh; /* Minimum height to fill viewport / Chiều cao tối thiểu để lấp đầy viewport */
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%); 
   position: relative;
-  overflow-x: hidden;
+  overflow-x: hidden; /* Hide horizontal overflow / Ẩn tràn ngang */
 }
 
 .dashboard-container::before {
-  content: '';
+  content: ''; /* Empty content for pseudo-element / Nội dung rỗng cho pseudo-element */
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: 0; 
+  right: 0; 
+  bottom: 0; 
   background-image: 
     radial-gradient(circle at 20% 20%, rgba(255, 165, 0, 0.1) 0%, transparent 50%),
     radial-gradient(circle at 80% 80%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
     linear-gradient(45deg, transparent 30%, rgba(255, 165, 0, 0.05) 50%, transparent 70%);
-  pointer-events: none;
-  z-index: 1;
+  pointer-events: none; 
+  z-index: 1; /* Layer order / Thứ tự lớp */
 }
 
-/* Dashboard Main */
+/* Dashboard Main - Phần chính của dashboard */
 .dashboard-main {
   position: relative;
-  z-index: 2;
-  padding-top: 80px;
+  z-index: 2; /* Above background elements / Trên các phần tử nền */
+  padding-top: 80px; /* Space for fixed navigation / Khoảng trống cho navigation cố định */
 }
 
-/* Dashboard Header */
+/* Dashboard Header - Header trang dashboard */
 .dashboard-header {
-  padding: 60px 0 40px;
+  padding: 60px 0 40px; /* Top and bottom padding / Padding trên và dưới */
   text-align: center;
   background: linear-gradient(135deg, rgba(255, 165, 0, 0.1) 0%, rgba(0, 255, 255, 0.1) 100%);
-  margin-bottom: 40px;
+  margin-bottom: 40px; 
 }
 
 .dashboard-header-content {
   max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
+  margin: 0 auto; /* Center horizontally / Căn giữa theo chiều ngang */
+  padding: 0 20px; /* Left and right padding / Padding trái và phải */
 }
 
 .dashboard-title {
-  margin-bottom: 20px;
+  margin-bottom: 20px; 
 }
 
 .dashboard-title-main {
   display: block;
-  font-size: 3.5rem;
-  font-weight: 800;
-  color: #ffffff;
-  margin-bottom: 10px;
+  font-size: 3.5rem; 
+  font-weight: 800; 
+  color: #ffffff; 
+  margin-bottom: 10px; 
   text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
 }
 
 .dashboard-title-sub {
-  display: block;
-  font-size: 2.5rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #ffa500 0%, #ff6b35 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  display: block; 
+  font-size: 2.5rem; 
+  font-weight: 700; 
+  background: linear-gradient(135deg, #ffa500 0%, #ff6b35 100%); 
+  -webkit-background-clip: text; /* Clip background to text / Cắt nền theo text */
+  -webkit-text-fill-color: transparent; /* Transparent text fill / Tô màu text trong suốt */
+  background-clip: text; /* Standard background clip / Cắt nền chuẩn */
 }
 
 .dashboard-subtitle {
-  font-size: 1.2rem;
-  color: #cccccc;
-  max-width: 600px;
-  margin: 0 auto;
-  line-height: 1.6;
+  font-size: 1.2rem; 
+  color: #cccccc; 
+  max-width: 600px; 
+  margin: 0 auto; 
+  line-height: 1.6; 
 }
 
-/* Dashboard Metrics */
+/* Dashboard Metrics - Các chỉ số dashboard */
 .dashboard-metrics {
   padding: 40px 0;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding-left: 20px;
-  padding-right: 20px;
+  max-width: 1200px; 
+  margin: 0 auto; 
+  padding-left: 20px; 
+  padding-right: 20px; 
 }
 
 /* .metrics-grid {
@@ -90,74 +90,74 @@
 
 .metric-card {
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 165, 0, 0.2);
-  border-radius: 16px;
-  padding: 24px;
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
+  border: 1px solid rgba(255, 165, 0, 0.2); 
+  border-radius: 16px; 
+  padding: 24px; 
+  backdrop-filter: blur(10px); 
+  transition: all 0.3s ease; 
+  position: relative; 
+  overflow: hidden; 
 }
 
 .metric-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(255, 165, 0, 0.1) 0%, rgba(0, 255, 255, 0.1) 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: 1;
+  content: ''; 
+  position: absolute; 
+  top: 0; 
+  left: 0; 
+  right: 0; 
+  bottom: 0; 
+  background: linear-gradient(135deg, rgba(255, 165, 0, 0.1) 0%, rgba(0, 255, 255, 0.1) 100%); 
+  opacity: 0; /* Initially transparent / Ban đầu trong suốt */
+  transition: opacity 0.3s ease; 
+  z-index: 1; 
 }
 
 .metric-card:hover::before {
-  opacity: 1;
+  opacity: 1; /* Full opacity on hover / Độ trong suốt đầy đủ khi hover */
 }
 
 .metric-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 40px rgba(255, 165, 0, 0.2);
-  border-color: rgba(255, 165, 0, 0.4);
+  transform: translateY(-5px); /* Move up on hover / Di chuyển lên khi hover */
+  box-shadow: 0 20px 40px rgba(255, 165, 0, 0.2); 
+  border-color: rgba(255, 165, 0, 0.4); 
 }
 
 .metric-icon {
-  width: 60px;
-  height: 60px;
-  background: linear-gradient(135deg, #ffa500 0%, #ff6b35 100%);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-  position: relative;
-  z-index: 2;
+  width: 60px; 
+  height: 60px; 
+  background: linear-gradient(135deg, #ffa500 0%, #ff6b35 100%); 
+  border-radius: 12px; 
+  display: flex; 
+  align-items: center; /* Center vertically / Căn giữa theo chiều dọc */
+  justify-content: center; /* Center horizontally / Căn giữa theo chiều ngang */
+  margin-bottom: 16px; 
+  position: relative; 
+  z-index: 2; 
 }
 
 .metric-icon svg {
-  color: #ffffff;
+  color: #ffffff; 
 }
 
 .metric-content {
-  position: relative;
-  z-index: 2;
+  position: relative; 
+  z-index: 2; 
 }
 
 .metric-title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #ffa500;
-  margin-bottom: 8px;
-  letter-spacing: 1px;
+  font-size: 0.9rem; 
+  font-weight: 600; 
+  color: #ffa500; 
+  margin-bottom: 8px; 
+  letter-spacing: 1px; 
 }
 
 .metric-value {
   font-size: 2.5rem;
-  font-weight: 800;
-  color: #ffffff;
-  margin-bottom: 8px;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  font-weight: 800; 
+  color: #ffffff; 
+  margin-bottom: 8px; 
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3); 
 }
 
 /* Lưới chứa các metric-card */
@@ -189,67 +189,67 @@
 }
 
 .metric-change {
-  font-size: 0.9rem;
+  font-size: 0.9rem; 
   font-weight: 500;
 }
 
 .metric-change.positive {
-  color: #4ade80;
+  color: #4ade80; 
 }
 
 .metric-change.negative {
-  color: #f87171;
+  color: #f87171; 
 }
 
 
 
 
-/* Dashboard Content */
+/* Dashboard Content - Nội dung dashboard */
 .dashboard-content {
-  padding: 40px 0;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding-left: 20px;
-  padding-right: 20px;
+  padding: 40px 0; 
+  max-width: 1200px; 
+  margin: 0 auto; 
+  padding-left: 20px; 
+  padding-right: 20px; 
 }
 
 .dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 24px;
+  display: grid; 
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* Responsive grid columns / Cột lưới responsive */
+  gap: 24px; /* Grid gap / Khoảng cách lưới */
 }
 
 .dashboard-card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 165, 0, 0.2);
-  border-radius: 16px;
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05); 
+  border: 1px solid rgba(255, 165, 0, 0.2); 
+  border-radius: 16px; 
+  backdrop-filter: blur(10px); 
+  transition: all 0.3s ease; 
+  position: relative; 
+  overflow: hidden; 
 }
 
 .dashboard-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
+  content: ''; 
+  position: absolute; 
+  top: 0; 
   left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(255, 165, 0, 0.05) 0%, rgba(0, 255, 255, 0.05) 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: 1;
+  right: 0; 
+  bottom: 0; 
+  background: linear-gradient(135deg, rgba(255, 165, 0, 0.05) 0%, rgba(0, 255, 255, 0.05) 100%); 
+  opacity: 0; 
+  transition: opacity 0.3s ease; 
+  z-index: 1; 
 }
 
 .dashboard-card:hover::before {
-  opacity: 1;
+  opacity: 1; 
 }
 
 .dashboard-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 40px rgba(255, 165, 0, 0.15);
-  border-color: rgba(255, 165, 0, 0.3);
+  transform: translateY(-5px); 
+  box-shadow: 0 20px 40px rgba(255, 165, 0, 0.15); 
+  border-color: rgba(255, 165, 0, 0.3); 
 }
 
 .card-header {
@@ -515,30 +515,41 @@
   }
 }
 
-/* Dashboard Features */
+/* Dashboard Features - Tính năng dashboard */
 .dashboard-features {
-  padding: 60px 0;
-  background: linear-gradient(135deg, rgba(255, 165, 0, 0.1) 0%, rgba(0, 255, 255, 0.1) 100%);
-  margin-top: 40px;
+  padding: 60px 0; 
+  background: linear-gradient(135deg, rgba(255, 165, 0, 0.1) 0%, rgba(0, 255, 255, 0.1) 100%); 
+  margin-top: 40px; 
 }
 
 .features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 40px;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 0 20px;
+  display: flex !important; /* Force flex layout / Buộc bố cục flex */
+  flex-direction: row !important; /* Force horizontal layout / Buộc bố cục ngang */
+  justify-content: center; 
+  align-items: stretch; /* Stretch items to same height / Kéo dài các mục cùng chiều cao */
+  gap: 25px; 
+  max-width: 1200px; 
+  margin: 0 auto; 
+  padding: 0 20px; 
+  flex-wrap: nowrap !important; 
+  width: 100%; 
 }
 
 .feature-item {
-  text-align: center;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 165, 0, 0.2);
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
+  flex: 1 1 0 !important; /* Equal flex growth and shrink / Tăng trưởng và co lại flex bằng nhau */
+  min-width: 180px;
+  max-width: 280px; 
+  text-align: center; 
+  padding: 20px; 
+  background: rgba(255, 255, 255, 0.05); 
+  border-radius: 16px; 
+  border: 1px solid rgba(255, 165, 0, 0.2); 
+  backdrop-filter: blur(10px); /* Blur background / Làm mờ nền */
+  transition: all 0.3s ease; 
+  display: flex; /* Flex container for content / Container flex cho nội dung */
+  flex-direction: column; 
+  justify-content: center; 
+  align-items: center; 
 }
 
 .feature-item:hover {
@@ -562,8 +573,35 @@
   letter-spacing: 1px;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
+/* Large screens - Màn hình lớn */
+@media (min-width: 769px) {
+  .features-grid {
+    flex-wrap: nowrap !important; /* Force single row on large screens / Buộc một hàng trên màn hình lớn */
+    flex-direction: row !important; /* Force horizontal layout / Buộc bố cục ngang */
+  }
+  
+  .feature-item {
+    flex: 1 1 0 !important; /* Equal flex growth / Tăng trưởng flex bằng nhau */
+  }
+}
+
+/* Medium screens - Màn hình trung bình */
+@media (min-width: 481px) and (max-width: 768px) {
+  .features-grid {
+    flex-wrap: nowrap !important; /* Keep single row on medium screens / Giữ một hàng trên màn hình trung bình */
+    flex-direction: row !important; /* Force horizontal layout / Buộc bố cục ngang */
+    gap: 15px; /* Reduce gap / Giảm khoảng cách */
+  }
+  
+  .feature-item {
+    flex: 1 1 0 !important; /* Equal flex growth / Tăng trưởng flex bằng nhau */
+    min-width: 150px; /* Smaller min-width / Chiều rộng tối thiểu nhỏ hơn */
+    max-width: 200px; /* Smaller max-width / Chiều rộng tối đa nhỏ hơn */
+  }
+}
+
+/* Small mobile screens only - Chỉ màn hình mobile nhỏ */
+@media (max-width: 480px) { /* Very small mobile screens / Màn hình mobile rất nhỏ */
   .dashboard-title-main {
     font-size: 2.5rem;
   }
@@ -588,10 +626,15 @@
     grid-template-columns: 1fr;
   }
   
-  /* .features-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  } */
+  .features-grid {
+    flex-direction: column; /* Stack on very small screens / Xếp chồng trên màn hình rất nhỏ */
+    gap: 20px; /* Reduce gap on mobile / Giảm khoảng cách trên mobile */
+  }
+  
+  .feature-item {
+    min-width: unset; /* Remove min-width on mobile / Loại bỏ chiều rộng tối thiểu trên mobile */
+    max-width: unset; /* Remove max-width on mobile / Loại bỏ chiều rộng tối đa trên mobile */
+  }
   
   .feature-number {
     font-size: 2.5rem;
