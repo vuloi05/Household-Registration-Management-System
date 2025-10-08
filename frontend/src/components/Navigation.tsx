@@ -1,8 +1,11 @@
 import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import './Navigation.css';
 
 const Navigation: React.FC = () => {
+  const location = useLocation();
+  const isDashboard = location.pathname === '/dashboard';
+
   useEffect(() => {
     const navigation = document.getElementById('navigation') as HTMLElement | null;
     const mobileToggle = document.getElementById('navigation-mobile-toggle') as HTMLButtonElement | null;
@@ -128,7 +131,25 @@ const Navigation: React.FC = () => {
       <nav id="navigation" className="navigation">
         <div className="navigation__container">
           <div className="navigation__logo">
-            <Link to="/">
+            {!isDashboard ? (
+              <Link to="/">
+                <div className="navigation__logo-link">
+                  <div className="navigation__logo-icon">
+                    <svg width="32" xmlns="http://www.w3.org/2000/svg" height="32" viewBox="0 0 24 24">
+                      <path
+                        d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <span className="navigation__logo-text">InfoFuturist</span>
+                </div>
+              </Link>
+            ) : (
               <div className="navigation__logo-link">
                 <div className="navigation__logo-icon">
                   <svg width="32" xmlns="http://www.w3.org/2000/svg" height="32" viewBox="0 0 24 24">
@@ -144,7 +165,7 @@ const Navigation: React.FC = () => {
                 </div>
                 <span className="navigation__logo-text">InfoFuturist</span>
               </div>
-            </Link>
+            )}
           </div>
           <div className="navigation__desktop">
             <ul className="navigation__menu">
@@ -195,10 +216,12 @@ const Navigation: React.FC = () => {
                 </Link>
               </li>
             </ul>
-            <div className="navigation__actions">
-              <button className="btn-outline navigation__login btn">Đăng nhập</button>
-              <button className="btn-primary navigation__signup btn">Đăng ký</button>
-            </div>
+            {!isDashboard && (
+              <div className="navigation__actions">
+                <button className="btn-outline navigation__login btn">Đăng nhập</button>
+                <button className="btn-primary navigation__signup btn">Đăng ký</button>
+              </div>
+            )}
           </div>
           <button
             id="navigation-mobile-toggle"
@@ -290,10 +313,12 @@ const Navigation: React.FC = () => {
                 </Link>
               </li>
             </ul>
-            <div className="navigation__mobile-actions">
-              <button className="btn-outline navigation__mobile-login btn">Đăng nhập</button>
-              <button className="btn-primary navigation__mobile-signup btn">Đăng ký</button>
-            </div>
+            {!isDashboard && (
+              <div className="navigation__mobile-actions">
+                <button className="btn-outline navigation__mobile-login btn">Đăng nhập</button>
+                <button className="btn-primary navigation__mobile-signup btn">Đăng ký</button>
+              </div>
+            )}
           </div>
         </div>
       </nav>
