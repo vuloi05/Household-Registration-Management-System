@@ -87,8 +87,8 @@ const AdminLogin: React.FC = () => {
           <div className="admin-form-wrapper anim">
             <form className="admin-form">
               <div className="form-group">
-                <label htmlFor="email">Email</label>
-                <input id="email" type="email" placeholder="you@company.com" />
+                <label htmlFor="email">Mã ID</label>
+                <input id="email" type="email" placeholder="123456" />
               </div>
               <div className="form-group">
                 <label htmlFor="password">Mật khẩu</label>
