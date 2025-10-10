@@ -2,120 +2,111 @@
 
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, TextField, Box
+  Button, TextField, Box, Typography, Divider
 } from '@mui/material';
-import { useForm, Controller } from 'react-hook-form'; // 1. Import hook từ react-hook-form
-import { zodResolver } from '@hookform/resolvers/zod'; // 2. Import resolver
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 
-import { hoKhauSchema } from '../../types/hoKhau'; // Import giá trị
-import type { HoKhauFormValues } from '../../types/hoKhau'; // Import type với từ khóa 'type'
+import { hoKhauSchema } from '../../types/hoKhau'; // Import schema đã được cập nhật
+import type { HoKhauFormValues } from '../../types/hoKhau'; // Import type đã được cập nhật
 
 interface HoKhauFormProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: HoKhauFormValues) => void; // 4. Prop mới để xử lý submit
-  initialData?: HoKhauFormValues | null; // 2. Prop mới để nhận dữ liệu cần sửa (có thể null)
+  onSubmit: (data: HoKhauFormValues) => void;
+  // Prop initialData tạm thời chưa dùng cho logic Sửa phức tạp, sẽ nâng cấp sau
+  initialData?: any; 
 }
 
 export default function HoKhauForm({ open, onClose, onSubmit, initialData }: HoKhauFormProps) {
   const isEditMode = !!initialData; // Kiểm tra xem có phải chế độ sửa không
 
-  // 5. Khởi tạo react-hook-form
+  // Khởi tạo react-hook-form với schema mới
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors },
-    reset, // 3. Lấy hàm reset từ useForm
   } = useForm<HoKhauFormValues>({
-    resolver: zodResolver(hoKhauSchema), // Tích hợp Zod để validation
-    defaultValues: initialData || { // Giá trị mặc định cho form
-      maHoKhau: '',
-      chuHo: '',
-      diaChi: '',
-    },
+    resolver: zodResolver(hoKhauSchema),
+    // Giá trị mặc định giờ bao gồm cả object lồng nhau chuHoInfo
+    defaultValues: {
+        maHoKhau: '',
+        diaChi: '',
+        ngayLap: '',
+        chuHoInfo: {
+            hoTen: '',
+            ngaySinh: '',
+            cmndCccd: ''
+        }
+    }
   });
 
-  // 4. Sử dụng useEffect để cập nhật lại form khi initialData thay đổi
+  // Sử dụng useEffect để reset form khi mở ra
   useEffect(() => {
     if (open) {
-      reset(initialData || { maHoKhau: '', chuHo: '', diaChi: '' });
+      if (isEditMode) {
+        // TODO: Xử lý logic điền dữ liệu cho chế độ Sửa sau này
+        // reset(initialData); 
+      } else {
+        // Reset về form trống hoàn toàn cho chế độ Thêm mới
+        reset({
+            maHoKhau: '', diaChi: '', ngayLap: '',
+            chuHoInfo: { hoTen: '', ngaySinh: '', cmndCccd: '' }
+        });
+      }
     }
-  }, [initialData, open, reset]);
+  }, [initialData, open, reset, isEditMode]);
 
-  const handleFormSubmitWithReset = (data: HoKhauFormValues) => {
-    onSubmit(data);
-    reset(); // Reset form sau khi submit
-  };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      {/* 6. Sử dụng handleSubmit của react-hook-form */}
-      <Box component="form" onSubmit={handleSubmit(handleFormSubmitWithReset)}>
+    // Mở rộng form (`maxWidth="md"`) để có thêm không gian
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <Box component="form" onSubmit={handleSubmit(onSubmit)}>
         <DialogTitle sx={{ fontWeight: 'bold' }}>
-          {/* Sửa lại để dùng isEditMode */}
           {isEditMode ? 'Cập nhật Hộ khẩu' : 'Thêm Hộ khẩu mới'}
         </DialogTitle>
+
         <DialogContent>
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 2,
-              mt: 2,
-            }}
-          >
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              {/* 7. Bọc TextField trong Controller */}
-              <Controller
-                name="maHoKhau"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    autoFocus
-                    required
-                    label="Mã Hộ khẩu"
-                    fullWidth
-                    variant="outlined"
-                    error={!!errors.maHoKhau}
-                    helperText={errors.maHoKhau?.message}
-                  />
-                )}
-              />
-              <Controller
-                name="chuHo"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    required
-                    label="Họ tên Chủ hộ"
-                    fullWidth
-                    variant="outlined"
-                    error={!!errors.chuHo}
-                    helperText={errors.chuHo?.message}
-                  />
-                )}
-              />
+            {/* === PHẦN THÔNG TIN CHUNG CỦA HỘ KHẨU === */}
+            <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>Thông tin chung</Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                <Controller name="maHoKhau" control={control} render={({ field }) => (
+                    <TextField {...field} required label="Mã Hộ khẩu" error={!!errors.maHoKhau} helperText={errors.maHoKhau?.message} />
+                )} />
+                {/* Dùng gridColumn: 'span 2' để ô địa chỉ chiếm 2 cột */}
+                <Controller name="diaChi" control={control} render={({ field }) => (
+                    <TextField {...field} required label="Địa chỉ" error={!!errors.diaChi} helperText={errors.diaChi?.message} sx={{ gridColumn: 'span 2' }} />
+                )} />
+                <Controller name="ngayLap" control={control} render={({ field }) => (
+                    <TextField {...field} required label="Ngày lập" type="date" InputLabelProps={{ shrink: true }} error={!!errors.ngayLap} helperText={errors.ngayLap?.message} />
+                )} />
             </Box>
-            <Controller
-              name="diaChi"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  required
-                  label="Địa chỉ"
-                  fullWidth
-                  variant="outlined"
-                  error={!!errors.diaChi}
-                  helperText={errors.diaChi?.message}
-                />
-              )}
-            />
-          </Box>
+
+            <Divider sx={{ my: 3 }} />
+
+            {/* === PHẦN THÔNG TIN CHỦ HỘ === */}
+            {/* Phần này chỉ hiển thị khi ở chế độ Thêm mới */}
+            {!isEditMode && (
+                <>
+                    <Typography variant="h6" sx={{ mb: 1 }}>Thông tin Chủ hộ</Typography>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                        {/* Lưu ý cách đặt tên cho các trường lồng nhau: "chuHoInfo.hoTen" */}
+                        <Controller name="chuHoInfo.hoTen" control={control} render={({ field }) => (
+                            <TextField {...field} required label="Họ tên Chủ hộ" error={!!errors.chuHoInfo?.hoTen} helperText={errors.chuHoInfo?.hoTen?.message} />
+                        )} />
+                        <Controller name="chuHoInfo.ngaySinh" control={control} render={({ field }) => (
+                            <TextField {...field} required label="Ngày sinh Chủ hộ" type="date" InputLabelProps={{ shrink: true }} error={!!errors.chuHoInfo?.ngaySinh} helperText={errors.chuHoInfo?.ngaySinh?.message} />
+                        )} />
+                        <Controller name="chuHoInfo.cmndCccd" control={control} render={({ field }) => (
+                            <TextField {...field} required label="CCCD Chủ hộ" error={!!errors.chuHoInfo?.cmndCccd} helperText={errors.chuHoInfo?.cmndCccd?.message} />
+                        )} />
+                    </Box>
+                </>
+            )}
         </DialogContent>
+        
         <DialogActions sx={{ p: '0 24px 16px' }}>
           <Button onClick={onClose}>Hủy</Button>
           <Button type="submit" variant="contained">Lưu</Button>

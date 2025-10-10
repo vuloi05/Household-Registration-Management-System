@@ -2,43 +2,45 @@
 
 package com.quanlynhankhau.api.entity;
 
+import java.time.LocalDate; 
 import java.util.List;
-
-import com.fasterxml.jackson.annotation.JsonIgnore; // Import JsonIgnore
-
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+// <<<< THAY ĐỔI 1: Xóa import JsonIgnore và thêm import JsonManagedReference >>>>
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-@Entity // Đánh dấu đây là một Entity, sẽ được ánh xạ tới một bảng trong CSDL
-@Table(name = "ho_khau") // Tên của bảng trong CSDL
-@Getter // Tự động tạo các hàm getter cho tất cả các trường (nhờ Lombok)
-@Setter // Tự động tạo các hàm setter cho tất cả các trường (nhờ Lombok)
+@Entity
+@Table(name = "ho_khau")
+@Getter
+@Setter
 public class HoKhau {
 
-    @Id // Đánh dấu đây là khóa chính
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // Khóa chính sẽ tự động tăng
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String maHoKhau;
-
-    private String chuHo;
-
     private String diaChi;
+    private LocalDate ngayLap; 
 
-    // Constructors, ... (Lombok sẽ tự tạo, chúng ta không cần viết)
+    /**
+     * Mối quan hệ Một-Một: Mỗi Hộ khẩu có một Chủ hộ.
+     * Chủ hộ này là một bản ghi trong bảng NhanKhau.
+     * fetch = FetchType.LAZY: chỉ lấy thông tin chủ hộ khi thực sự cần.
+     */
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "chu_ho_id") // Liên kết với cột 'chu_ho_id' trong bảng 'ho_khau'
+    private NhanKhau chuHo;
 
-    
-    // --- MỐI QUAN HỆ ONE-TO-MANY ---
-    // Một Hộ khẩu sẽ có Nhiều Nhân khẩu.
+    /**
+     * Mối quan hệ Một-Nhiều: Một Hộ khẩu có nhiều Nhân khẩu.
+     * @JsonManagedReference: Đánh dấu đây là "phía cha" của mối quan hệ. 
+     * Khi chuyển sang JSON, nó sẽ hiển thị danh sách này, nhưng các phần tử con (NhanKhau) 
+     * sẽ không hiển thị lại thông tin của Hộ khẩu này, nhờ đó tránh được vòng lặp.
+     */
+    // <<<< THAY ĐỔI 2: Thay @JsonIgnore bằng @JsonManagedReference >>>>
     @OneToMany(mappedBy = "hoKhau", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore // Ngăn không cho trường này bị serialize thành JSON để tránh vòng lặp vô hạn
+    @JsonManagedReference
     private List<NhanKhau> danhSachNhanKhau;
-
 }

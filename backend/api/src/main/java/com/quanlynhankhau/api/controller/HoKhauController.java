@@ -2,6 +2,8 @@
 
 package com.quanlynhankhau.api.controller;
 
+import com.quanlynhankhau.api.dto.HoKhauRequest;
+import com.quanlynhankhau.api.dto.HoKhauResponseDTO; // <<< THÊM 1: Import DTO Response
 import com.quanlynhankhau.api.entity.HoKhau;
 import com.quanlynhankhau.api.service.HoKhauService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,51 +21,56 @@ public class HoKhauController {
     @Autowired
     private HoKhauService hoKhauService;
 
+    // <<< CẬP NHẬT 2: Sửa kiểu trả về sang List<HoKhauResponseDTO> >>>
     // API 1: Lấy danh sách tất cả hộ khẩu
     // - Method: GET
     // - URL: http://localhost:8080/api/hokhau
     @GetMapping
-    public ResponseEntity<List<HoKhau>> getAllHoKhau() {
-        List<HoKhau> hoKhauList = hoKhauService.getAllHoKhau();
+    public ResponseEntity<List<HoKhauResponseDTO>> getAllHoKhau() {
+        List<HoKhauResponseDTO> hoKhauList = hoKhauService.getAllHoKhau();
         return new ResponseEntity<>(hoKhauList, HttpStatus.OK);
     }
 
-    // API 2: Tạo một hộ khẩu mới
+    // <<< CẬP NHẬT 3: Sửa kiểu trả về sang HoKhauResponseDTO >>>
+    // API 5: Lấy thông tin chi tiết của một hộ khẩu
+    // - Method: GET
+    // - URL: http://localhost:8080/api/hokhau/{id}
+    @GetMapping("/{id}")
+    public ResponseEntity<HoKhauResponseDTO> getHoKhauById(@PathVariable Long id) {
+        HoKhauResponseDTO hoKhau = hoKhauService.getHoKhauById(id);
+        return new ResponseEntity<>(hoKhau, HttpStatus.OK);
+    }
+    
+    // <<< CẬP NHẬT 4: Sửa kiểu trả về sang HoKhauResponseDTO >>>
+    // API 2: Tạo một hộ khẩu mới (cùng với chủ hộ)
     // - Method: POST
     // - URL: http://localhost:8080/api/hokhau
     @PostMapping
-    public ResponseEntity<HoKhau> createHoKhau(@RequestBody HoKhau hoKhau) {
-        HoKhau savedHoKhau = hoKhauService.createHoKhau(hoKhau);
+    public ResponseEntity<HoKhauResponseDTO> createHoKhau(@RequestBody HoKhauRequest request) {
+        HoKhauResponseDTO savedHoKhau = hoKhauService.createHoKhau(request);
         return new ResponseEntity<>(savedHoKhau, HttpStatus.CREATED);
     }
 
-    // --- THÊM ENDPOINT MỚI ---
+    // <<< CẬP NHẬT 5: Sửa kiểu trả về sang HoKhauResponseDTO >>>
     // API 3: Cập nhật một hộ khẩu đã có
     // - Method: PUT
     // - URL: http://localhost:8080/api/hokhau/{id}  (ví dụ: /api/hokhau/1)
     @PutMapping("/{id}")
-    public ResponseEntity<HoKhau> updateHoKhau(@PathVariable Long id, @RequestBody HoKhau hoKhauDetails) {
-        HoKhau updatedHoKhau = hoKhauService.updateHoKhau(id, hoKhauDetails);
+    public ResponseEntity<HoKhauResponseDTO> updateHoKhau(@PathVariable Long id, @RequestBody HoKhau hoKhauDetails) {
+        // Lưu ý: hoKhauDetails ở đây vẫn là Entity HoKhau.
+        // Spring Boot sẽ tự động map JSON đầu vào vào object này.
+        // Service sẽ chỉ sử dụng các trường cần thiết từ nó.
+        HoKhauResponseDTO updatedHoKhau = hoKhauService.updateHoKhau(id, hoKhauDetails);
         return new ResponseEntity<>(updatedHoKhau, HttpStatus.OK);
     }
 
-    // --- THÊM ENDPOINT MỚI ---
-    // API 4: Xóa một hộ khẩu theo id
+    // API 4: Xóa một hộ khẩu theo id (giữ nguyên, không có thay đổi)
     // - Method: DELETE
-    // - URL: http://localhost:8080/api/hokhau/{id}  (ví dụ: /api/hokhau/1)
+    // - URL: http://localhost:8080/api/hokhau/{id}
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteHoKhau(@PathVariable Long id) {
         hoKhauService.deleteHoKhau(id);
         // Trả về status 204 No Content, báo hiệu đã xóa thành công và không có nội dung gì trả về
         return ResponseEntity.noContent().build();
-    }
-
-    // API 5: Lấy thông tin chi tiết của một hộ khẩu
-    // - Method: GET
-    // - URL: http://localhost:8080/api/hokhau/{id}
-    @GetMapping("/{id}")
-    public ResponseEntity<HoKhau> getHoKhauById(@PathVariable Long id) {
-        HoKhau hoKhau = hoKhauService.getHoKhauById(id);
-        return new ResponseEntity<>(hoKhau, HttpStatus.OK);
     }
 }

@@ -3,9 +3,8 @@
 package com.quanlynhankhau.api.entity;
 
 import java.time.LocalDate;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
+// <<<< THAY ĐỔI 1: Xóa import JsonIgnore và thêm import JsonBackReference >>>>
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -49,9 +48,14 @@ public class NhanKhau {
     private String quanHeVoiChuHo;
 
     // --- MỐI QUAN HỆ MANY-TO-ONE ---
-    // Nhiều Nhân khẩu sẽ thuộc về MỘT Hộ khẩu.
+    /**
+     * @JsonBackReference: Đánh dấu đây là "phía con" của mối quan hệ.
+     * Khi chuyển sang JSON, trường này sẽ bị bỏ qua để phá vỡ vòng lặp, 
+     * nhưng mối quan hệ vẫn được duy trì ở phía "cha" (HoKhau).
+     */
+    // <<<< THAY ĐỔI 2: Thay @JsonIgnore bằng @JsonBackReference >>>>
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ho_khau_id") // Tên cột khóa ngoại trong bảng nhan_khau
-    @JsonIgnore // Tránh vòng lặp vô hạn khi serial hóa JSON
+    @JsonBackReference
     private HoKhau hoKhau;
 }

@@ -2,38 +2,64 @@
 
 import type { HoKhauFormValues } from '../types/hoKhau';
 import axiosClient from './axiosClient';
+import type { NhanKhau } from './nhanKhauApi'; // Import kiểu NhanKhau
 
-// Định nghĩa kiểu dữ liệu trả về từ API (có thêm id)
-export interface HoKhau extends HoKhauFormValues {
+// Cập nhật interface HoKhau ===
+// Định nghĩa kiểu dữ liệu HoKhau trả về từ API.
+// Nó không còn kế thừa HoKhauFormValues nữa vì cấu trúc đã khác.
+export interface HoKhau {
   id: number;
+  maHoKhau: string;
+  diaChi: string;
+  ngayLap: string;
+  chuHo: NhanKhau; // Chủ hộ giờ là một object NhanKhau đầy đủ
 }
 
-// Hàm gọi API lấy danh sách hộ khẩu
-// --- SỬA LỖI Ở ĐÂY: Đảm bảo có từ khóa `async` ---
+// Hàm gọi API lấy danh sách hộ khẩu (giữ nguyên)
 export const getDanhSachHoKhau = async (): Promise<HoKhau[]> => {
   const response = await axiosClient.get('/hokhau');
   return response.data; 
 };
 
 // Hàm gọi API tạo hộ khẩu mới
-// --- SỬA LỖI Ở ĐÂY: Đảm bảo có từ khóa `async` ---
 export const createHoKhau = async (data: HoKhauFormValues): Promise<HoKhau> => {
-  const response = await axiosClient.post('/hokhau', data);
+  // Tái cấu trúc lại dữ liệu từ form để khớp với HoKhauRequest DTO của backend
+  const payload = {
+    hoKhauInfo: {
+      maHoKhau: data.maHoKhau,
+      diaChi: data.diaChi,
+      ngayLap: data.ngayLap,
+    },
+    chuHoInfo: {
+      hoTen: data.chuHoInfo.hoTen,
+      ngaySinh: data.chuHoInfo.ngaySinh,
+      cmndCccd: data.chuHoInfo.cmndCccd,
+      // Có thể thêm các trường khác của chủ hộ ở đây nếu cần
+    }
+  };
+  const response = await axiosClient.post('/hokhau', payload);
   return response.data;
 };
 
 // Hàm gọi API cập nhật hộ khẩu
+// Lưu ý: hàm này hiện chỉ cập nhật thông tin cơ bản, chưa thay đổi chủ hộ
 export const updateHoKhau = async (id: number, data: HoKhauFormValues): Promise<HoKhau> => {
-  const response = await axiosClient.put(`/hokhau/${id}`, data);
+  // Chỉ gửi đi các thông tin cơ bản của hộ khẩu
+  const payload = {
+    maHoKhau: data.maHoKhau,
+    diaChi: data.diaChi,
+    ngayLap: data.ngayLap,
+  }
+  const response = await axiosClient.put(`/hokhau/${id}`, payload);
   return response.data;
 };
 
-// Hàm gọi API xóa hộ khẩu
+// Hàm gọi API xóa hộ khẩu (giữ nguyên)
 export const deleteHoKhau = async (id: number): Promise<void> => {
   await axiosClient.delete(`/hokhau/${id}`);
 };
 
-// Hàm gọi API lấy chi tiết một hộ khẩu
+// Hàm gọi API lấy chi tiết một hộ khẩu (giữ nguyên)
 export const getHoKhauById = async (id: number): Promise<HoKhau> => {
   const response = await axiosClient.get(`/hokhau/${id}`);
   return response.data;
