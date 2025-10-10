@@ -23,3 +23,14 @@ export const createNhanKhau = async (hoKhauId: number, data: NhanKhauFormValues)
     const response = await axiosClient.post(`/hokhau/${hoKhauId}/nhankhau`, data);
     return response.data;
 };
+
+// Hàm gọi API cập nhật nhân khẩu
+export const updateNhanKhau = async (hoKhauId: number, nhanKhauId: number, data: NhanKhauFormValues): Promise<NhanKhau> => {
+    const response = await axiosClient.put(`/hokhau/${hoKhauId}/nhankhau/${nhanKhauId}`, data);
+    return response.data;
+};
+
+// Hàm gọi API xóa nhân khẩu
+export const deleteNhanKhau = async (hoKhauId: number, nhanKhauId: number): Promise<void> => {
+    await axiosClient.delete(`/hokhau/${hoKhauId}/nhankhau/${nhanKhauId}`);
+};
