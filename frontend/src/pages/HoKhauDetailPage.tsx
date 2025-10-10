@@ -1,53 +1,85 @@
 // src/pages/HoKhauDetailPage.tsx
 
-import { Box, Typography, Paper, CircularProgress, Divider, Button } from '@mui/material';
+import {
+  Box, Typography, Paper, CircularProgress, Divider, Button,
+  TableContainer, Table, TableHead, TableRow, TableCell, TableBody, IconButton
+} from '@mui/material';
 import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
+// Import API
 import { getHoKhauById } from '../api/hoKhauApi';
 import type { HoKhau } from '../api/hoKhauApi';
-import { getDanhSachNhanKhau } from '../api/nhanKhauApi';
+import { getDanhSachNhanKhau, createNhanKhau, updateNhanKhau, deleteNhanKhau } from '../api/nhanKhauApi';
 import type { NhanKhau } from '../api/nhanKhauApi';
 
-import NhanKhauForm from '../components/forms/NhanKhauForm'; // 1. Import NhanKhauForm
-import type { NhanKhauFormValues } from '../types/nhanKhau'; // 2. Import type cho form
-import { createNhanKhau } from '../api/nhanKhauApi'; // 3. Import API tạo nhân khẩu
+// Import Component & Type
+import NhanKhauForm from '../components/forms/NhanKhauForm';
+import type { NhanKhauFormValues } from '../types/nhanKhau';
+import ConfirmationDialog from '../components/shared/ConfirmationDialog';
+import NhanKhauDetailModal from '../components/details/NhanKhauDetailModal';
 
-// Component NhanKhauTable giữ nguyên
-function NhanKhauTable({ data }: { data: NhanKhau[] }) {
+/**
+ * Component Bảng hiển thị danh sách Nhân khẩu.
+ * Nhận vào dữ liệu và các hàm callback để xử lý sự kiện từ component cha.
+ */
+function NhanKhauTable({ data, onDetail, onEdit, onDelete }: { data: NhanKhau[], onDetail: (nhanKhau: NhanKhau) => void, onEdit: (nhanKhau: NhanKhau) => void, onDelete: (id: number) => void }) {
     if (data.length === 0) {
-        return <Typography sx={{ mt: 2 }}>Chưa có nhân khẩu nào trong hộ này.</Typography>;
+        return <Typography sx={{ mt: 2, fontStyle: 'italic' }}>Chưa có nhân khẩu nào trong hộ này.</Typography>;
     }
     return (
-        <table width="100%" style={{ borderCollapse: 'collapse', marginTop: '16px' }}>
-            <thead>
-                <tr style={{ borderBottom: '1px solid #ddd' }}>
-                    <th align="left" style={{ padding: '8px' }}>Họ Tên</th>
-                    <th align="left" style={{ padding: '8px' }}>Ngày Sinh</th>
-                    <th align="left" style={{ padding: '8px' }}>Quan hệ với chủ hộ</th>
-                </tr>
-            </thead>
-            <tbody>
+      <TableContainer>
+        <Table size="small">
+            <TableHead>
+                <TableRow>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Họ Tên</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Ngày Sinh</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Quan hệ với chủ hộ</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>Hành động</TableCell>
+                </TableRow>
+            </TableHead>
+            <TableBody>
                 {data.map(nk => (
-                    <tr key={nk.id} style={{ borderBottom: '1px solid #eee' }}>
-                        <td style={{ padding: '8px' }}>{nk.hoTen}</td>
-                        <td style={{ padding: '8px' }}>{nk.ngaySinh}</td>
-                        <td style={{ padding: '8px' }}>{nk.quanHeVoiChuHo}</td>
-                    </tr>
+                    <TableRow key={nk.id} hover>
+                        <TableCell>{nk.hoTen}</TableCell>
+                        <TableCell>{nk.ngaySinh}</TableCell>
+                        <TableCell>{nk.quanHeVoiChuHo}</TableCell>
+                        <TableCell align="right">
+                            <IconButton title="Xem chi tiết" size="small" color="primary" onClick={() => onDetail(nk)}><VisibilityIcon fontSize="small" /></IconButton>
+                            <IconButton title="Chỉnh sửa" size="small" onClick={() => onEdit(nk)}><EditIcon fontSize="small" /></IconButton>
+                            <IconButton title="Xóa" size="small" color="error" onClick={() => onDelete(nk.id)}><DeleteIcon fontSize="small" /></IconButton>
+                        </TableCell>
+                    </TableRow>
                 ))}
-            </tbody>
-        </table>
+            </TableBody>
+        </Table>
+      </TableContainer>
     )
 }
 
+/**
+ * Trang chính hiển thị thông tin chi tiết của một Hộ khẩu và quản lý các Nhân khẩu bên trong.
+ */
 export default function HoKhauDetailPage() {
   const { hoKhauId } = useParams<{ hoKhauId: string }>();
+  
+  // State quản lý dữ liệu
   const [hoKhau, setHoKhau] = useState<HoKhau | null>(null);
   const [nhanKhauList, setNhanKhauList] = useState<NhanKhau[]>([]);
   const [loading, setLoading] = useState(true);
-  const [openNhanKhauForm, setOpenNhanKhauForm] = useState(false); // 4. State mới cho form nhân khẩu
-
+  
+  // State quản lý trạng thái các Modal
+  const [openNhanKhauForm, setOpenNhanKhauForm] = useState(false);
+  const [editingNhanKhau, setEditingNhanKhau] = useState<NhanKhau | null>(null);
+  const [deletingNhanKhauId, setDeletingNhanKhauId] = useState<number | null>(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedNhanKhau, setSelectedNhanKhau] = useState<NhanKhau | null>(null);
+  
+  // Fetch dữ liệu Hộ khẩu và Nhân khẩu khi component được tải lần đầu hoặc khi hoKhauId thay đổi
   useEffect(() => {
     if (hoKhauId) {
       const fetchData = async () => {
@@ -69,41 +101,67 @@ export default function HoKhauDetailPage() {
       fetchData();
     }
   }, [hoKhauId]);
-
-  // 5. Hàm xử lý submit form nhân khẩu
+  
+  // ---- Logic cho Form (Thêm & Sửa) ----
+  const handleOpenCreateForm = () => { setEditingNhanKhau(null); setOpenNhanKhauForm(true); };
+  const handleOpenEditForm = (nhanKhau: NhanKhau) => { setEditingNhanKhau(nhanKhau); setOpenNhanKhauForm(true); };
+  const handleCloseForm = () => { setOpenNhanKhauForm(false); setEditingNhanKhau(null); };
   const handleNhanKhauFormSubmit = async (data: NhanKhauFormValues) => {
-    if (!hoKhauId) return;
-
-    try {
-      const id = parseInt(hoKhauId, 10);
-      const newNhanKhau = await createNhanKhau(id, data);
-      // Cập nhật lại danh sách trên UI
-      setNhanKhauList(prevList => [...prevList, newNhanKhau]);
-      setOpenNhanKhauForm(false); // Đóng form
-    } catch (error) {
-      console.error("Failed to create nhan khau:", error);
-    }
+      if (!hoKhauId) return;
+      const currentHoKhauId = parseInt(hoKhauId, 10);
+      try {
+        if (editingNhanKhau) {
+          const updated = await updateNhanKhau(currentHoKhauId, editingNhanKhau.id, data);
+          setNhanKhauList(list => list.map(item => item.id === updated.id ? updated : item));
+        } else {
+          const created = await createNhanKhau(currentHoKhauId, data);
+          setNhanKhauList(list => [...list, created]);
+        }
+        handleCloseForm();
+      } catch (error) { console.error("Failed to submit NhanKhau form:", error); }
   };
+
+  // ---- Logic cho Dialog Xóa ----
+  const handleOpenDeleteDialog = (id: number) => setDeletingNhanKhauId(id);
+  const handleCloseDeleteDialog = () => setDeletingNhanKhauId(null);
+  const handleDeleteConfirm = async () => {
+      if (!hoKhauId || !deletingNhanKhauId) return;
+      const currentHoKhauId = parseInt(hoKhauId, 10);
+      try {
+        await deleteNhanKhau(currentHoKhauId, deletingNhanKhauId);
+        setNhanKhauList(list => list.filter(item => item.id !== deletingNhanKhauId));
+        handleCloseDeleteDialog();
+      } catch (error) { console.error("Failed to delete NhanKhau:", error); }
+  };
+
+  // ---- Logic cho Modal Chi tiết ----
+  const handleOpenDetailModal = (nhanKhau: NhanKhau) => { setSelectedNhanKhau(nhanKhau); setDetailModalOpen(true); };
+  const handleCloseDetailModal = () => { setDetailModalOpen(false); };
 
   if (loading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>;
   }
-
   if (!hoKhau) {
     return <Typography>Không tìm thấy thông tin hộ khẩu.</Typography>;
   }
 
   return (
     <>
+      <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>
+        Chi tiết Hộ khẩu: {hoKhau.maHoKhau}
+      </Typography>
+
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
         {/* Cột thông tin Hộ khẩu */}
         <Box sx={{ width: { xs: '100%', md: '33.33%' } }}>
           <Paper sx={{ p: 2, height: '100%' }}>
-            <Typography variant="h6" gutterBottom>Thông tin Hộ khẩu</Typography>
+            <Typography variant="h6" gutterBottom>Thông tin Chung</Typography>
             <Divider sx={{ mb: 2 }} />
             <Typography><strong>Mã Hộ khẩu:</strong> {hoKhau.maHoKhau}</Typography>
-            <Typography><strong>Chủ hộ:</strong> {hoKhau.chuHo}</Typography>
+            <Typography><strong>Chủ hộ:</strong> {hoKhau.chuHo?.hoTen}</Typography>
             <Typography><strong>Địa chỉ:</strong> {hoKhau.diaChi}</Typography>
+            <Typography><strong>Ngày lập:</strong> {hoKhau.ngayLap}</Typography>
+            <Typography><strong>Số thành viên:</strong> {nhanKhauList.length}</Typography>
           </Paper>
         </Box>
       
@@ -111,26 +169,41 @@ export default function HoKhauDetailPage() {
         <Box sx={{ width: { xs: '100%', md: '66.67%' } }}>
           <Paper sx={{ p: 2, height: '100%' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="h6">Danh sách Nhân khẩu</Typography>
-
-                  {/* 6. Gán sự kiện onClick cho nút */}
-                  <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenNhanKhauForm(true)}>
-                    Thêm Nhân khẩu
+                  <Typography variant="h6">Danh sách Thành viên</Typography>
+                  <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreateForm}>
+                    Thêm Thành viên
                   </Button> 
               </Box>
               <Divider sx={{ my: 2 }} />
-              <NhanKhauTable data={nhanKhauList} />
+              <NhanKhauTable 
+                data={nhanKhauList} 
+                onDetail={handleOpenDetailModal}
+                onEdit={handleOpenEditForm}
+                onDelete={handleOpenDeleteDialog}
+              />
           </Paper>
         </Box>
       </Box>
 
-      {/* 7. Render component NhanKhauForm */}
+      {/* Các component Dialog sẽ được render ở đây */}
       <NhanKhauForm 
         open={openNhanKhauForm}
-        onClose={() => setOpenNhanKhauForm(false)}
+        onClose={handleCloseForm}
         onSubmit={handleNhanKhauFormSubmit}
+        initialData={editingNhanKhau}
       />
-
+      <ConfirmationDialog
+        open={!!deletingNhanKhauId}
+        onClose={handleCloseDeleteDialog}
+        onConfirm={handleDeleteConfirm}
+        title="Xác nhận Xóa Nhân khẩu"
+        message="Bạn có chắc chắn muốn xóa nhân khẩu này không? Hành động này không thể hoàn tác."
+      />
+      <NhanKhauDetailModal 
+        open={detailModalOpen}
+        onClose={handleCloseDetailModal}
+        nhanKhau={selectedNhanKhau}
+      />
     </>
   );
 }

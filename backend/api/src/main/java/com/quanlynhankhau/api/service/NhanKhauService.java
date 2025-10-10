@@ -39,5 +39,42 @@ public class NhanKhauService {
         return nhanKhauRepository.save(nhanKhau);
     }
 
-    // (Chúng ta sẽ thêm các phương thức Sửa và Xóa sau)
+    
+    /**
+     * Cập nhật thông tin cho một nhân khẩu đã tồn tại.
+     * @param nhanKhauId ID của nhân khẩu cần cập nhật.
+     * @param nhanKhauDetails Đối tượng chứa thông tin mới.
+     * @return Nhân khẩu sau khi đã được cập nhật.
+     */
+    public NhanKhau updateNhanKhau(Long nhanKhauId, NhanKhau nhanKhauDetails) {
+        // 1. Tìm nhân khẩu trong CSDL
+        NhanKhau existingNhanKhau = nhanKhauRepository.findById(nhanKhauId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu với id: " + nhanKhauId));
+
+        // 2. Cập nhật các trường thông tin
+        existingNhanKhau.setHoTen(nhanKhauDetails.getHoTen());
+        existingNhanKhau.setNgaySinh(nhanKhauDetails.getNgaySinh());
+        existingNhanKhau.setCmndCccd(nhanKhauDetails.getCmndCccd());
+        existingNhanKhau.setQuanHeVoiChuHo(nhanKhauDetails.getQuanHeVoiChuHo());
+        existingNhanKhau.setQueQuan(nhanKhauDetails.getQueQuan());
+        existingNhanKhau.setDanToc(nhanKhauDetails.getDanToc());
+        existingNhanKhau.setNgheNghiep(nhanKhauDetails.getNgheNghiep());
+        // ... bạn có thể thêm các trường khác ở đây
+
+        // 3. Lưu lại và trả về kết quả
+        return nhanKhauRepository.save(existingNhanKhau);
+    }
+
+    /**
+     * Xóa một nhân khẩu khỏi CSDL.
+     * @param nhanKhauId ID của nhân khẩu cần xóa.
+     */
+    public void deleteNhanKhau(Long nhanKhauId) {
+        // Kiểm tra sự tồn tại trước khi xóa để có thông báo lỗi tốt hơn
+        if (!nhanKhauRepository.existsById(nhanKhauId)) {
+            throw new RuntimeException("Không tìm thấy nhân khẩu với id: " + nhanKhauId);
+        }
+        nhanKhauRepository.deleteById(nhanKhauId);
+    }
+
 }

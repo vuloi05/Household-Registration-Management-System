@@ -7,13 +7,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*; //import tất cả
+
 
 import com.quanlynhankhau.api.entity.NhanKhau;
 import com.quanlynhankhau.api.service.NhanKhauService;
@@ -44,5 +39,30 @@ public class NhanKhauController {
     public ResponseEntity<NhanKhau> createNhanKhau(@PathVariable Long hoKhauId, @RequestBody NhanKhau nhanKhau) {
         NhanKhau savedNhanKhau = nhanKhauService.createNhanKhau(hoKhauId, nhanKhau);
         return new ResponseEntity<>(savedNhanKhau, HttpStatus.CREATED);
+    }
+
+        /**
+     * API cập nhật một nhân khẩu đã tồn tại.
+     */
+    @PutMapping("/{nhanKhauId}")
+    public ResponseEntity<NhanKhau> updateNhanKhau(
+            @PathVariable Long hoKhauId, // Biến này vẫn cần để khớp với URL của RequestMapping
+            @PathVariable Long nhanKhauId, 
+            @RequestBody NhanKhau nhanKhauDetails) {
+        
+        NhanKhau updatedNhanKhau = nhanKhauService.updateNhanKhau(nhanKhauId, nhanKhauDetails);
+        return new ResponseEntity<>(updatedNhanKhau, HttpStatus.OK);
+    }
+
+    /**
+     * API xóa một nhân khẩu.
+     */
+    @DeleteMapping("/{nhanKhauId}")
+    public ResponseEntity<Void> deleteNhanKhau(
+            @PathVariable Long hoKhauId, // Biến này vẫn cần để khớp với URL của RequestMapping
+            @PathVariable Long nhanKhauId) {
+            
+        nhanKhauService.deleteNhanKhau(nhanKhauId);
+        return ResponseEntity.noContent().build();
     }
 }
