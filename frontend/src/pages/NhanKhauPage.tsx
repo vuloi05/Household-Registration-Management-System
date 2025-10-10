@@ -13,9 +13,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import { useState, useEffect } from 'react';
 import HoKhauForm from '../components/forms/HoKhauForm';
 import type { HoKhauFormValues } from '../types/hoKhau';
-// Import các hàm API
 import { createHoKhau, getDanhSachHoKhau, updateHoKhau, deleteHoKhau } from '../api/hoKhauApi';
-// Import các type bằng cú pháp 'import type'
 import type { HoKhau } from '../api/hoKhauApi';
 
 
@@ -27,7 +25,6 @@ export default function NhanKhauPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedHoKhauId, setSelectedHoKhauId] = useState<number | null>(null);
 
-  // useEffect để fetch dữ liệu khi component được mount (giữ nguyên)
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -41,9 +38,8 @@ export default function NhanKhauPage() {
       }
     };
     fetchData();
-  }, []); // Mảng rỗng [] nghĩa là effect này chỉ chạy 1 lần duy nhất
+  }, []);
 
-  // Các hàm xử lý sự kiện (giữ nguyên, không thay đổi)
   const handleOpenCreateForm = () => {
     setEditingHoKhau(null);
     setOpenForm(true);
@@ -59,13 +55,11 @@ export default function NhanKhauPage() {
   const handleFormSubmit = async (data: HoKhauFormValues) => {
     try {
       if (editingHoKhau) {
-        // --- Logic Sửa ---
         const updatedHoKhau = await updateHoKhau(editingHoKhau.id, data);
         setHoKhauList(prevList => 
           prevList.map(item => item.id === updatedHoKhau.id ? updatedHoKhau : item)
         );
       } else {
-        // --- Logic Thêm mới ---
         const newHoKhau = await createHoKhau(data);
         setHoKhauList(prevList => [...prevList, newHoKhau]);
       }
@@ -96,60 +90,56 @@ export default function NhanKhauPage() {
 
   return (
     <> 
-      <Paper sx={{ p: 3, borderRadius: 3 }}>
+      <Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>Danh sách Hộ khẩu</Typography>
+          <Typography variant="h4" sx={{ fontWeight: 'bold' }}>Quản lý Hộ khẩu</Typography>
           <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreateForm}>
             Thêm hộ khẩu mới
           </Button>
         </Box>
 
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <TableContainer>
-            <Table>
-              <TableHead>
-                  {/* === THAY ĐỔI 1: Cập nhật tiêu đề bảng === */}
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Mã Hộ khẩu</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Tên Chủ hộ</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Địa chỉ</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>Hành động</TableCell>
-                  </TableRow>
-              </TableHead>
-              <TableBody>
-                {hoKhauList.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell>{row.maHoKhau}</TableCell>
-                    
-                    {/* === THAY ĐỔI 2 (QUAN TRỌNG): Sửa lỗi hiển thị === */}
-                    {/* `row.chuHo` bây giờ là một object, chúng ta cần truy cập `row.chuHo.hoTen` */}
-                    <TableCell>{row.chuHo?.hoTen}</TableCell>
-                    
-                    <TableCell>{row.diaChi}</TableCell>
-                    <TableCell align="center">
-                      <IconButton color="primary" component={RouterLink} to={`/hokhau/${row.id}`}>
-                        <InfoIcon />
-                      </IconButton>
-                      <IconButton color="secondary" onClick={() => handleOpenEditForm(row)}>
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton color="error" onClick={() => handleOpenDeleteDialog(row.id)}>
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Paper>
+        <Paper sx={{ borderRadius: 2, p: 2 }}>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <TableContainer>
+              <Table>
+                <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Mã Hộ khẩu</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Tên Chủ hộ</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Địa chỉ</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold' }}>Hành động</TableCell>
+                    </TableRow>
+                </TableHead>
+                <TableBody>
+                  {hoKhauList.map((row) => (
+                    <TableRow key={row.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                      <TableCell>{row.maHoKhau}</TableCell>
+                      <TableCell>{row.chuHo?.hoTen}</TableCell>
+                      <TableCell>{row.diaChi}</TableCell>
+                      <TableCell align="center">
+                        <IconButton title="Xem chi tiết" color="primary" component={RouterLink} to={`/hokhau/${row.id}`}>
+                          <InfoIcon />
+                        </IconButton>
+                        <IconButton title="Chỉnh sửa" color="secondary" onClick={() => handleOpenEditForm(row)}>
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton title="Xóa" color="error" onClick={() => handleOpenDeleteDialog(row.id)}>
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Paper>
+      </Box>
 
-      {/* Các component Dialog (giữ nguyên) */}
       <HoKhauForm
         open={openForm}
         onClose={handleCloseForm}
