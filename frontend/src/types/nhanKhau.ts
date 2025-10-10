@@ -3,13 +3,19 @@ import { z } from 'zod';
 
 export const nhanKhauSchema = z.object({
   hoTen: z.string().min(1, 'Họ tên là bắt buộc'),
-  ngaySinh: z.string().min(1, 'Ngày sinh là bắt buộc'), // Tạm thời là string, sẽ dùng Date Picker sau
-  cmndCccd: z.string().optional(), // CCCD có thể có hoặc không
-  quanHeVoiChuHo: z.string().min(1, 'Quan hệ với chủ hộ là bắt buộc'),
-  // Thêm các trường khác nếu bạn muốn có trong form
+  biDanh: z.string().optional(),
+  ngaySinh: z.string().min(1, 'Ngày sinh là bắt buộc'),
+  noiSinh: z.string().optional(),
   queQuan: z.string().optional(),
   danToc: z.string().optional(),
   ngheNghiep: z.string().optional(),
+  noiLamViec: z.string().optional(),
+  cmndCccd: z.string().optional(),
+  ngayCap: z.string().optional(),
+  noiCap: z.string().optional(),
+  ngayDangKyThuongTru: z.string().optional(),
+  diaChiTruocKhiChuyenDen: z.string().optional(),
+  quanHeVoiChuHo: z.string().min(1, 'Quan hệ với chủ hộ là bắt buộc'),
 });
 
 export type NhanKhauFormValues = z.infer<typeof nhanKhauSchema>;
