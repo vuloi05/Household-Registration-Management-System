@@ -6,6 +6,8 @@
 */
 
 -- Xóa các bảng theo thứ tự ngược lại của sự phụ thuộc để tránh lỗi khóa ngoại
+DROP TABLE IF EXISTS lich_su_nop_tien CASCADE;
+DROP TABLE IF EXISTS khoan_thu CASCADE;
 DROP TABLE IF EXISTS nhan_khau CASCADE;
 DROP TABLE IF EXISTS ho_khau CASCADE;
 
@@ -48,3 +50,27 @@ CREATE TABLE nhan_khau (
 ALTER TABLE ho_khau
 ADD CONSTRAINT fk_hokhau_nhankhau_chuho
 FOREIGN KEY (chu_ho_id) REFERENCES nhan_khau(id);
+
+
+
+-- TẠO BẢNG KHOẢN THU (khoan_thu)
+CREATE TABLE khoan_thu (
+    id                            BIGSERIAL PRIMARY KEY,
+    ten_khoan_thu                 VARCHAR(255) NOT NULL,
+    ngay_tao                      DATE NOT NULL,
+    loai_khoan_thu                VARCHAR(50) NOT NULL, -- Ví dụ: 'BAT_BUOC', 'DONG_GOP'
+    so_tien_tren_mot_nhan_khau    DECIMAL(10, 2) -- Dùng DECIMAL cho tiền tệ
+);
+
+-- TẠO BẢNG LỊCH SỬ NỘP TIỀN (lich_su_nop_tien)
+CREATE TABLE lich_su_nop_tien (
+    id                            BIGSERIAL PRIMARY KEY,
+    ngay_nop                      DATE NOT NULL,
+    so_tien                       DECIMAL(15, 2) NOT NULL,
+    nguoi_thu                     VARCHAR(255),
+    khoan_thu_id                  BIGINT NOT NULL,
+    ho_khau_id                    BIGINT NOT NULL,
+
+    CONSTRAINT fk_lichsu_khoanthu FOREIGN KEY (khoan_thu_id) REFERENCES khoan_thu(id),
+    CONSTRAINT fk_lichsu_hokhau FOREIGN KEY (ho_khau_id) REFERENCES ho_khau(id)
+);

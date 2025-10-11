@@ -10,6 +10,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+
+
 @Entity
 @Table(name = "ho_khau")
 @Getter
@@ -41,6 +43,6 @@ public class HoKhau {
      */
     // <<<< THAY ĐỔI 2: Thay @JsonIgnore bằng @JsonManagedReference >>>>
     @OneToMany(mappedBy = "hoKhau", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
+    @JsonManagedReference("lichsu-hokhau")
     private List<NhanKhau> danhSachNhanKhau;
 }
