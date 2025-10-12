@@ -59,3 +59,11 @@ VALUES('Lê Minh Tuấn', NULL, '1988-06-20', 'Hà Nội', 'Hà Nội', 'Kinh', 
 
 -- Cập nhật chủ hộ cho Hộ khẩu 3
 UPDATE ho_khau SET chu_ho_id = 6 WHERE id = 3;
+
+
+-- =================================================================
+-- DỮ LIỆU MẪU CHO BẢNG users
+-- Mật khẩu cho cả 2 tài khoản đều là: 123456
+-- =================================================================
+INSERT INTO users(username, password, full_name, role) VALUES('admin', '$2a$10$JDd/YhSg.GTiEuH22K/POOL0pisEjyhApabrsiyaAxtCOkORCpC2a', 'Tổ trưởng A', 'ROLE_ADMIN');
+INSERT INTO users(username, password, full_name, role) VALUES('ketoan', '$2a$10$JDd/YhSg.GTiEuH22K/POOL0pisEjyhApabrsiyaAxtCOkORCpC2a', 'Kế toán B', 'ROLE_ACCOUNTANT');
