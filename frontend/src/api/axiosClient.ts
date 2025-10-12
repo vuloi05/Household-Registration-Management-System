@@ -8,4 +8,22 @@ const axiosClient = axios.create({
   },
 });
 
+// Interceptor này sẽ chạy trước mỗi request được gửi đi
+axiosClient.interceptors.request.use(
+  (config) => {
+    // Lấy token từ localStorage
+    const token = localStorage.getItem('jwt_token');
+    
+    // Nếu có token, thêm nó vào header Authorization
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 export default axiosClient;

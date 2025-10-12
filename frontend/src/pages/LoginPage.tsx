@@ -1,112 +1,108 @@
 // src/pages/LoginPage.tsx
 
 import {
-  Box,
-  Button,
-  Card,
-  Container,
-  TextField,
-  Typography,
-  Stack,
-  Link as MuiLink,
+  Box, Button, Card, TextField, Typography,
+  IconButton, InputAdornment, Alert
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useState } from 'react';
-import { IconButton, InputAdornment } from '@mui/material';
+import { useForm, Controller } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+
+import { useAuth } from '../context/AuthContext';
+import { loginApi } from '../api/authApi';
+import type { AuthRequest } from '../api/authApi';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleClickShowPassword = () => setShowPassword((show) => !show);
+  const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<AuthRequest>();
 
-  const handleMouseDownPassword = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
+  const onSubmit = async (data: AuthRequest) => {
+    setLoginError(null);
+    try {
+      const response = await loginApi(data);
+      login(response.jwt);
+      navigate('/');
+    } catch (error) {
+      console.error("Login failed:", error);
+      setLoginError("Tên đăng nhập hoặc mật khẩu không chính xác.");
+    }
   };
 
   return (
-    <Container
-      component="main"
-      maxWidth="xs"
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
+    // Box ngoài cùng làm nhiệm vụ căn giữa
+    <Box 
+      sx={{ 
+        display: 'flex', 
         justifyContent: 'center',
-        minHeight: '100vh',
+        alignItems: 'center',
+        width: '100vw', // Chiếm 100% chiều rộng viewport
+        height: '100vh', // Chiếm 100% chiều cao viewport
+        backgroundColor: 'grey.100'
       }}
     >
-      <Card sx={{ padding: 4 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}
-        >
-          {/* Bạn có thể thay logo ở đây */}
-          <img src="/logo.svg" alt="logo" width="60" height="60" />
+      {/* Box thứ hai để giới hạn độ rộng của form */}
+      <Box sx={{ maxWidth: 400, width: '100%', p: 2 }}>
+        <Card sx={{ padding: 4, borderRadius: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <img src="/vite.svg" alt="logo" width="60" height="60" />
+            <Typography component="h1" variant="h5" sx={{ mt: 2, fontWeight: 'bold' }}>
+              Đăng nhập hệ thống
+            </Typography>
 
-          <Typography component="h1" variant="h5" sx={{ mt: 2, fontWeight: 'bold' }}>
-            Đăng nhập hệ thống
-          </Typography>
-          <Typography color="text.secondary" sx={{ mb: 3 }}>
-            Quản lý Nhân khẩu Tổ dân phố 7, La Khê
-          </Typography>
+            {loginError && <Alert severity="error" sx={{ width: '100%', mt: 2 }}>{loginError}</Alert>}
 
-          <Box component="form" noValidate sx={{ mt: 1, width: '100%' }}>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="username"
-              label="Tên đăng nhập"
-              name="username"
-              autoComplete="username"
-              autoFocus
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Mật khẩu"
-              type={showPassword ? 'text' : 'password'}
-              id="password"
-              autoComplete="current-password"
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label="toggle password visibility"
-                      onClick={handleClickShowPassword}
-                      onMouseDown={handleMouseDownPassword}
-                      edge="end"
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              size="large"
-              startIcon={<LockOutlinedIcon />}
-              sx={{ mt: 3, mb: 2, py: 1.5 }}
-            >
-              Đăng nhập
-            </Button>
-            <Stack direction="row" justifyContent="flex-end">
-              <MuiLink href="#" variant="body2">
-                Quên mật khẩu?
-              </MuiLink>
-            </Stack>
+            <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ mt: 1, width: '100%' }}>
+              <Controller
+                name="username"
+                control={control}
+                defaultValue=""
+                rules={{ required: 'Tên đăng nhập là bắt buộc' }}
+                render={({ field }) => (
+                  <TextField {...field} margin="normal" required fullWidth label="Tên đăng nhập" autoFocus error={!!errors.username} helperText={errors.username?.message as string} />
+                )}
+              />
+              <Controller
+                name="password"
+                control={control}
+                defaultValue=""
+                rules={{ required: 'Mật khẩu là bắt buộc' }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    margin="normal"
+                    required
+                    fullWidth
+                    label="Mật khẩu"
+                    type={showPassword ? 'text' : 'password'}
+                    error={!!errors.password}
+                    helperText={errors.password?.message as string}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                )}
+              />
+              <Button type="submit" fullWidth variant="contained" size="large" startIcon={<LockOutlinedIcon />} sx={{ mt: 3, mb: 2, py: 1.5 }} disabled={isSubmitting} >
+                {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+              </Button>
+            </Box>
           </Box>
-        </Box>
-      </Card>
-    </Container>
+        </Card>
+      </Box>
+    </Box>
   );
 }

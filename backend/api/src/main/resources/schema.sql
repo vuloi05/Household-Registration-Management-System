@@ -8,6 +8,7 @@
 -- Xóa các bảng theo thứ tự ngược lại của sự phụ thuộc để tránh lỗi khóa ngoại
 DROP TABLE IF EXISTS lich_su_nop_tien CASCADE;
 DROP TABLE IF EXISTS khoan_thu CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS nhan_khau CASCADE;
 DROP TABLE IF EXISTS ho_khau CASCADE;
 
@@ -73,4 +74,16 @@ CREATE TABLE lich_su_nop_tien (
 
     CONSTRAINT fk_lichsu_khoanthu FOREIGN KEY (khoan_thu_id) REFERENCES khoan_thu(id),
     CONSTRAINT fk_lichsu_hokhau FOREIGN KEY (ho_khau_id) REFERENCES ho_khau(id)
+);
+
+
+-- =================================================================
+-- TẠO BẢNG NGƯỜI DÙNG (users)
+-- =================================================================
+CREATE TABLE users (
+    id          BIGSERIAL PRIMARY KEY,
+    username    VARCHAR(255) NOT NULL UNIQUE,
+    password    VARCHAR(255) NOT NULL,
+    full_name   VARCHAR(255),
+    role        VARCHAR(50) NOT NULL -- Ví dụ: 'ROLE_ADMIN', 'ROLE_ACCOUNTANT'
 );
