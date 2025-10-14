@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*; //import tất cả
-
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.quanlynhankhau.api.entity.NhanKhau;
 import com.quanlynhankhau.api.service.NhanKhauService;
@@ -18,6 +18,7 @@ import com.quanlynhankhau.api.service.NhanKhauService;
 // URL cơ sở cho controller này sẽ lồng trong URL của Hộ khẩu
 @RequestMapping("/api/hokhau/{hoKhauId}/nhankhau") 
 @CrossOrigin(origins = "http://localhost:5173")
+
 public class NhanKhauController {
 
     @Autowired
@@ -27,6 +28,7 @@ public class NhanKhauController {
     // - Method: GET
     // - URL: http://localhost:8080/api/hokhau/{hoKhauId}/nhankhau
     @GetMapping
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<List<NhanKhau>> getNhanKhauByHoKhauId(@PathVariable Long hoKhauId) {
         List<NhanKhau> nhanKhauList = nhanKhauService.getAllNhanKhauByHoKhauId(hoKhauId);
         return new ResponseEntity<>(nhanKhauList, HttpStatus.OK);
@@ -36,6 +38,7 @@ public class NhanKhauController {
     // - Method: POST
     // - URL: http://localhost:8080/api/hokhau/{hoKhauId}/nhankhau
     @PostMapping
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<NhanKhau> createNhanKhau(@PathVariable Long hoKhauId, @RequestBody NhanKhau nhanKhau) {
         NhanKhau savedNhanKhau = nhanKhauService.createNhanKhau(hoKhauId, nhanKhau);
         return new ResponseEntity<>(savedNhanKhau, HttpStatus.CREATED);
@@ -45,6 +48,7 @@ public class NhanKhauController {
      * API cập nhật một nhân khẩu đã tồn tại.
      */
     @PutMapping("/{nhanKhauId}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<NhanKhau> updateNhanKhau(
             @PathVariable Long hoKhauId, // Biến này vẫn cần để khớp với URL của RequestMapping
             @PathVariable Long nhanKhauId, 
@@ -58,6 +62,7 @@ public class NhanKhauController {
      * API xóa một nhân khẩu.
      */
     @DeleteMapping("/{nhanKhauId}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<Void> deleteNhanKhau(
             @PathVariable Long hoKhauId, // Biến này vẫn cần để khớp với URL của RequestMapping
             @PathVariable Long nhanKhauId) {

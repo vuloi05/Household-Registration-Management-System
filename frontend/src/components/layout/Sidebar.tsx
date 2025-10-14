@@ -4,19 +4,37 @@ import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Too
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
 import PaymentsIcon from '@mui/icons-material/Payments';
-import { Link as RouterLink, useLocation } from 'react-router-dom'; // 1. Import thêm Link và useLocation
+import { useAuth } from '../../context/AuthContext'; // Import hook useAuth
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 
-// Mảng chứa thông tin các mục menu để dễ quản lý
+/**
+ * Mảng cấu hình cho các mục menu trong Sidebar.
+ * Mỗi mục có:
+ * - text: Văn bản hiển thị.
+ * - icon: Biểu tượng (component từ MUI).
+ * - path: Đường dẫn URL khi click vào.
+ * - roles: Mảng các vai trò được phép nhìn thấy mục menu này.
+ */
 const menuItems = [
-  { text: 'Bảng điều khiển', icon: <DashboardIcon />, path: '/' },
-  { text: 'Quản lý Nhân khẩu', icon: <PeopleIcon />, path: '/nhan-khau' },
-  { text: 'Quản lý Thu phí', icon: <PaymentsIcon />, path: '/thu-phi' }, // Thêm path cho thu phí
+  { text: 'Bảng điều khiển', icon: <DashboardIcon />, path: '/', roles: ['ROLE_ADMIN', 'ROLE_ACCOUNTANT'] },
+  { text: 'Quản lý Nhân khẩu', icon: <PeopleIcon />, path: '/nhan-khau', roles: ['ROLE_ADMIN'] },
+  { text: 'Quản lý Thu phí', icon: <PaymentsIcon />, path: '/thu-phi', roles: ['ROLE_ADMIN', 'ROLE_ACCOUNTANT'] },
 ];
 
 const drawerWidth = 240;
 
 export default function Sidebar() {
-  const location = useLocation(); // 2. Lấy vị trí URL hiện tại
+  const location = useLocation(); // Hook để lấy URL hiện tại, giúp highlight mục menu đang active.
+  const { user } = useAuth(); // Lấy thông tin user (bao gồm cả role) từ AuthContext.
+
+  /**
+   * Lọc danh sách menuItems ban đầu để chỉ giữ lại những mục mà
+   * vai trò (role) của người dùng hiện tại được phép truy cập.
+   */
+  const accessibleMenuItems = menuItems.filter(item => 
+    // Kiểm tra xem user có tồn tại và role của user có nằm trong danh sách roles của mục menu không.
+    user && item.roles.includes(user.role)
+  );
 
   return (
     <Drawer
@@ -33,13 +51,17 @@ export default function Sidebar() {
     >
       <Toolbar />
       <List>
-        {menuItems.map((item) => (
+        {/* 
+          Sử dụng `accessibleMenuItems` (danh sách đã được lọc) thay vì `menuItems` (danh sách gốc) 
+          để render ra các mục menu.
+        */}
+        {accessibleMenuItems.map((item) => (
           <ListItem key={item.text} disablePadding>
-            {/* 3. Bọc ListItemButton trong RouterLink */}
+            {/* Bọc ListItemButton trong RouterLink để xử lý điều hướng */}
             <ListItemButton
               component={RouterLink}
               to={item.path}
-              // 4. Thêm style để highlight mục đang được chọn
+              // Thêm style 'selected' để highlight mục menu đang được chọn
               selected={location.pathname === item.path}
             >
               <ListItemIcon>{item.icon}</ListItemIcon>

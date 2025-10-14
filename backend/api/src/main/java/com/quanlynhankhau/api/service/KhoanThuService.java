@@ -1,13 +1,14 @@
 // src/main/java/com/quanlynhankhau/api/service/KhoanThuService.java
-
 package com.quanlynhankhau.api.service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors; // Thêm import
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.quanlynhankhau.api.dto.KhoanThuResponseDTO; // Thêm import
 import com.quanlynhankhau.api.entity.KhoanThu;
 import com.quanlynhankhau.api.repository.KhoanThuRepository;
 
@@ -16,21 +17,46 @@ public class KhoanThuService {
 
     @Autowired
     private KhoanThuRepository khoanThuRepository;
+    
+    // --- PHƯƠNG THỨC CHUYỂN ĐỔI ENTITY SANG DTO ---
+    private KhoanThuResponseDTO convertToDTO(KhoanThu entity) {
+        if (entity == null) return null;
+        
+        KhoanThuResponseDTO dto = new KhoanThuResponseDTO();
+        dto.setId(entity.getId());
+        dto.setTenKhoanThu(entity.getTenKhoanThu());
+        dto.setNgayTao(entity.getNgayTao());
+        dto.setLoaiKhoanThu(entity.getLoaiKhoanThu());
+        dto.setSoTienTrenMotNhanKhau(entity.getSoTienTrenMotNhanKhau());
+        
+        return dto;
+    }
+
+    // --- CÁC PHƯƠNG THỨC PUBLIC ĐƯỢC CẬP NHẬT ĐỂ TRẢ VỀ DTO ---
 
     // Lấy danh sách tất cả các khoản thu
-    public List<KhoanThu> getAllKhoanThu() {
-        return khoanThuRepository.findAll();
+    public List<KhoanThuResponseDTO> getAllKhoanThu() {
+        return khoanThuRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+    
+    // Lấy chi tiết một khoản thu theo ID
+    public KhoanThuResponseDTO getKhoanThuById(Long id) {
+        KhoanThu khoanThu = khoanThuRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy khoản thu với ID: " + id));
+        return convertToDTO(khoanThu);
     }
 
     // Tạo một khoản thu mới
-    public KhoanThu createKhoanThu(KhoanThu khoanThu) {
-        // Tự động gán ngày tạo là ngày hiện tại
+    public KhoanThuResponseDTO createKhoanThu(KhoanThu khoanThu) {
         khoanThu.setNgayTao(LocalDate.now());
-        return khoanThuRepository.save(khoanThu);
+        KhoanThu savedKhoanThu = khoanThuRepository.save(khoanThu);
+        return convertToDTO(savedKhoanThu);
     }
-
-     // --- THÊM PHƯƠNG THỨC SỬA ---
-    public KhoanThu updateKhoanThu(Long id, KhoanThu khoanThuDetails) {
+    
+    // Cập nhật một khoản thu
+    public KhoanThuResponseDTO updateKhoanThu(Long id, KhoanThu khoanThuDetails) {
         KhoanThu existingKhoanThu = khoanThuRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy khoản thu với id: " + id));
 
@@ -38,10 +64,11 @@ public class KhoanThuService {
         existingKhoanThu.setLoaiKhoanThu(khoanThuDetails.getLoaiKhoanThu());
         existingKhoanThu.setSoTienTrenMotNhanKhau(khoanThuDetails.getSoTienTrenMotNhanKhau());
         
-        return khoanThuRepository.save(existingKhoanThu);
+        KhoanThu updatedKhoanThu = khoanThuRepository.save(existingKhoanThu);
+        return convertToDTO(updatedKhoanThu);
     }
 
-    // --- THÊM PHƯƠNG THỨC XÓA ---
+    // Xóa một khoản thu (giữ nguyên)
     public void deleteKhoanThu(Long id) {
         if (!khoanThuRepository.existsById(id)) {
             throw new RuntimeException("Không tìm thấy khoản thu với id: " + id);

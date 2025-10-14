@@ -2,6 +2,8 @@
 package com.quanlynhankhau.api.util;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 import org.springframework.security.core.userdetails.UserDetails;
@@ -50,7 +52,17 @@ public class JwtUtil {
 
     // Tạo token mới cho người dùng
     public String generateToken(UserDetails userDetails) {
+        // Tạo một Map để chứa các custom claims
+        Map<String, Object> claims = new HashMap<>();
+        
+        // Lấy role đầu tiên từ danh sách authorities và thêm vào claims
+        // Giả sử mỗi user chỉ có 1 role
+        if (!userDetails.getAuthorities().isEmpty()) {
+            claims.put("role", userDetails.getAuthorities().iterator().next().getAuthority());
+        }
+
         return Jwts.builder()
+                .setClaims(claims)
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // Hết hạn sau 10 giờ

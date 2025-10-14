@@ -11,6 +11,7 @@ export const nopTienSchema = z.object({
 
   ngayNop: z.string().min(1, 'Ngày nộp là bắt buộc'),
   
+  
   // Xử lý trường số: không cho phép null hoặc undefined
   soTien: z.number().positive('Số tiền phải là số dương'),
 

@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import java.util.List;
 
 @RestController // Đánh dấu đây là một REST Controller, chuyên xử lý API và trả về JSON
@@ -26,6 +28,7 @@ public class HoKhauController {
     // - Method: GET
     // - URL: http://localhost:8080/api/hokhau
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')") //Cho phép cả ADMIN và KETOAN xem
     public ResponseEntity<List<HoKhauResponseDTO>> getAllHoKhau() {
         List<HoKhauResponseDTO> hoKhauList = hoKhauService.getAllHoKhau();
         return new ResponseEntity<>(hoKhauList, HttpStatus.OK);
@@ -36,6 +39,7 @@ public class HoKhauController {
     // - Method: GET
     // - URL: http://localhost:8080/api/hokhau/{id}
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')") //Cho phép cả ADMIN và KETOAN xem
     public ResponseEntity<HoKhauResponseDTO> getHoKhauById(@PathVariable Long id) {
         HoKhauResponseDTO hoKhau = hoKhauService.getHoKhauById(id);
         return new ResponseEntity<>(hoKhau, HttpStatus.OK);
@@ -46,6 +50,7 @@ public class HoKhauController {
     // - Method: POST
     // - URL: http://localhost:8080/api/hokhau
     @PostMapping
+    @PreAuthorize("hasRole('ROLE_ADMIN')") // Chỉ ADMIN mới được tạo hộ khẩu
     public ResponseEntity<HoKhauResponseDTO> createHoKhau(@RequestBody HoKhauRequest request) {
         HoKhauResponseDTO savedHoKhau = hoKhauService.createHoKhau(request);
         return new ResponseEntity<>(savedHoKhau, HttpStatus.CREATED);
@@ -56,6 +61,7 @@ public class HoKhauController {
     // - Method: PUT
     // - URL: http://localhost:8080/api/hokhau/{id}  (ví dụ: /api/hokhau/1)
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<HoKhauResponseDTO> updateHoKhau(@PathVariable Long id, @RequestBody HoKhau hoKhauDetails) {
         // Lưu ý: hoKhauDetails ở đây vẫn là Entity HoKhau.
         // Spring Boot sẽ tự động map JSON đầu vào vào object này.
@@ -68,6 +74,7 @@ public class HoKhauController {
     // - Method: DELETE
     // - URL: http://localhost:8080/api/hokhau/{id}
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<Void> deleteHoKhau(@PathVariable Long id) {
         hoKhauService.deleteHoKhau(id);
         // Trả về status 204 No Content, báo hiệu đã xóa thành công và không có nội dung gì trả về
