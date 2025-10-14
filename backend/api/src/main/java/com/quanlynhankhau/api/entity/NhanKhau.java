@@ -56,6 +56,6 @@ public class NhanKhau {
     // <<<< THAY ĐỔI 2: Thay @JsonIgnore bằng @JsonBackReference >>>>
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ho_khau_id") // Tên cột khóa ngoại trong bảng nhan_khau
-    @JsonBackReference
+    @JsonBackReference("nhanKhau-hoKhau")
     private HoKhau hoKhau;
 }

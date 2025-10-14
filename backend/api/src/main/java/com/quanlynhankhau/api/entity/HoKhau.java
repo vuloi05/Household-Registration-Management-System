@@ -43,6 +43,6 @@ public class HoKhau {
      */
     // <<<< THAY ĐỔI 2: Thay @JsonIgnore bằng @JsonManagedReference >>>>
     @OneToMany(mappedBy = "hoKhau", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference("lichsu-hokhau")
+    @JsonManagedReference("nhanKhau-hoKhau")
     private List<NhanKhau> danhSachNhanKhau;
 }
