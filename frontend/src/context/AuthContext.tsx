@@ -9,6 +9,7 @@ import { jwtDecode } from 'jwt-decode'; // Cần cài đặt thư viện này
 interface User {
   sub: string; // 'sub' (subject) trong JWT thường là username
   // Thêm các trường khác nếu bạn đưa vào JWT, ví dụ: role
+  role: string; // Ví dụ: "ROLE_ADMIN", "ROLE_ACCOUNTANT"
 }
 
 interface AuthContextType {
@@ -39,11 +40,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Kiểm tra token hết hạn (tùy chọn nhưng nên có)
         // const isExpired = decodedUser.exp * 1000 < Date.now();
         // if (!isExpired) {
-          setUser(decodedUser);
-          axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        //  setUser(decodedUser);
+        //  axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         // } else {
         //   localStorage.removeItem('jwt_token');
         // }
+
+        // 2. Kiểm tra xem token có role không
+        if(decodedUser && decodedUser.sub){
+          setUser(decodedUser);
+          axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        } else {
+          localStorage.removeItem('jwt_token');
+        }
       } catch (error) {
         console.error("Invalid token:", error);
         localStorage.removeItem('jwt_token');
@@ -55,8 +64,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = (token: string) => {
     localStorage.setItem('jwt_token', token);
     const decodedUser: User = jwtDecode(token);
-    setUser(decodedUser);
-    axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    if(decodedUser.sub && decodedUser.role  ){
+      setUser(decodedUser);
+      axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+      // Nếu token không hợp lệ, xóa nó khỏi localStorage
+      console.error("Token is missing required claims (sub, role)");
+      localStorage.removeItem('jwt_token');
+    }
   };
 
   // Hàm để xử lý đăng xuất

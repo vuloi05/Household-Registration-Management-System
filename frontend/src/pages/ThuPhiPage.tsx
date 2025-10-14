@@ -18,12 +18,15 @@ import { getDanhSachHoKhau } from '../api/hoKhauApi';
 import type { HoKhau } from '../api/hoKhauApi';
 import { ghiNhanNopTien } from '../api/nopTienApi';
 import type { NopTienInput } from '../types/nopTien';
+import type { NopTienPayLoad } from '../api/nopTienApi';
 import NopTienForm from '../components/forms/NopTienForm';
 
 // Import các Component dùng chung
 import KhoanThuForm from '../components/forms/KhoanThuForm';
 import ConfirmationDialog from '../components/shared/ConfirmationDialog';
 
+import InfoIcon from '@mui/icons-material/Info'; // Import icon Xem chi tiết
+import { Link as RouterLink } from 'react-router-dom'; 
 
 /**
  * Hàm helper để format số thành định dạng tiền tệ VNĐ.
@@ -120,7 +123,7 @@ export default function ThuPhiPage() {
     if (!selectedKhoanThuId) return;
     try {
       // Lấy id từ object hoKhau
-            const payload = {
+            const payload: NopTienPayLoad = {
                 hoKhauId: data.hoKhau.id, 
                 khoanThuId: selectedKhoanThuId,
                 ngayNop: data.ngayNop,
@@ -173,7 +176,13 @@ export default function ThuPhiPage() {
                                 <TableCell>{row.loaiKhoanThu === 'BAT_BUOC' ? 'Bắt buộc' : 'Đóng góp'}</TableCell>
                                 <TableCell>{row.ngayTao}</TableCell>
                                 <TableCell align="right">{formatCurrency(row.soTienTrenMotNhanKhau)}</TableCell>
+                                
+
                                 <TableCell align="center">
+                                    <IconButton 
+                                      title="Xem chi tiết & thống kê" color = "primary" size="small" component={RouterLink} to={`/thu-phi/${row.id}`}>
+                                      <InfoIcon fontSize="small" />
+                                    </IconButton>
                                     <IconButton title="Ghi nhận nộp tiền" size="small" color="success" onClick={() => handleOpenNopTienForm(row.id)}>
                                       <PaymentIcon fontSize="small" />
                                     </IconButton>
@@ -184,11 +193,12 @@ export default function ThuPhiPage() {
                                       <DeleteIcon fontSize="small" />
                                     </IconButton>
                                 </TableCell>
+
                             </TableRow>
                             ))}
                         </TableBody>
                     </Table>
-                </TableContainer>
+                </TableContainer> 
             )}
         </Paper>
       </Box>
@@ -198,7 +208,7 @@ export default function ThuPhiPage() {
         open={openForm}
         onClose={handleCloseForm}
         onSubmit={handleFormSubmit}
-        // initialData={editingKhoanThu} // TODO: Hoàn thiện logic Sửa
+        initialData={editingKhoanThu} // TODO: Hoàn thiện logic Sửa
       />
       <ConfirmationDialog
         open={deletingKhoanThuId !== null}

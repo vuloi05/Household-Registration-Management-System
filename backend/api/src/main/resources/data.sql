@@ -67,3 +67,16 @@ UPDATE ho_khau SET chu_ho_id = 6 WHERE id = 3;
 -- =================================================================
 INSERT INTO users(username, password, full_name, role) VALUES('admin', '$2a$10$JDd/YhSg.GTiEuH22K/POOL0pisEjyhApabrsiyaAxtCOkORCpC2a', 'Tổ trưởng A', 'ROLE_ADMIN');
 INSERT INTO users(username, password, full_name, role) VALUES('ketoan', '$2a$10$JDd/YhSg.GTiEuH22K/POOL0pisEjyhApabrsiyaAxtCOkORCpC2a', 'Kế toán B', 'ROLE_ACCOUNTANT');
+
+
+-- =================================================================
+-- DỮ LIỆU MẪU CHO BẢNG KHOẢN THU (khoan_thu)
+-- =================================================================
+
+-- Khoản thu 1: Phí vệ sinh bắt buộc
+INSERT INTO khoan_thu(ten_khoan_thu, ngay_tao, loai_khoan_thu, so_tien_tren_mot_nhan_khau)
+VALUES('Phí vệ sinh năm 2025', '2025-10-01', 'BAT_BUOC', 6000);
+
+-- Khoản thu 2: Đóng góp tự nguyện
+INSERT INTO khoan_thu(ten_khoan_thu, ngay_tao, loai_khoan_thu, so_tien_tren_mot_nhan_khau)
+VALUES('Ủng hộ ngày Thương binh - Liệt sỹ 27/07', '2025-07-01', 'DONG_GOP', NULL);

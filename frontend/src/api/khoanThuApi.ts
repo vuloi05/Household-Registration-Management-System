@@ -1,5 +1,7 @@
 // src/api/khoanThuApi.ts
 import axiosClient from './axiosClient';
+import type { LichSuNopTien } from './nopTienApi';
+
 
 // Kiểu dữ liệu KHOẢN THU mà API trả về
 export interface KhoanThu {
@@ -8,6 +10,13 @@ export interface KhoanThu {
   ngayTao: string;
   loaiKhoanThu: 'BAT_BUOC' | 'DONG_GOP';
   soTienTrenMotNhanKhau?: number | null;
+}
+
+// Kiểu dữ liệu cho thống kê
+export interface ThongKeKhoanThu {
+    soHoDaNop: number;
+    tongSoHo: number;
+    tongSoTien: number;
 }
 
 // Kiểu dữ liệu cho FORM
@@ -46,4 +55,22 @@ export const updateKhoanThu = async (id: number, data: KhoanThuFormValues): Prom
  */
 export const deleteKhoanThu = async (id: number): Promise<void> => {
   await axiosClient.delete(`/khoanthu/${id}`);
+};
+
+
+export const getKhoanThuById = async (id: number): Promise<KhoanThu> => {
+  const response = await axiosClient.get(`/khoanthu/${id}`);
+  return response.data;
+};
+
+// Hàm lấy lịch sử nộp tiền của một khoản thu
+export const getLichSuNopTienByKhoanThuId = async (id: number): Promise<LichSuNopTien[]> => {
+    const response = await axiosClient.get(`/khoanthu/${id}/lichsu`);
+    return response.data;
+};
+
+// Hàm lấy thống kê của một khoản thu
+export const getThongKeKhoanThu = async (id: number): Promise<ThongKeKhoanThu> => {
+    const response = await axiosClient.get(`/khoanthu/${id}/thongke`);
+    return response.data;
 };

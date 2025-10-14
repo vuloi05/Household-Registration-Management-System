@@ -13,9 +13,11 @@ interface KhoanThuFormProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: KhoanThuFormValues) => void;
+  initialData?: KhoanThuFormValues | null;
 }
 
-export default function KhoanThuForm({ open, onClose, onSubmit }: KhoanThuFormProps) {
+export default function KhoanThuForm({ open, onClose, onSubmit, initialData }: KhoanThuFormProps) {
+  const isEditMode = !!initialData;
   const {
     control,
     handleSubmit,
@@ -27,15 +29,30 @@ export default function KhoanThuForm({ open, onClose, onSubmit }: KhoanThuFormPr
   });
 
   const loaiKhoanThuValue = watch('loaiKhoanThu');
-  useEffect(() => { if(open) reset() }, [open, reset]);
+  useEffect(() => {
+    if (open) {
+      if (isEditMode && initialData) {
+        // Nếu là chế độ Sửa, điền dữ liệu cũ vào form
+        reset(initialData);
+      } else {
+        // Nếu là chế độ Thêm mới, reset về form trống
+        reset({
+          tenKhoanThu: '',
+          loaiKhoanThu: undefined,
+          soTienTrenMotNhanKhau: undefined,
+        });
+      }
+    }
+  }, [open, reset, isEditMode, initialData]);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <Box component="form" onSubmit={handleSubmit(onSubmit)}>
-        <DialogTitle sx={{ fontWeight: 'bold' }}>Tạo Khoản thu mới</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 'bold' }}> {isEditMode ? 'Cập nhật Khoản thu' : 'Tạo Khoản thu mới'} </DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
             <Controller name="tenKhoanThu" control={control} render={({ field }) => ( <TextField {...field} autoFocus required label="Tên khoản thu" error={!!errors.tenKhoanThu} helperText={errors.tenKhoanThu?.message} /> )}/>
+
             <Controller name="loaiKhoanThu" control={control} render={({ field }) => (
                 <FormControl fullWidth required error={!!errors.loaiKhoanThu}>
                   <InputLabel>Loại khoản thu</InputLabel>

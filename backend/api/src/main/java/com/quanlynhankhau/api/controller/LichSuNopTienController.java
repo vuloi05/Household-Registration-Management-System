@@ -15,6 +15,8 @@ import com.quanlynhankhau.api.dto.NopTienRequestDTO;
 import com.quanlynhankhau.api.entity.LichSuNopTien;
 import com.quanlynhankhau.api.service.LichSuNopTienService;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 @RestController
 @RequestMapping("/api/noptien") // Đặt một URL cơ sở riêng cho nghiệp vụ này
 @CrossOrigin(origins = "http://localhost:5173")
@@ -29,6 +31,7 @@ public class LichSuNopTienController {
      * @return Bản ghi LichSuNopTien đã được tạo.
      */
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
     public ResponseEntity<LichSuNopTien> ghiNhanNopTien(@RequestBody NopTienRequestDTO request) {
         LichSuNopTien savedRecord = lichSuNopTienService.ghiNhanNopTien(request);
         return new ResponseEntity<>(savedRecord, HttpStatus.CREATED);
