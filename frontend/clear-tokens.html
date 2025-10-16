@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Tokens</title>
+</head>
+<body>
+    <h1>Clearing expired tokens...</h1>
+    <p id="status"></p>
+    <script>
+        // Xóa tất cả token
+        localStorage.removeItem('jwt_token');
+        localStorage.removeItem('refresh_token');
+        
+        document.getElementById('status').innerHTML = 'Tokens cleared successfully!<br>You can now close this tab and return to your application.';
+        
+        // Tự động đóng tab sau 2 giây
+        setTimeout(() => {
+            window.close();
+        }, 2000);
+    </script>
+</body>
+</html>
