@@ -41,7 +41,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // Lấy token từ header
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             jwt = authorizationHeader.substring(7);
-            username = jwtUtil.extractUsername(jwt);
+            try {
+                username = jwtUtil.extractUsername(jwt);
+            } catch (Exception e) {
+                // Token đã expired hoặc không hợp lệ, bỏ qua và tiếp tục
+                logger.debug("JWT token expired or invalid: " + e.getMessage());
+            }
         }
 
         // Nếu đã có username và chưa có phiên xác thực nào trong context

@@ -12,7 +12,6 @@ import { useForm, Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
-import { loginApi } from '../api/authApi';
 import type { AuthRequest } from '../api/authApi';
 
 export default function LoginPage() {
@@ -20,15 +19,14 @@ export default function LoginPage() {
   const [loginError, setLoginError] = useState<string | null>(null);
   
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { loginWithRefresh } = useAuth();
 
   const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<AuthRequest>();
 
   const onSubmit = async (data: AuthRequest) => {
     setLoginError(null);
     try {
-      const response = await loginApi(data);
-      login(response.jwt);
+      await loginWithRefresh(data.username!, data.password!);
       navigate('/');
     } catch (error) {
       console.error("Login failed:", error);
@@ -52,8 +50,10 @@ export default function LoginPage() {
       <Box sx={{ maxWidth: 400, width: '100%', p: 2 }}>
         <Card sx={{ padding: 4, borderRadius: 2 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <img src="/vite.svg" alt="logo" width="60" height="60" />
-            <Typography component="h1" variant="h5" sx={{ mt: 2, fontWeight: 'bold' }}>
+            <Box sx={{ width: '120px', height: '120px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0 }}>
+              <img src="vite1.png" alt="logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </Box>
+            <Typography component="h1" variant="h5" sx={{ mt: 1, fontWeight: 'bold' }}>
               Đăng nhập hệ thống
             </Typography>
 

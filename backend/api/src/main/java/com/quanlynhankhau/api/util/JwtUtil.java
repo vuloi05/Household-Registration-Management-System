@@ -5,6 +5,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.time.Instant;
+import java.time.ZoneId;
 
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -23,6 +25,9 @@ public class JwtUtil {
     private final String SECRET_KEY = "day_la_mot_chuoi_bi_mat_rat_dai_de_ma_hoa_jwt_token";
     
     private final Key key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+    
+    // Múi giờ Việt Nam
+    private static final ZoneId VIETNAM_TIMEZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     // Trích xuất username từ token
     public String extractUsername(String token) {
@@ -47,7 +52,9 @@ public class JwtUtil {
 
     // Kiểm tra xem token đã hết hạn chưa
     private Boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
+        Date expirationDate = extractExpiration(token);
+        Date currentDate = Date.from(Instant.now().atZone(VIETNAM_TIMEZONE).toInstant());
+        return expirationDate.before(currentDate);
     }
 
     // Tạo token mới cho người dùng
@@ -61,11 +68,16 @@ public class JwtUtil {
             claims.put("role", userDetails.getAuthorities().iterator().next().getAuthority());
         }
 
+        // Sử dụng thời gian Việt Nam để tạo token
+        Instant now = Instant.now().atZone(VIETNAM_TIMEZONE).toInstant();
+        Date issuedAt = Date.from(now);
+        Date expiration = Date.from(now.plusSeconds(10 * 60 * 60)); // Hết hạn sau 10 giờ
+        
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(userDetails.getUsername())
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // Hết hạn sau 10 giờ
+                .setIssuedAt(issuedAt)
+                .setExpiration(expiration)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -74,5 +86,61 @@ public class JwtUtil {
     public Boolean validateToken(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+    }
+    
+    // Tạo refresh token với thời gian hết hạn dài hơn (30 ngày)
+    public String generateRefreshToken(UserDetails userDetails) {
+        Map<String, Object> claims = new HashMap<>();
+        
+        // Lấy role đầu tiên từ danh sách authorities và thêm vào claims
+        if (!userDetails.getAuthorities().isEmpty()) {
+            claims.put("role", userDetails.getAuthorities().iterator().next().getAuthority());
+        }
+        
+        // Đánh dấu đây là refresh token
+        claims.put("type", "refresh");
+
+        // Sử dụng thời gian Việt Nam để tạo token
+        Instant now = Instant.now().atZone(VIETNAM_TIMEZONE).toInstant();
+        Date issuedAt = Date.from(now);
+        Date expiration = Date.from(now.plusSeconds(30 * 24 * 60 * 60)); // Hết hạn sau 30 ngày
+        
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(userDetails.getUsername())
+                .setIssuedAt(issuedAt)
+                .setExpiration(expiration)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+    
+    // Kiểm tra xem token có phải là refresh token không
+    public Boolean isRefreshToken(String token) {
+        try {
+            Claims claims = extractAllClaims(token);
+            return "refresh".equals(claims.get("type"));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
+    // Tạo cặp access token và refresh token
+    public Map<String, String> generateTokenPair(UserDetails userDetails) {
+        Map<String, String> tokens = new HashMap<>();
+        tokens.put("accessToken", generateToken(userDetails));
+        tokens.put("refreshToken", generateRefreshToken(userDetails));
+        return tokens;
+    }
+    
+    // Xác thực refresh token
+    public Boolean validateRefreshToken(String token, UserDetails userDetails) {
+        try {
+            final String username = extractUsername(token);
+            return (username.equals(userDetails.getUsername()) && 
+                   !isTokenExpired(token) && 
+                   isRefreshToken(token));
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

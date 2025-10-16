@@ -3,7 +3,10 @@
 import { createContext, useState, useEffect, useContext} from 'react';
 import type { ReactNode } from 'react';
 import axiosClient from '../api/axiosClient';
-import { jwtDecode } from 'jwt-decode'; // Cần cài đặt thư viện này
+import { jwtDecode } from 'jwt-decode';
+import { loginWithRefreshApi } from '../api/authApi';
+import type { TokenPair } from '../api/authApi';
+import { checkAndClearExpiredTokens, clearTokens } from '../utils/tokenUtils';
 
 // 1. Định nghĩa kiểu dữ liệu cho thông tin người dùng và context
 interface User {
@@ -16,6 +19,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
   login: (token: string) => void;
+  loginWithRefresh: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -33,29 +37,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // useEffect để kiểm tra token trong localStorage khi ứng dụng được tải lần đầu
   useEffect(() => {
-    const token = localStorage.getItem('jwt_token');
-    if (token) {
-      try {
-        const decodedUser: User = jwtDecode(token);
-        // Kiểm tra token hết hạn (tùy chọn nhưng nên có)
-        // const isExpired = decodedUser.exp * 1000 < Date.now();
-        // if (!isExpired) {
-        //  setUser(decodedUser);
-        //  axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        // } else {
-        //   localStorage.removeItem('jwt_token');
-        // }
-
-        // 2. Kiểm tra xem token có role không
-        if(decodedUser && decodedUser.sub){
-          setUser(decodedUser);
-          axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        } else {
-          localStorage.removeItem('jwt_token');
+    // Kiểm tra và xóa token expired trước
+    const hasExpiredTokens = checkAndClearExpiredTokens();
+    
+    if (!hasExpiredTokens) {
+      const token = localStorage.getItem('jwt_token');
+      
+      if (token) {
+        try {
+          const decodedUser: User = jwtDecode(token);
+          
+          // 2. Kiểm tra xem token có role không
+          if(decodedUser && decodedUser.sub){
+            setUser(decodedUser);
+            axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          } else {
+            clearTokens();
+          }
+        } catch (error) {
+          console.error("Invalid token:", error);
+          clearTokens();
         }
-      } catch (error) {
-        console.error("Invalid token:", error);
-        localStorage.removeItem('jwt_token');
       }
     }
   }, []);
@@ -74,9 +76,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  // Hàm để xử lý đăng nhập với refresh token
+  const loginWithRefresh = async (username: string, password: string) => {
+    try {
+      const tokens: TokenPair = await loginWithRefreshApi({ username, password });
+      
+      // Lưu cả access token và refresh token
+      localStorage.setItem('jwt_token', tokens.accessToken);
+      localStorage.setItem('refresh_token', tokens.refreshToken);
+      
+      const decodedUser: User = jwtDecode(tokens.accessToken);
+      if(decodedUser.sub && decodedUser.role) {
+        setUser(decodedUser);
+        axiosClient.defaults.headers.common['Authorization'] = `Bearer ${tokens.accessToken}`;
+      } else {
+        throw new Error("Token is missing required claims (sub, role)");
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+      localStorage.removeItem('jwt_token');
+      localStorage.removeItem('refresh_token');
+      throw error;
+    }
+  };
+
   // Hàm để xử lý đăng xuất
   const logout = () => {
-    localStorage.removeItem('jwt_token');
+    clearTokens();
     setUser(null);
     delete axiosClient.defaults.headers.common['Authorization'];
   };
@@ -86,6 +112,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated: !!user, // Chuyển object user thành boolean
     user,
     login,
+    loginWithRefresh,
     logout,
   };
 
@@ -93,6 +120,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 }
 
 // 5. Tạo một custom hook để sử dụng AuthContext dễ dàng hơn
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
