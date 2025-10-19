@@ -21,8 +21,15 @@ export const checkAndClearExpiredTokens = () => {
         clearTokens();
         return true;
       }
+      
+      // Kiểm tra thêm: nếu token không có exp field, coi như invalid
+      if (!payload.exp) {
+        console.log('Token missing expiration claim, clearing tokens...');
+        clearTokens();
+        return true;
+      }
     } catch (error) {
-      console.log('Invalid token format, clearing tokens...');
+      console.log('Invalid token format, clearing tokens...', error);
       clearTokens();
       return true;
     }
