@@ -18,6 +18,7 @@ interface User {
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
+  isLoading: boolean;
   login: (token: string) => void;
   loginWithRefresh: (username: string, password: string) => Promise<void>;
   logout: () => void;
@@ -34,32 +35,49 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // useEffect để kiểm tra token trong localStorage khi ứng dụng được tải lần đầu
   useEffect(() => {
-    // Kiểm tra và xóa token expired trước
-    const hasExpiredTokens = checkAndClearExpiredTokens();
-    
-    if (!hasExpiredTokens) {
-      const token = localStorage.getItem('jwt_token');
-      
-      if (token) {
-        try {
-          const decodedUser: User = jwtDecode(token);
+    const initializeAuth = () => {
+      try {
+        // Kiểm tra và xóa token expired trước
+        const hasExpiredTokens = checkAndClearExpiredTokens();
+        
+        // Nếu không có token hết hạn, kiểm tra token hiện tại
+        if (!hasExpiredTokens) {
+          const token = localStorage.getItem('jwt_token');
           
-          // 2. Kiểm tra xem token có role không
-          if(decodedUser && decodedUser.sub){
-            setUser(decodedUser);
-            axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          if (token) {
+            try {
+              const decodedUser: User = jwtDecode(token);
+              
+              // Kiểm tra xem token có role và sub không
+              if(decodedUser && decodedUser.sub && decodedUser.role){
+                setUser(decodedUser);
+                axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                console.log('User authenticated on page load:', decodedUser.sub);
+              } else {
+                console.log('Token missing required claims, clearing tokens');
+                clearTokens();
+              }
+            } catch (error) {
+              console.error("Invalid token:", error);
+              clearTokens();
+            }
           } else {
-            clearTokens();
+            console.log('No token found in localStorage');
           }
-        } catch (error) {
-          console.error("Invalid token:", error);
-          clearTokens();
+        } else {
+          console.log('Expired tokens found and cleared');
         }
+      } finally {
+        // Luôn set loading = false sau khi kiểm tra xong
+        setIsLoading(false);
       }
-    }
+    };
+
+    initializeAuth();
   }, []);
 
   // Hàm để xử lý đăng nhập
@@ -111,6 +129,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const value = {
     isAuthenticated: !!user, // Chuyển object user thành boolean
     user,
+    isLoading,
     login,
     loginWithRefresh,
     logout,
