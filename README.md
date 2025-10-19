@@ -29,6 +29,15 @@ Phần mềm được xây dựng cho Ban quản lý tổ dân phố 7, phườn
 2.  **Node.js 18** hoặc cao hơn.
 3.  **PostgreSQL** đã được cài đặt và đang chạy.
 4.  **Maven** (thường đã được tích hợp trong các IDE như IntelliJ, VS Code).
+5. **.env** đặt cùng cấp với file pom.xml (copy nội dung bên dưới vào file .env và cấu hình theo của bạn)
+
+#### Nội dung file .env:
+
+ ```bash
+    # Database Configuration
+    # Copy this file to .env and update the values
+    DB_PASSWORD=your_database_password_here
+ ```
 
 ### Các bước cài đặt
 
