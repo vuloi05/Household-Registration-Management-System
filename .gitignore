@@ -36,6 +36,8 @@ backend/api/pom.xml.next
 backend/api/release.properties
 backend/api/dependency-reduced-pom.xml
 backend/api/build-log.txt
+backend/api/.env
+backend/api/.env.*
 
 # ==================================
 # Operating System files
