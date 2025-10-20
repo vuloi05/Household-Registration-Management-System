@@ -17,7 +17,7 @@ import { Link as RouterLink, useLocation } from 'react-router-dom';
  */
 const menuItems = [
   { text: 'Bảng điều khiển', icon: <DashboardIcon />, path: '/', roles: ['ROLE_ADMIN', 'ROLE_ACCOUNTANT'] },
-  { text: 'Quản lý Nhân khẩu', icon: <PeopleIcon />, path: '/nhan-khau', roles: ['ROLE_ADMIN'] },
+  { text: 'Quản lý Hộ khẩu', icon: <PeopleIcon />, path: '/ho-khau', roles: ['ROLE_ADMIN'] },
   { text: 'Quản lý Thu phí', icon: <PaymentsIcon />, path: '/thu-phi', roles: ['ROLE_ADMIN', 'ROLE_ACCOUNTANT'] },
 ];
 
