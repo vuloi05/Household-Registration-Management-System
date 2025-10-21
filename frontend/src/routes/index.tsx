@@ -23,7 +23,7 @@ const router = createBrowserRouter([
         element: <DashboardPage />,
       },
       {
-        path: '/nhan-khau',
+        path: '/ho-khau',
         element: <NhanKhauPage />,
       },
       {

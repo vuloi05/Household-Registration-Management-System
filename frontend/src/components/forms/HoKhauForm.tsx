@@ -16,7 +16,7 @@ interface HoKhauFormProps {
   onClose: () => void;
   onSubmit: (data: HoKhauFormValues) => void;
   // Prop initialData tạm thời chưa dùng cho logic Sửa phức tạp, sẽ nâng cấp sau
-  initialData?: any; 
+  initialData?: unknown; 
 }
 
 export default function HoKhauForm({ open, onClose, onSubmit, initialData }: HoKhauFormProps) {
