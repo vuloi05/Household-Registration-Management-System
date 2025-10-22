@@ -6,10 +6,11 @@ import {
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { hoKhauSchema } from '../../types/hoKhau'; // Import schema đã được cập nhật
 import type { HoKhauFormValues } from '../../types/hoKhau'; // Import type đã được cập nhật
+import { searchNhanKhauByCmndCccd } from '../../api/nhanKhauApi';
 
 interface HoKhauFormProps {
   open: boolean;
@@ -21,12 +22,15 @@ interface HoKhauFormProps {
 
 export default function HoKhauForm({ open, onClose, onSubmit, initialData }: HoKhauFormProps) {
   const isEditMode = !!initialData; // Kiểm tra xem có phải chế độ sửa không
+  const [isSearching, setIsSearching] = useState(false);
 
   // Khởi tạo react-hook-form với schema mới
   const {
     control,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<HoKhauFormValues>({
     resolver: zodResolver(hoKhauSchema),
@@ -42,6 +46,28 @@ export default function HoKhauForm({ open, onClose, onSubmit, initialData }: HoK
         }
     }
   });
+
+  // Watch CCCD field để tự động tìm kiếm khi có thay đổi
+  const cmndCccdValue = watch('chuHoInfo.cmndCccd');
+
+  // Hàm tự động tìm kiếm và điền thông tin khi nhập CCCD
+  const handleCmndCccdChange = async (cmndCccd: string) => {
+    if (cmndCccd && cmndCccd.length >= 9) { // Chỉ tìm kiếm khi có ít nhất 9 ký tự
+      setIsSearching(true);
+      try {
+        const nhanKhau = await searchNhanKhauByCmndCccd(cmndCccd);
+        if (nhanKhau) {
+          // Tự động điền thông tin nếu tìm thấy
+          setValue('chuHoInfo.hoTen', nhanKhau.hoTen);
+          setValue('chuHoInfo.ngaySinh', nhanKhau.ngaySinh);
+        }
+      } catch (error) {
+        console.error('Lỗi khi tìm kiếm nhân khẩu:', error);
+      } finally {
+        setIsSearching(false);
+      }
+    }
+  };
 
   // Sử dụng useEffect để reset form khi mở ra
   useEffect(() => {
@@ -59,6 +85,16 @@ export default function HoKhauForm({ open, onClose, onSubmit, initialData }: HoK
     }
   }, [initialData, open, reset, isEditMode]);
 
+  // useEffect để theo dõi thay đổi CCCD và tự động tìm kiếm
+  useEffect(() => {
+    if (cmndCccdValue && !isEditMode) {
+      const timeoutId = setTimeout(() => {
+        handleCmndCccdChange(cmndCccdValue);
+      }, 500); // Debounce 500ms để tránh gọi API quá nhiều
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [cmndCccdValue, isEditMode]);
 
   return (
     // Mở rộng form (`maxWidth="md"`) để có thêm không gian
@@ -100,7 +136,22 @@ export default function HoKhauForm({ open, onClose, onSubmit, initialData }: HoK
                             <TextField {...field} required label="Ngày sinh Chủ hộ" type="date" InputLabelProps={{ shrink: true }} error={!!errors.chuHoInfo?.ngaySinh} helperText={errors.chuHoInfo?.ngaySinh?.message} />
                         )} />
                         <Controller name="chuHoInfo.cmndCccd" control={control} render={({ field }) => (
-                            <TextField {...field} required label="CCCD Chủ hộ" error={!!errors.chuHoInfo?.cmndCccd} helperText={errors.chuHoInfo?.cmndCccd?.message} />
+                            <TextField 
+                                {...field} 
+                                required 
+                                label="CCCD Chủ hộ" 
+                                error={!!errors.chuHoInfo?.cmndCccd} 
+                                helperText={errors.chuHoInfo?.cmndCccd?.message || (isSearching ? "Đang tìm kiếm..." : "")}
+                                InputProps={{
+                                    endAdornment: isSearching ? (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', mr: 1 }}>
+                                            <Typography variant="caption" color="text.secondary">
+                                                Tìm kiếm...
+                                            </Typography>
+                                        </Box>
+                                    ) : null
+                                }}
+                            />
                         )} />
                     </Box>
                 </>

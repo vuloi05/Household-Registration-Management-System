@@ -3,6 +3,7 @@
 package com.quanlynhankhau.api.service;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -75,6 +76,15 @@ public class NhanKhauService {
             throw new RuntimeException("Không tìm thấy nhân khẩu với id: " + nhanKhauId);
         }
         nhanKhauRepository.deleteById(nhanKhauId);
+    }
+
+    /**
+     * Tìm nhân khẩu theo số CCCD.
+     * @param cmndCccd Số CCCD cần tìm.
+     * @return Optional chứa nhân khẩu nếu tìm thấy, empty nếu không tìm thấy.
+     */
+    public Optional<NhanKhau> findByCmndCccd(String cmndCccd) {
+        return nhanKhauRepository.findByCmndCccd(cmndCccd);
     }
 
 }

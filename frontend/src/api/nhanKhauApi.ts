@@ -34,3 +34,17 @@ export const updateNhanKhau = async (hoKhauId: number, nhanKhauId: number, data:
 export const deleteNhanKhau = async (hoKhauId: number, nhanKhauId: number): Promise<void> => {
     await axiosClient.delete(`/hokhau/${hoKhauId}/nhankhau/${nhanKhauId}`);
 };
+
+// Hàm gọi API tìm kiếm nhân khẩu theo số CCCD
+export const searchNhanKhauByCmndCccd = async (cmndCccd: string): Promise<NhanKhau | null> => {
+    try {
+        const response = await axiosClient.get(`/nhankhau/search?cmndCccd=${cmndCccd}`);
+        return response.data;
+    } catch (error) {
+        // Nếu không tìm thấy (404), trả về null
+        if (error.response?.status === 404) {
+            return null;
+        }
+        throw error;
+    }
+};
