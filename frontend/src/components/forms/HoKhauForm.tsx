@@ -60,12 +60,23 @@ export default function HoKhauForm({ open, onClose, onSubmit, initialData }: HoK
           // Tự động điền thông tin nếu tìm thấy
           setValue('chuHoInfo.hoTen', nhanKhau.hoTen);
           setValue('chuHoInfo.ngaySinh', nhanKhau.ngaySinh);
+        } else {
+          // Nếu không tìm thấy, xóa thông tin đã tự động điền trước đó
+          setValue('chuHoInfo.hoTen', '');
+          setValue('chuHoInfo.ngaySinh', '');
         }
       } catch (error) {
         console.error('Lỗi khi tìm kiếm nhân khẩu:', error);
+        // Nếu có lỗi, cũng xóa thông tin đã tự động điền
+        setValue('chuHoInfo.hoTen', '');
+        setValue('chuHoInfo.ngaySinh', '');
       } finally {
         setIsSearching(false);
       }
+    } else {
+      // Nếu CCCD rỗng hoặc không đủ 9 ký tự, xóa thông tin đã tự động điền
+      setValue('chuHoInfo.hoTen', '');
+      setValue('chuHoInfo.ngaySinh', '');
     }
   };
 
@@ -87,9 +98,9 @@ export default function HoKhauForm({ open, onClose, onSubmit, initialData }: HoK
 
   // useEffect để theo dõi thay đổi CCCD và tự động tìm kiếm
   useEffect(() => {
-    if (cmndCccdValue && !isEditMode) {
+    if (!isEditMode) {
       const timeoutId = setTimeout(() => {
-        handleCmndCccdChange(cmndCccdValue);
+        handleCmndCccdChange(cmndCccdValue || '');
       }, 500); // Debounce 500ms để tránh gọi API quá nhiều
 
       return () => clearTimeout(timeoutId);
