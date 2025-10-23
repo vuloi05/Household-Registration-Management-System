@@ -36,5 +36,49 @@ public class NhanKhauSearchController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
+
+    /**
+     * API kiểm tra thông tin hộ khẩu hiện tại của nhân khẩu theo CCCD.
+     * - Method: GET
+     * - URL: http://localhost:8080/api/nhankhau/check-household?cmndCccd={cmndCccd}
+     */
+    @GetMapping("/check-household")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<?> checkHouseholdInfo(@RequestParam String cmndCccd) {
+        Optional<NhanKhau> nhanKhau = nhanKhauService.findByCmndCccd(cmndCccd);
+        if (nhanKhau.isPresent()) {
+            NhanKhau person = nhanKhau.get();
+            
+            // Kiểm tra xem có phải chủ hộ không
+            boolean isChuHo = "Chủ hộ".equals(person.getQuanHeVoiChuHo());
+            
+            // Tạo response object với thông tin hộ khẩu đơn giản
+            var response = new java.util.HashMap<String, Object>();
+            response.put("found", true);
+            response.put("isChuHo", isChuHo);
+            
+            // Tạo thông tin hộ khẩu đơn giản để tránh lỗi serialization
+            var householdInfo = new java.util.HashMap<String, Object>();
+            if (person.getHoKhau() != null) {
+                householdInfo.put("id", person.getHoKhau().getId());
+                householdInfo.put("maHoKhau", person.getHoKhau().getMaHoKhau());
+                householdInfo.put("diaChi", person.getHoKhau().getDiaChi());
+            }
+            response.put("currentHousehold", householdInfo);
+            
+            // Tạo thông tin nhân khẩu đơn giản
+            var personInfo = new java.util.HashMap<String, Object>();
+            personInfo.put("id", person.getId());
+            personInfo.put("hoTen", person.getHoTen());
+            personInfo.put("ngaySinh", person.getNgaySinh());
+            personInfo.put("cmndCccd", person.getCmndCccd());
+            personInfo.put("quanHeVoiChuHo", person.getQuanHeVoiChuHo());
+            response.put("personInfo", personInfo);
+            
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
 }
 
