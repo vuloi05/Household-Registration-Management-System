@@ -32,14 +32,14 @@ function NhanKhauTable({ data, onDetail, onEdit, onDelete }: { data: NhanKhau[],
         return <Typography sx={{ mt: 2, fontStyle: 'italic' }}>Chưa có nhân khẩu nào trong hộ này.</Typography>;
     }
     return (
-      <TableContainer>
-        <Table size="small">
+      <TableContainer sx={{ width: '100%' }}>
+        <Table size="small" sx={{ width: '100%', tableLayout: 'fixed' }}>
             <TableHead>
                 <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Họ Tên</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Ngày Sinh</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Quan hệ với chủ hộ</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>Hành động</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', width: '30%' }}>Họ Tên</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Ngày Sinh</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', width: '25%' }}>Quan hệ với chủ hộ</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold', width: '25%' }}>Hành động</TableCell>
                 </TableRow>
             </TableHead>
             <TableBody>
@@ -147,11 +147,12 @@ export default function HoKhauDetailPage() {
 
   return (
     <>
-      <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>
-        Chi tiết Hộ khẩu: {hoKhau.maHoKhau}
-      </Typography>
+      <Box sx={{ width: '100%', maxWidth: '100%' }}>
+        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>
+          Chi tiết Hộ khẩu: {hoKhau.maHoKhau}
+        </Typography>
 
-      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3, width: '100%' }}>
         {/* Cột thông tin Hộ khẩu */}
         <Box sx={{ width: { xs: '100%', md: '33.33%' } }}>
           <Paper sx={{ p: 2, height: '100%' }}>
@@ -167,8 +168,8 @@ export default function HoKhauDetailPage() {
       
         {/* Cột danh sách Nhân khẩu */}
         <Box sx={{ width: { xs: '100%', md: '66.67%' } }}>
-          <Paper sx={{ p: 2, height: '100%' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Paper sx={{ p: 2, height: '100%', width: '100%' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                   <Typography variant="h6">Danh sách Thành viên</Typography>
                   <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreateForm}>
                     Thêm Thành viên
@@ -182,6 +183,7 @@ export default function HoKhauDetailPage() {
                 onDelete={handleOpenDeleteDialog}
               />
           </Paper>
+        </Box>
         </Box>
       </Box>
 

@@ -54,8 +54,6 @@ export default function HoKhauForm({ open, onClose, onSubmit, initialData }: HoK
 
   // Watch CCCD field để tự động tìm kiếm khi có thay đổi
   const cmndCccdValue = watch('chuHoInfo.cmndCccd');
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const ngaySinhValue = watch('chuHoInfo.ngaySinh');
 
   // Hàm kiểm tra tuổi
   const calculateAge = (birthDate: string): number => {

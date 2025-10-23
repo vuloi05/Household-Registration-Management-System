@@ -12,7 +12,7 @@ export default function DoTuoiChart({ data }: DoTuoiChartProps) {
   const chartData = Object.entries(data).map(([name, value]) => ({ name, 'Số lượng': value }));
 
   return (
-    <Paper sx={{ p: 2, height: '400px' }}>
+    <Paper sx={{ p: 2, height: '400px', width: '100%' }}>
       <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>Thống kê theo Độ tuổi</Typography>
       <ResponsiveContainer width="100%" height="90%">
         <BarChart data={chartData}>
