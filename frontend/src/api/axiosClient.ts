@@ -11,10 +11,13 @@ const axiosClient = axios.create({
 // Biến để tránh refresh token nhiều lần đồng thời
 let isRefreshing = false;
 let failedQueue: Array<{
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   resolve: (value?: any) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   reject: (reason?: any) => void;
 }> = [];
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const processQueue = (error: any, token: string | null = null) => {
   failedQueue.forEach(({ resolve, reject }) => {
     if (error) {

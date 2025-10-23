@@ -56,6 +56,14 @@ public class HoKhauController {
         return new ResponseEntity<>(savedHoKhau, HttpStatus.CREATED);
     }
 
+    // API tách hộ - chuyển nhân khẩu hiện có sang hộ khẩu mới
+    @PostMapping("/separate")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<HoKhauResponseDTO> separateHousehold(@RequestBody HoKhauRequest request, @RequestParam String cmndCccd) {
+        HoKhauResponseDTO savedHoKhau = hoKhauService.separateHousehold(request, cmndCccd);
+        return new ResponseEntity<>(savedHoKhau, HttpStatus.CREATED);
+    }
+
     // <<< CẬP NHẬT 5: Sửa kiểu trả về sang HoKhauResponseDTO >>>
     // API 3: Cập nhật một hộ khẩu đã có
     // - Method: PUT

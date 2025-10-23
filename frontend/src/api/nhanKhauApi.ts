@@ -34,3 +34,49 @@ export const updateNhanKhau = async (hoKhauId: number, nhanKhauId: number, data:
 export const deleteNhanKhau = async (hoKhauId: number, nhanKhauId: number): Promise<void> => {
     await axiosClient.delete(`/hokhau/${hoKhauId}/nhankhau/${nhanKhauId}`);
 };
+
+// Hàm gọi API tìm kiếm nhân khẩu theo số CCCD
+export const searchNhanKhauByCmndCccd = async (cmndCccd: string): Promise<NhanKhau | null> => {
+    try {
+        const response = await axiosClient.get(`/nhankhau/search?cmndCccd=${cmndCccd}`);
+        return response.data;
+    } catch (error) {
+        // Nếu không tìm thấy (404), trả về null
+        if (error.response?.status === 404) {
+            return null;
+        }
+        throw error;
+    }
+};
+
+// Interface cho thông tin kiểm tra hộ khẩu
+export interface HouseholdCheckResult {
+    found: boolean;
+    isChuHo: boolean;
+    currentHousehold: {
+        id: number;
+        maHoKhau: string;
+        diaChi: string;
+    };
+    personInfo: {
+        id: number;
+        hoTen: string;
+        ngaySinh: string;
+        cmndCccd: string;
+        quanHeVoiChuHo: string;
+    };
+}
+
+// Hàm gọi API kiểm tra thông tin hộ khẩu hiện tại
+export const checkHouseholdInfo = async (cmndCccd: string): Promise<HouseholdCheckResult | null> => {
+    try {
+        const response = await axiosClient.get(`/nhankhau/check-household?cmndCccd=${cmndCccd}`);
+        return response.data;
+    } catch (error) {
+        // Nếu không tìm thấy (404), trả về null
+        if (error.response?.status === 404) {
+            return null;
+        }
+        throw error;
+    }
+};

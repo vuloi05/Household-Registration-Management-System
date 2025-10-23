@@ -93,6 +93,40 @@ public class HoKhauService {
         return convertToDTO(finalHoKhau);
     }
 
+    // Phương thức tách hộ - chuyển nhân khẩu hiện có sang hộ khẩu mới
+    public HoKhauResponseDTO separateHousehold(HoKhauRequest request, String cmndCccd) {
+        // Tìm nhân khẩu hiện có
+        NhanKhau existingPerson = nhanKhauRepository.findByCmndCccd(cmndCccd)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu với CCCD: " + cmndCccd));
+
+        // Tạo hộ khẩu mới
+        HoKhau hoKhau = new HoKhau();
+        hoKhau.setMaHoKhau(request.getHoKhauInfo().getMaHoKhau());
+        hoKhau.setDiaChi(request.getHoKhauInfo().getDiaChi());
+        hoKhau.setNgayLap(request.getHoKhauInfo().getNgayLap());
+        hoKhau.setChuHo(null);
+        
+        HoKhau savedHoKhau = hoKhauRepository.save(hoKhau);
+
+        // Chuyển nhân khẩu sang hộ khẩu mới và cập nhật thông tin
+        existingPerson.setHoKhau(savedHoKhau);
+        existingPerson.setQuanHeVoiChuHo("Chủ hộ");
+        
+        // Cập nhật thông tin từ form nếu có
+        if (request.getChuHoInfo() != null) {
+            existingPerson.setHoTen(request.getChuHoInfo().getHoTen());
+            existingPerson.setNgaySinh(request.getChuHoInfo().getNgaySinh());
+        }
+        
+        NhanKhau savedChuHo = nhanKhauRepository.save(existingPerson);
+        
+        // Cập nhật chủ hộ cho hộ khẩu mới
+        savedHoKhau.setChuHo(savedChuHo);
+        HoKhau finalHoKhau = hoKhauRepository.save(savedHoKhau);
+
+        return convertToDTO(finalHoKhau);
+    }
+
     // phương thức updateHoKhau, giờ trả về một DTO
     public HoKhauResponseDTO updateHoKhau(Long id, HoKhau hoKhauDetails) {
         HoKhau existingHoKhau = hoKhauRepository.findById(id)

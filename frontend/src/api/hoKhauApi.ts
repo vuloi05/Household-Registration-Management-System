@@ -64,3 +64,21 @@ export const getHoKhauById = async (id: number): Promise<HoKhau> => {
   const response = await axiosClient.get(`/hokhau/${id}`);
   return response.data;
 };
+
+// Hàm gọi API tách hộ - chuyển nhân khẩu hiện có sang hộ khẩu mới
+export const separateHousehold = async (data: HoKhauFormValues, cmndCccd: string): Promise<HoKhau> => {
+  const payload = {
+    hoKhauInfo: {
+      maHoKhau: data.maHoKhau,
+      diaChi: data.diaChi,
+      ngayLap: data.ngayLap,
+    },
+    chuHoInfo: {
+      hoTen: data.chuHoInfo.hoTen,
+      ngaySinh: data.chuHoInfo.ngaySinh,
+      cmndCccd: data.chuHoInfo.cmndCccd,
+    }
+  };
+  const response = await axiosClient.post(`/hokhau/separate?cmndCccd=${cmndCccd}`, payload);
+  return response.data;
+};

@@ -3,6 +3,7 @@
 package com.quanlynhankhau.api.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -16,4 +17,7 @@ public interface NhanKhauRepository extends JpaRepository<NhanKhau, Long> {
     // Spring Data JPA sẽ tự động hiểu và tạo ra câu lệnh SQL
     // để tìm tất cả các NhanKhau có trường 'hoKhau' với id khớp với id truyền vào.
     List<NhanKhau> findByHoKhauId(Long hoKhauId);
+    
+    // Tìm nhân khẩu theo số CCCD
+    Optional<NhanKhau> findByCmndCccd(String cmndCccd);
 }
