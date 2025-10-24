@@ -142,9 +142,9 @@ export default function ThuPhiPage() {
 
   return (
     <>
-      <Box>
+      <Box sx={{ width: '100%', maxWidth: '100%' }}>
         {/* Header của trang */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, width: '100%' }}>
           <Typography variant="h4" sx={{ fontWeight: 'bold' }}>Quản lý Thu phí</Typography>
           <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreateForm}>
             Tạo khoản thu mới
@@ -152,21 +152,21 @@ export default function ThuPhiPage() {
         </Box>
         
         {/* Body của trang */}
-        <Paper sx={{ borderRadius: 2, p: 2 }}>
+        <Paper sx={{ borderRadius: 2, p: 2, width: '100%' }}>
             {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
                     <CircularProgress />
                 </Box>
             ) : (
-                <TableContainer>
-                    <Table>
+                <TableContainer sx={{ width: '100%' }}>
+                    <Table sx={{ width: '100%', tableLayout: 'fixed' }}>
                         <TableHead>
                             <TableRow>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Tên khoản thu</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Loại</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Ngày tạo</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 'bold' }}>Đơn giá/Nhân khẩu</TableCell>
-                                <TableCell align="center" sx={{ fontWeight: 'bold' }}>Hành động</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', width: '30%' }}>Tên khoản thu</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', width: '15%' }}>Loại</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Ngày tạo</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 'bold', width: '20%' }}>Đơn giá/Nhân khẩu</TableCell>
+                                <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Hành động</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>

@@ -50,7 +50,7 @@ export default function KhoanThuDetailPage() {
   }
 
   return (
-    <Box>
+    <Box sx={{ width: '100%', maxWidth: '100%' }}>
       <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>
         Chi tiết Khoản thu: {khoanThu.tenKhoanThu}
       </Typography>
@@ -61,6 +61,7 @@ export default function KhoanThuDetailPage() {
           display: 'grid',
           gap: 3,
           mb: 3,
+          width: '100%',
           gridTemplateColumns: {
             xs: '1fr', // 1 cột trên màn hình nhỏ
             sm: '1fr 1fr', // 2 cột trên màn hình vừa
@@ -81,16 +82,16 @@ export default function KhoanThuDetailPage() {
         />
       </Box>
       
-      <Paper sx={{ p: 2 }}>
+      <Paper sx={{ p: 2, width: '100%' }}>
         <Typography variant="h6" sx={{ mb: 2 }}>Danh sách các hộ đã nộp</Typography>
-        <TableContainer>
-          <Table>
+        <TableContainer sx={{ width: '100%' }}>
+          <Table sx={{ width: '100%', tableLayout: 'fixed' }}>
             <TableHead>
                 <TableRow>
-                    <TableCell>Họ tên Chủ hộ</TableCell>
-                    <TableCell>Địa chỉ</TableCell>
-                    <TableCell>Ngày nộp</TableCell>
-                    <TableCell align="right">Số tiền</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', width: '30%' }}>Họ tên Chủ hộ</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', width: '40%' }}>Địa chỉ</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Ngày nộp</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold', width: '10%' }}>Số tiền</TableCell>
                 </TableRow>
             </TableHead>
             <TableBody>

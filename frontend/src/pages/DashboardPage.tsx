@@ -41,7 +41,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <Box>
+    <Box sx={{ width: '100%', maxWidth: '100%' }}>
       <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>Bảng điều khiển</Typography>
       
       {/* <<<< SỬA LỖI Ở ĐÂY: Dùng Box với Flexbox thay cho Grid >>>> */}
@@ -50,6 +50,7 @@ export default function DashboardPage() {
         sx={{
           display: 'grid',
           gap: 3,
+          width: '100%',
           gridTemplateColumns: {
             xs: '1fr', // 1 cột trên màn hình nhỏ
             sm: '1fr 1fr', // 2 cột trên màn hình vừa
@@ -73,7 +74,7 @@ export default function DashboardPage() {
       </Box>
 
       {/* Biểu đồ độ tuổi */}
-      <Box sx={{ mt: 4 }}>
+      <Box sx={{ mt: 4, width: '100%' }}>
         {doTuoiData && <DoTuoiChart data={doTuoiData} />}
       </Box>
 

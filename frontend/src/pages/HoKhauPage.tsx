@@ -2,7 +2,7 @@
 
 import {
   Button, Typography, Box, Paper, TableContainer, Table, TableHead,
-  TableRow, TableCell, TableBody, IconButton, CircularProgress
+  TableRow, TableCell, TableBody, IconButton, CircularProgress, TextField, InputAdornment
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -10,6 +10,7 @@ import ConfirmationDialog from '../components/shared/ConfirmationDialog';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import InfoIcon from '@mui/icons-material/Info';
+import SearchIcon from '@mui/icons-material/Search';
 import { useState, useEffect } from 'react';
 import HoKhauForm from '../components/forms/HoKhauForm';
 import type { HoKhauFormValues } from '../types/hoKhau';
@@ -20,10 +21,12 @@ import type { HoKhau } from '../api/hoKhauApi';
 export default function NhanKhauPage() {
   const [openForm, setOpenForm] = useState(false);
   const [hoKhauList, setHoKhauList] = useState<HoKhau[]>([]);
+  const [filteredHoKhauList, setFilteredHoKhauList] = useState<HoKhau[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingHoKhau, setEditingHoKhau] = useState<HoKhau | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedHoKhauId, setSelectedHoKhauId] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -31,6 +34,7 @@ export default function NhanKhauPage() {
         setLoading(true);
         const data = await getDanhSachHoKhau();
         setHoKhauList(data);
+        setFilteredHoKhauList(data);
       } catch (error) {
         console.error('Failed to fetch ho khau list:', error);
       } finally {
@@ -39,6 +43,20 @@ export default function NhanKhauPage() {
     };
     fetchData();
   }, []);
+
+  // Effect để lọc dữ liệu khi có thay đổi từ khóa tìm kiếm
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredHoKhauList(hoKhauList);
+    } else {
+      const filtered = hoKhauList.filter(hoKhau => 
+        hoKhau.maHoKhau.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        hoKhau.chuHo?.hoTen?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        hoKhau.diaChi.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredHoKhauList(filtered);
+    }
+  }, [searchTerm, hoKhauList]);
 
   const handleOpenCreateForm = () => {
     setEditingHoKhau(null);
@@ -59,9 +77,13 @@ export default function NhanKhauPage() {
         setHoKhauList(prevList => 
           prevList.map(item => item.id === updatedHoKhau.id ? updatedHoKhau : item)
         );
+        setFilteredHoKhauList(prevList => 
+          prevList.map(item => item.id === updatedHoKhau.id ? updatedHoKhau : item)
+        );
       } else {
         const newHoKhau = await createHoKhau(data);
         setHoKhauList(prevList => [...prevList, newHoKhau]);
+        setFilteredHoKhauList(prevList => [...prevList, newHoKhau]);
       }
       handleCloseForm();
     } catch (error) {
@@ -81,6 +103,7 @@ export default function NhanKhauPage() {
       try {
         await deleteHoKhau(selectedHoKhauId);
         setHoKhauList(prevList => prevList.filter(item => item.id !== selectedHoKhauId));
+        setFilteredHoKhauList(prevList => prevList.filter(item => item.id !== selectedHoKhauId));
         handleCloseDeleteDialog();
       } catch (error) {
         console.error('Failed to delete ho khau:', error);
@@ -90,32 +113,54 @@ export default function NhanKhauPage() {
 
   return (
     <> 
-      <Box>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ width: '100%', maxWidth: '100%' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, width: '100%' }}>
           <Typography variant="h4" sx={{ fontWeight: 'bold' }}>Quản lý Hộ khẩu</Typography>
           <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreateForm}>
             Thêm hộ khẩu mới
           </Button>
         </Box>
 
-        <Paper sx={{ borderRadius: 2, p: 2 }}>
+        {/* Thanh tìm kiếm */}
+        <Box sx={{ mb: 3, width: '100%' }}>
+          <TextField
+            fullWidth
+            placeholder="Tìm kiếm theo mã hộ khẩu, tên chủ hộ hoặc địa chỉ..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+              }
+            }}
+          />
+        </Box>
+
+        <Paper sx={{ borderRadius: 2, p: 2, width: '100%' }}>
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
               <CircularProgress />
             </Box>
           ) : (
-            <TableContainer>
-              <Table>
+            <TableContainer sx={{ width: '100%' }}>
+              <Table sx={{ width: '100%', tableLayout: 'fixed' }}>
                 <TableHead>
                     <TableRow>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Mã Hộ khẩu</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Tên Chủ hộ</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Địa chỉ</TableCell>
-                      <TableCell align="center" sx={{ fontWeight: 'bold' }}>Hành động</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '15%' }}>Mã Hộ khẩu</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '25%' }}>Tên Chủ hộ</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '45%' }}>Địa chỉ</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Hành động</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                  {hoKhauList.map((row) => (
+                  {filteredHoKhauList.map((row) => (
                     <TableRow key={row.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                       <TableCell>{row.maHoKhau}</TableCell>
                       <TableCell>{row.chuHo?.hoTen}</TableCell>

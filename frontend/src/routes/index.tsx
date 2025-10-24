@@ -3,7 +3,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import DashboardPage from '../pages/DashboardPage';
 import LoginPage from '../pages/LoginPage';
-import NhanKhauPage from '../pages/NhanKhauPage';
+import NhanKhauPage from '../pages/HoKhauPage';
 import ThuPhiPage from '../pages/ThuPhiPage';
 import HoKhauDetailPage from '../pages/HoKhauDetailPage';
 import KhoanThuDetailPage from '../pages/KhoanThuDetailPage';
