@@ -3,7 +3,8 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import DashboardPage from '../pages/DashboardPage';
 import LoginPage from '../pages/LoginPage';
-import NhanKhauPage from '../pages/HoKhauPage';
+import HoKhauPage from '../pages/HoKhauPage';
+import NhanKhauPage from '../pages/NhanKhauPage';
 import ThuPhiPage from '../pages/ThuPhiPage';
 import HoKhauDetailPage from '../pages/HoKhauDetailPage';
 import KhoanThuDetailPage from '../pages/KhoanThuDetailPage';
@@ -24,6 +25,10 @@ const router = createBrowserRouter([
       },
       {
         path: '/ho-khau',
+        element: <HoKhauPage />,
+      },
+      {
+        path: '/nhan-khau',
         element: <NhanKhauPage />,
       },
       {

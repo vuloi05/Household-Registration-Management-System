@@ -1,0 +1,232 @@
+// src/main/java/com/quanlynhankhau/api/service/NhanKhauManagementService.java
+
+package com.quanlynhankhau.api.service;
+
+import java.time.LocalDate;
+import java.time.Period;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+import com.quanlynhankhau.api.dto.NhanKhauDTO;
+import com.quanlynhankhau.api.entity.HoKhau;
+import com.quanlynhankhau.api.entity.NhanKhau;
+import com.quanlynhankhau.api.repository.HoKhauRepository;
+import com.quanlynhankhau.api.repository.NhanKhauRepository;
+
+/**
+ * Service quản lý tất cả nhân khẩu trong hệ thống.
+ */
+@Service
+public class NhanKhauManagementService {
+
+    @Autowired
+    private NhanKhauRepository nhanKhauRepository;
+
+    @Autowired
+    private HoKhauRepository hoKhauRepository;
+
+    /**
+     * Lấy tất cả nhân khẩu với phân trang và các bộ lọc.
+     */
+    public Page<NhanKhauDTO> getAllNhanKhauWithFilters(
+            String search,
+            String ageFilter,
+            String genderFilter,
+            String locationFilter,
+            Pageable pageable) {
+
+        // Lấy tất cả nhân khẩu từ database
+        List<NhanKhau> allNhanKhau = nhanKhauRepository.findAll();
+
+        // Áp dụng các bộ lọc
+        List<NhanKhau> filteredList = allNhanKhau.stream()
+                .filter(nk -> applySearchFilter(nk, search))
+                .filter(nk -> applyAgeFilter(nk, ageFilter))
+                .filter(nk -> applyGenderFilter(nk, genderFilter))
+                .filter(nk -> applyLocationFilter(nk, locationFilter))
+                .collect(Collectors.toList());
+
+        // Phân trang thủ công
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), filteredList.size());
+
+        List<NhanKhauDTO> pageContent = filteredList.subList(start, end).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(pageContent, pageable, filteredList.size());
+    }
+
+    /**
+     * Convert entity NhanKhau sang DTO.
+     */
+    private NhanKhauDTO convertToDTO(NhanKhau nhanKhau) {
+        NhanKhauDTO dto = new NhanKhauDTO();
+        dto.setId(nhanKhau.getId());
+        dto.setHoTen(nhanKhau.getHoTen());
+        dto.setBiDanh(nhanKhau.getBiDanh());
+        dto.setNgaySinh(nhanKhau.getNgaySinh());
+        dto.setGioiTinh(nhanKhau.getGioiTinh());
+        dto.setNoiSinh(nhanKhau.getNoiSinh());
+        dto.setQueQuan(nhanKhau.getQueQuan());
+        dto.setDanToc(nhanKhau.getDanToc());
+        dto.setNgheNghiep(nhanKhau.getNgheNghiep());
+        dto.setNoiLamViec(nhanKhau.getNoiLamViec());
+        dto.setCmndCccd(nhanKhau.getCmndCccd());
+        dto.setNgayCap(nhanKhau.getNgayCap());
+        dto.setNoiCap(nhanKhau.getNoiCap());
+        dto.setQuanHeVoiChuHo(nhanKhau.getQuanHeVoiChuHo());
+
+        // Thông tin hộ khẩu
+        if (nhanKhau.getHoKhau() != null) {
+            dto.setHoKhauId(nhanKhau.getHoKhau().getId());
+            dto.setMaHoKhau(nhanKhau.getHoKhau().getMaHoKhau());
+            dto.setDiaChiHoKhau(nhanKhau.getHoKhau().getDiaChi());
+        }
+
+        return dto;
+    }
+
+    /**
+     * Lọc theo tìm kiếm (tên hoặc CCCD).
+     */
+    private boolean applySearchFilter(NhanKhau nhanKhau, String search) {
+        if (search == null || search.isEmpty()) {
+            return true;
+        }
+        String searchLower = search.toLowerCase();
+        boolean matchName = nhanKhau.getHoTen() != null && 
+                            nhanKhau.getHoTen().toLowerCase().contains(searchLower);
+        boolean matchCccd = nhanKhau.getCmndCccd() != null && 
+                            nhanKhau.getCmndCccd().toLowerCase().contains(searchLower);
+        return matchName || matchCccd;
+    }
+
+    /**
+     * Lọc theo độ tuổi.
+     */
+    private boolean applyAgeFilter(NhanKhau nhanKhau, String ageFilter) {
+        if (ageFilter == null || ageFilter.isEmpty()) {
+            return true;
+        }
+
+        if (nhanKhau.getNgaySinh() == null) {
+            return false;
+        }
+
+        int age = Period.between(nhanKhau.getNgaySinh(), LocalDate.now()).getYears();
+
+        switch (ageFilter) {
+            case "under18":
+                return age < 18;
+            case "18-35":
+                return age >= 18 && age <= 35;
+            case "36-60":
+                return age >= 36 && age <= 60;
+            case "over60":
+                return age > 60;
+            default:
+                return true;
+        }
+    }
+
+    /**
+     * Lọc theo giới tính.
+     */
+    private boolean applyGenderFilter(NhanKhau nhanKhau, String genderFilter) {
+        if (genderFilter == null || genderFilter.isEmpty()) {
+            return true;
+        }
+        
+        if (nhanKhau.getGioiTinh() == null) {
+            return false;
+        }
+        
+        return nhanKhau.getGioiTinh().equalsIgnoreCase(genderFilter);
+    }
+
+    /**
+     * Lọc theo địa chỉ.
+     */
+    private boolean applyLocationFilter(NhanKhau nhanKhau, String locationFilter) {
+        if (locationFilter == null || locationFilter.isEmpty()) {
+            return true;
+        }
+
+        // Lọc theo địa chỉ hộ khẩu
+        if (nhanKhau.getHoKhau() != null && nhanKhau.getHoKhau().getDiaChi() != null) {
+            return nhanKhau.getHoKhau().getDiaChi().toLowerCase()
+                    .contains(locationFilter.toLowerCase());
+        }
+
+        return false;
+    }
+
+    /**
+     * Lấy nhân khẩu theo ID.
+     */
+    public NhanKhauDTO getNhanKhauById(Long id) {
+        NhanKhau nhanKhau = nhanKhauRepository.findById(id).orElse(null);
+        return nhanKhau != null ? convertToDTO(nhanKhau) : null;
+    }
+
+    /**
+     * Tạo mới nhân khẩu.
+     */
+    public NhanKhau createNhanKhau(NhanKhau nhanKhau) {
+        // Nếu có hoKhauId trong request, cần gán hộ khẩu
+        if (nhanKhau.getHoKhau() != null && nhanKhau.getHoKhau().getId() != null) {
+            HoKhau hoKhau = hoKhauRepository.findById(nhanKhau.getHoKhau().getId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy hộ khẩu"));
+            nhanKhau.setHoKhau(hoKhau);
+        }
+        return nhanKhauRepository.save(nhanKhau);
+    }
+
+    /**
+     * Cập nhật thông tin nhân khẩu.
+     */
+    public NhanKhau updateNhanKhau(Long id, NhanKhau nhanKhauDetails) {
+        NhanKhau existingNhanKhau = nhanKhauRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu với id: " + id));
+
+        // Cập nhật các trường
+        existingNhanKhau.setHoTen(nhanKhauDetails.getHoTen());
+        existingNhanKhau.setBiDanh(nhanKhauDetails.getBiDanh());
+        existingNhanKhau.setNgaySinh(nhanKhauDetails.getNgaySinh());
+        existingNhanKhau.setNoiSinh(nhanKhauDetails.getNoiSinh());
+        existingNhanKhau.setQueQuan(nhanKhauDetails.getQueQuan());
+        existingNhanKhau.setDanToc(nhanKhauDetails.getDanToc());
+        existingNhanKhau.setNgheNghiep(nhanKhauDetails.getNgheNghiep());
+        existingNhanKhau.setNoiLamViec(nhanKhauDetails.getNoiLamViec());
+        existingNhanKhau.setCmndCccd(nhanKhauDetails.getCmndCccd());
+        existingNhanKhau.setNgayCap(nhanKhauDetails.getNgayCap());
+        existingNhanKhau.setNoiCap(nhanKhauDetails.getNoiCap());
+        existingNhanKhau.setQuanHeVoiChuHo(nhanKhauDetails.getQuanHeVoiChuHo());
+
+        // Cập nhật hộ khẩu nếu có
+        if (nhanKhauDetails.getHoKhau() != null && nhanKhauDetails.getHoKhau().getId() != null) {
+            HoKhau hoKhau = hoKhauRepository.findById(nhanKhauDetails.getHoKhau().getId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy hộ khẩu"));
+            existingNhanKhau.setHoKhau(hoKhau);
+        }
+
+        return nhanKhauRepository.save(existingNhanKhau);
+    }
+
+    /**
+     * Xóa nhân khẩu.
+     */
+    public void deleteNhanKhau(Long id) {
+        if (!nhanKhauRepository.existsById(id)) {
+            throw new RuntimeException("Không tìm thấy nhân khẩu với id: " + id);
+        }
+        nhanKhauRepository.deleteById(id);
+    }
+}

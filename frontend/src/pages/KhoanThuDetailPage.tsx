@@ -1,10 +1,11 @@
 // src/pages/KhoanThuDetailPage.tsx
 
-import { Box, Typography, Paper, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
-import { useParams } from 'react-router-dom';
+import { Box, Typography, Paper, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button } from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import PeopleIcon from '@mui/icons-material/People';
 import PaidIcon from '@mui/icons-material/Paid';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import StatCard from '../components/dashboard/StatCard';
 
 import { getKhoanThuById, getLichSuNopTienByKhoanThuId, getThongKeKhoanThu } from '../api/khoanThuApi';
@@ -15,6 +16,7 @@ const formatCurrency = (value: number) => new Intl.NumberFormat('vi-VN', { style
 
 export default function KhoanThuDetailPage() {
   const { khoanThuId } = useParams<{ khoanThuId: string }>();
+  const navigate = useNavigate();
   const [khoanThu, setKhoanThu] = useState<KhoanThu | null>(null);
   const [lichSuList, setLichSuList] = useState<LichSuNopTien[]>([]);
   const [thongKe, setThongKe] = useState<ThongKeKhoanThu | null>(null);
@@ -51,6 +53,16 @@ export default function KhoanThuDetailPage() {
 
   return (
     <Box sx={{ width: '100%', maxWidth: '100%' }}>
+      {/* Nút quay lại */}
+      <Button
+        startIcon={<ArrowBackIcon />}
+        onClick={() => navigate('/thu-phi')}
+        sx={{ mb: 2 }}
+        variant="outlined"
+      >
+        Quay lại
+      </Button>
+
       <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>
         Chi tiết Khoản thu: {khoanThu.tenKhoanThu}
       </Typography>

@@ -54,12 +54,18 @@ public class NhanKhauService {
 
         // 2. Cập nhật các trường thông tin
         existingNhanKhau.setHoTen(nhanKhauDetails.getHoTen());
+        existingNhanKhau.setBiDanh(nhanKhauDetails.getBiDanh());
         existingNhanKhau.setNgaySinh(nhanKhauDetails.getNgaySinh());
+        existingNhanKhau.setGioiTinh(nhanKhauDetails.getGioiTinh());
+        existingNhanKhau.setNoiSinh(nhanKhauDetails.getNoiSinh());
         existingNhanKhau.setCmndCccd(nhanKhauDetails.getCmndCccd());
         existingNhanKhau.setQuanHeVoiChuHo(nhanKhauDetails.getQuanHeVoiChuHo());
         existingNhanKhau.setQueQuan(nhanKhauDetails.getQueQuan());
         existingNhanKhau.setDanToc(nhanKhauDetails.getDanToc());
         existingNhanKhau.setNgheNghiep(nhanKhauDetails.getNgheNghiep());
+        existingNhanKhau.setNoiLamViec(nhanKhauDetails.getNoiLamViec());
+        existingNhanKhau.setNgayCap(nhanKhauDetails.getNgayCap());
+        existingNhanKhau.setNoiCap(nhanKhauDetails.getNoiCap());
         // ... bạn có thể thêm các trường khác ở đây
 
         // 3. Lưu lại và trả về kết quả

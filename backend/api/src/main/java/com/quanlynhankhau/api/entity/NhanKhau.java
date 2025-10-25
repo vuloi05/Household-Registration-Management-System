@@ -30,6 +30,7 @@ public class NhanKhau {
     private String hoTen;
     private String biDanh;
     private LocalDate ngaySinh;
+    private String gioiTinh; // Giới tính: Nam, Nữ
     private String noiSinh;
     private String queQuan;
     private String danToc;

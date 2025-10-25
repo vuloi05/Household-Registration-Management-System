@@ -28,6 +28,7 @@ CREATE TABLE nhan_khau (
     ho_ten                        VARCHAR(255),
     bi_danh                       VARCHAR(255),
     ngay_sinh                     DATE,
+    gioi_tinh                     VARCHAR(10),  -- Thêm cột giới tính
     noi_sinh                      VARCHAR(255),
     que_quan                      VARCHAR(255),
     dan_toc                       VARCHAR(255),
