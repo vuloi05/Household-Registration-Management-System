@@ -5,7 +5,28 @@ import {
   Divider, IconButton, Box
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import type { NhanKhau } from '../../api/nhanKhauApi';
+
+// Extended interface for detail view
+interface NhanKhau {
+  id?: number;
+  hoTen: string;
+  biDanh?: string;
+  ngaySinh: string;
+  gioiTinh?: string;
+  noiSinh?: string;
+  queQuan?: string;
+  danToc?: string;
+  ngheNghiep?: string;
+  noiLamViec?: string;
+  cmndCccd?: string;
+  ngayCap?: string;
+  noiCap?: string;
+  ngayDangKyThuongTru?: string;
+  diaChiTruocKhiChuyenDen?: string;
+  quanHeVoiChuHo: string;
+  maHoKhau?: string;
+  diaChiHoKhau?: string;
+}
 
 // Component con giúp hiển thị một dòng thông tin (label: value) cho gọn gàng
 // Đã được viết lại bằng Box và Flexbox
@@ -57,6 +78,7 @@ export default function NhanKhauDetailModal({ open, onClose, nhanKhau }: NhanKha
         <InfoRow label="Họ và tên" value={nhanKhau.hoTen} />
         <InfoRow label="Bí danh" value={nhanKhau.biDanh} />
         <InfoRow label="Ngày sinh" value={nhanKhau.ngaySinh} />
+        <InfoRow label="Giới tính" value={nhanKhau.gioiTinh} />
         <InfoRow label="Nơi sinh" value={nhanKhau.noiSinh} />
         <InfoRow label="Quê quán" value={nhanKhau.queQuan} />
         <InfoRow label="Dân tộc" value={nhanKhau.danToc} />
@@ -76,6 +98,8 @@ export default function NhanKhauDetailModal({ open, onClose, nhanKhau }: NhanKha
         <InfoRow label="Quan hệ với chủ hộ" value={nhanKhau.quanHeVoiChuHo} />
         <InfoRow label="Ngày ĐK thường trú" value={nhanKhau.ngayDangKyThuongTru} />
         <InfoRow label="Địa chỉ trước đây" value={nhanKhau.diaChiTruocKhiChuyenDen} />
+        <InfoRow label="Mã hộ khẩu" value={nhanKhau.maHoKhau} />
+        <InfoRow label="Địa chỉ hộ khẩu" value={nhanKhau.diaChiHoKhau} />
       </DialogContent>
     </Dialog>
   );

@@ -2,7 +2,8 @@
 
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, TextField, Box, Divider, Typography
+  Button, TextField, Box, Divider, Typography,
+  FormControl, InputLabel, Select, MenuItem
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -39,6 +40,7 @@ export default function NhanKhauForm({ open, onClose, onSubmit, initialData }: N
         hoTen: '',
         biDanh: '',
         ngaySinh: '',
+        gioiTinh: '',
         noiSinh: '',
         queQuan: '',
         danToc: '',
@@ -81,6 +83,20 @@ export default function NhanKhauForm({ open, onClose, onSubmit, initialData }: N
             <Controller name="hoTen" control={control} render={({ field }) => ( <TextField {...field} autoFocus required label="Họ và Tên" error={!!errors.hoTen} helperText={errors.hoTen?.message} /> )} />
             <Controller name="biDanh" control={control} render={({ field }) => ( <TextField {...field} label="Bí danh" /> )} />
             <Controller name="ngaySinh" control={control} render={({ field }) => ( <TextField {...field} required label="Ngày sinh" type="date" InputLabelProps={{ shrink: true }} error={!!errors.ngaySinh} helperText={errors.ngaySinh?.message} /> )} />
+            <Controller 
+              name="gioiTinh" 
+              control={control} 
+              render={({ field }) => ( 
+                <FormControl fullWidth>
+                  <InputLabel>Giới tính</InputLabel>
+                  <Select {...field} label="Giới tính">
+                    <MenuItem value="">Chọn giới tính</MenuItem>
+                    <MenuItem value="Nam">Nam</MenuItem>
+                    <MenuItem value="Nữ">Nữ</MenuItem>
+                  </Select>
+                </FormControl>
+              )} 
+            />
             <Controller name="noiSinh" control={control} render={({ field }) => ( <TextField {...field} label="Nơi sinh" /> )} />
             <Controller name="queQuan" control={control} render={({ field }) => ( <TextField {...field} label="Quê quán" /> )} />
             <Controller name="danToc" control={control} render={({ field }) => ( <TextField {...field} label="Dân tộc" /> )} />

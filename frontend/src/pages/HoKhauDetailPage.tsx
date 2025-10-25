@@ -4,12 +4,13 @@ import {
   Box, Typography, Paper, CircularProgress, Divider, Button,
   TableContainer, Table, TableHead, TableRow, TableCell, TableBody, IconButton
 } from '@mui/material';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 // Import API
 import { getHoKhauById } from '../api/hoKhauApi';
@@ -66,6 +67,7 @@ function NhanKhauTable({ data, onDetail, onEdit, onDelete }: { data: NhanKhau[],
  */
 export default function HoKhauDetailPage() {
   const { hoKhauId } = useParams<{ hoKhauId: string }>();
+  const navigate = useNavigate();
   
   // State quản lý dữ liệu
   const [hoKhau, setHoKhau] = useState<HoKhau | null>(null);
@@ -148,6 +150,16 @@ export default function HoKhauDetailPage() {
   return (
     <>
       <Box sx={{ width: '100%', maxWidth: '100%' }}>
+        {/* Nút quay lại */}
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate('/ho-khau')}
+          sx={{ mb: 2 }}
+          variant="outlined"
+        >
+          Quay lại
+        </Button>
+
         <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>
           Chi tiết Hộ khẩu: {hoKhau.maHoKhau}
         </Typography>
