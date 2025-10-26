@@ -8,7 +8,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository // Đánh dấu đây là một Spring Bean thuộc tầng Repository
 public interface HoKhauRepository extends JpaRepository<HoKhau, Long> {
-    // Để trống!
-    // Spring Data JPA sẽ tự động tạo các phương thức CRUD cho chúng ta.
-    // Ví dụ: save(), findById(), findAll(), deleteById(), ...
+    // Tìm hộ khẩu theo mã hộ khẩu
+    java.util.Optional<HoKhau> findByMaHoKhau(String maHoKhau);
 }

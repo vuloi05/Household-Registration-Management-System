@@ -27,7 +27,7 @@ body {
   padding: 0;
   width: 100%;
   height: 100vh;
-  overflow-x: hidden;
+  overflow-x: hidden; /* Chỉ ngăn cuộn ngang */
   box-sizing: border-box;
   /* Cố định scrollbar để tránh layout shift */
   scrollbar-gutter: stable;
@@ -73,4 +73,14 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+/* Đảm bảo Snackbar hiển thị ở layer cao nhất */
+.SnackbarContainer-root {
+  z-index: 9999 !important;
+}
+
+/* Đảm bảo SnackbarItem hiển thị ở layer cao nhất */
+.SnackbarItem-root {
+  z-index: 9999 !important;
 }

@@ -4,7 +4,7 @@
   margin: 0;
   padding: 0;
   text-align: left;
-  overflow-x: hidden;
+  overflow-x: hidden; /* Chỉ ngăn cuộn ngang */
   /* Đảm bảo layout không bị shift */
   position: relative;
   box-sizing: border-box;
@@ -14,7 +14,7 @@
 html {
   width: 100%;
   height: 100%;
-  overflow-x: hidden;
+  overflow-x: hidden; /* Chỉ ngăn cuộn ngang */
   scrollbar-gutter: stable;
 }
 

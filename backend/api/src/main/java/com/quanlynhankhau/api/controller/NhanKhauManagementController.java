@@ -17,6 +17,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.quanlynhankhau.api.dto.NhanKhauDTO;
+import com.quanlynhankhau.api.dto.NhanKhauRequestDTO;
 import com.quanlynhankhau.api.entity.NhanKhau;
 import com.quanlynhankhau.api.service.NhanKhauManagementService;
 
@@ -97,12 +98,28 @@ public class NhanKhauManagementController {
      */
     @PostMapping
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<NhanKhau> createNhanKhau(@RequestBody NhanKhau nhanKhau) {
+    public ResponseEntity<?> createNhanKhau(@RequestBody NhanKhauRequestDTO requestDTO) {
         try {
-            NhanKhau savedNhanKhau = nhanKhauManagementService.createNhanKhau(nhanKhau);
+            // Convert DTO to Entity
+            NhanKhau nhanKhau = convertToEntity(requestDTO);
+            
+            // Tạo nhân khẩu với mã hộ khẩu nếu có
+            NhanKhau savedNhanKhau;
+            if (requestDTO.getMaHoKhau() != null && !requestDTO.getMaHoKhau().trim().isEmpty()) {
+                savedNhanKhau = nhanKhauManagementService.createNhanKhauWithMaHoKhau(nhanKhau, requestDTO.getMaHoKhau());
+            } else {
+                savedNhanKhau = nhanKhauManagementService.createNhanKhau(nhanKhau);
+            }
+            
             return new ResponseEntity<>(savedNhanKhau, HttpStatus.CREATED);
+        } catch (RuntimeException e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Lỗi hệ thống: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -113,14 +130,30 @@ public class NhanKhauManagementController {
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<NhanKhau> updateNhanKhau(
+    public ResponseEntity<?> updateNhanKhau(
             @PathVariable Long id,
-            @RequestBody NhanKhau nhanKhauDetails) {
+            @RequestBody NhanKhauRequestDTO requestDTO) {
         try {
-            NhanKhau updatedNhanKhau = nhanKhauManagementService.updateNhanKhau(id, nhanKhauDetails);
+            // Convert DTO to Entity
+            NhanKhau nhanKhauDetails = convertToEntity(requestDTO);
+            
+            // Cập nhật nhân khẩu với mã hộ khẩu nếu có
+            NhanKhau updatedNhanKhau;
+            if (requestDTO.getMaHoKhau() != null && !requestDTO.getMaHoKhau().trim().isEmpty()) {
+                updatedNhanKhau = nhanKhauManagementService.updateNhanKhauWithMaHoKhau(id, nhanKhauDetails, requestDTO.getMaHoKhau());
+            } else {
+                updatedNhanKhau = nhanKhauManagementService.updateNhanKhau(id, nhanKhauDetails);
+            }
+            
             return new ResponseEntity<>(updatedNhanKhau, HttpStatus.OK);
         } catch (RuntimeException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Lỗi hệ thống: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -138,5 +171,28 @@ public class NhanKhauManagementController {
         } catch (RuntimeException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
+    }
+
+    /**
+     * Convert NhanKhauRequestDTO to NhanKhau entity.
+     */
+    private NhanKhau convertToEntity(NhanKhauRequestDTO dto) {
+        NhanKhau nhanKhau = new NhanKhau();
+        nhanKhau.setHoTen(dto.getHoTen());
+        nhanKhau.setBiDanh(dto.getBiDanh());
+        nhanKhau.setNgaySinh(dto.getNgaySinh());
+        nhanKhau.setGioiTinh(dto.getGioiTinh());
+        nhanKhau.setNoiSinh(dto.getNoiSinh());
+        nhanKhau.setQueQuan(dto.getQueQuan());
+        nhanKhau.setDanToc(dto.getDanToc());
+        nhanKhau.setNgheNghiep(dto.getNgheNghiep());
+        nhanKhau.setNoiLamViec(dto.getNoiLamViec());
+        nhanKhau.setCmndCccd(dto.getCmndCccd());
+        nhanKhau.setNgayCap(dto.getNgayCap());
+        nhanKhau.setNoiCap(dto.getNoiCap());
+        nhanKhau.setNgayDangKyThuongTru(dto.getNgayDangKyThuongTru());
+        nhanKhau.setDiaChiTruocKhiChuyenDen(dto.getDiaChiTruocKhiChuyenDen());
+        nhanKhau.setQuanHeVoiChuHo(dto.getQuanHeVoiChuHo());
+        return nhanKhau;
     }
 }
