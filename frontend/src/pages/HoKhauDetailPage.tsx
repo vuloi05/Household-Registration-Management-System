@@ -205,6 +205,7 @@ export default function HoKhauDetailPage() {
         onClose={handleCloseForm}
         onSubmit={handleNhanKhauFormSubmit}
         initialData={editingNhanKhau}
+        showMaHoKhauField={false} // Không hiển thị ô nhập mã hộ khẩu cho trang chi tiết hộ khẩu
       />
       <ConfirmationDialog
         open={!!deletingNhanKhauId}

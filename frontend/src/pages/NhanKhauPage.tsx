@@ -190,11 +190,18 @@ export default function NhanKhauPage() {
       enqueueSnackbar('Thêm nhân khẩu thành công', { variant: 'success' });
       setFormOpen(false);
       loadNhanKhauData(); // Reload data
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating nhan khau:', error);
-      enqueueSnackbar('Không thể thêm nhân khẩu', { variant: 'error' });
+      
+      // Xử lý lỗi từ backend
+      if (error.response?.data?.error) {
+        enqueueSnackbar(error.response.data.error, { variant: 'error' });
+      } else {
+        enqueueSnackbar('Không thể thêm nhân khẩu', { variant: 'error' });
+      }
     }
   };
+
 
   // Xử lý cập nhật nhân khẩu
   const handleUpdateNhanKhau = async (data: NhanKhauFormValues) => {
@@ -239,7 +246,12 @@ export default function NhanKhauPage() {
   // Xử lý mở form chỉnh sửa
   const handleOpenEditForm = (nhanKhau: NhanKhau) => {
     setSelectedNhanKhau(nhanKhau);
-    setEditingNhanKhau(nhanKhau as NhanKhauFormValues);
+    // Đảm bảo maHoKhau được map đúng từ dữ liệu nhân khẩu
+    const formData: NhanKhauFormValues = {
+      ...nhanKhau,
+      maHoKhau: nhanKhau.maHoKhau || '', // Đảm bảo maHoKhau có giá trị
+    };
+    setEditingNhanKhau(formData);
     setFormOpen(true);
   };
 
@@ -607,6 +619,7 @@ export default function NhanKhauPage() {
         }}
         onSubmit={editingNhanKhau ? handleUpdateNhanKhau : handleAddNhanKhau}
         initialData={editingNhanKhau}
+        showMaHoKhauField={true} // Hiển thị ô nhập mã hộ khẩu cho trang quản lý nhân khẩu
       />
 
       {/* Modal chi tiết nhân khẩu */}

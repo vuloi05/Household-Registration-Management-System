@@ -10,7 +10,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 
 // Import schema và type đã được cập nhật đầy đủ các trường
-import { nhanKhauSchema } from '../../types/nhanKhau';
+import { nhanKhauSchema, nhanKhauWithMaHoKhauSchema } from '../../types/nhanKhau';
 import type { NhanKhauFormValues } from '../../types/nhanKhau';
 
 interface NhanKhauFormProps {
@@ -18,9 +18,10 @@ interface NhanKhauFormProps {
   onClose: () => void;
   onSubmit: (data: NhanKhauFormValues) => void;
   initialData?: NhanKhauFormValues | null;
+  showMaHoKhauField?: boolean; // Prop để hiển thị ô nhập mã hộ khẩu
 }
 
-export default function NhanKhauForm({ open, onClose, onSubmit, initialData }: NhanKhauFormProps) {
+export default function NhanKhauForm({ open, onClose, onSubmit, initialData, showMaHoKhauField = false }: NhanKhauFormProps) {
   const isEditMode = !!initialData;
 
   const {
@@ -29,7 +30,7 @@ export default function NhanKhauForm({ open, onClose, onSubmit, initialData }: N
     reset,
     formState: { errors },
   } = useForm<NhanKhauFormValues>({
-    resolver: zodResolver(nhanKhauSchema),
+    resolver: zodResolver(showMaHoKhauField ? nhanKhauWithMaHoKhauSchema : nhanKhauSchema),
   });
 
   useEffect(() => {
@@ -52,6 +53,7 @@ export default function NhanKhauForm({ open, onClose, onSubmit, initialData }: N
         ngayDangKyThuongTru: '',
         diaChiTruocKhiChuyenDen: '',
         quanHeVoiChuHo: '',
+        maHoKhau: '',
       });
     }
   }, [initialData, open, reset]);
@@ -107,9 +109,9 @@ export default function NhanKhauForm({ open, onClose, onSubmit, initialData }: N
           {/* === THÔNG TIN CĂN CƯỚC & NGHỀ NGHIỆP === */}
           <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>Thông tin Căn cước & Nghề nghiệp</Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 2, }}>
-            <Controller name="cmndCccd" control={control} render={({ field }) => ( <TextField {...field} label="Số CMND/CCCD" /> )} />
-            <Controller name="ngayCap" control={control} render={({ field }) => ( <TextField {...field} label="Ngày cấp" type="date" InputLabelProps={{ shrink: true }} /> )} />
-            <Controller name="noiCap" control={control} render={({ field }) => ( <TextField {...field} label="Nơi cấp" /> )} />
+            <Controller name="cmndCccd" control={control} render={({ field }) => ( <TextField {...field} required label="Số CMND/CCCD" error={!!errors.cmndCccd} helperText={errors.cmndCccd?.message} /> )} />
+            <Controller name="ngayCap" control={control} render={({ field }) => ( <TextField {...field} required label="Ngày cấp" type="date" InputLabelProps={{ shrink: true }} error={!!errors.ngayCap} helperText={errors.ngayCap?.message} /> )} />
+            <Controller name="noiCap" control={control} render={({ field }) => ( <TextField {...field} required label="Nơi cấp" error={!!errors.noiCap} helperText={errors.noiCap?.message} /> )} />
             <Controller name="ngheNghiep" control={control} render={({ field }) => ( <TextField {...field} label="Nghề nghiệp" /> )} />
             <Controller name="noiLamViec" control={control} render={({ field }) => ( <TextField {...field} label="Nơi làm việc" /> )} />
           </Box>
@@ -119,6 +121,21 @@ export default function NhanKhauForm({ open, onClose, onSubmit, initialData }: N
           {/* === THÔNG TIN CƯ TRÚ === */}
           <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>Thông tin Cư trú</Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 2, }}>
+            {showMaHoKhauField && (
+              <Controller 
+                name="maHoKhau" 
+                control={control} 
+                render={({ field }) => ( 
+                  <TextField 
+                    {...field} 
+                    required 
+                    label="Mã hộ khẩu" 
+                    error={!!errors.maHoKhau} 
+                    helperText={errors.maHoKhau?.message || 'Nhập mã hộ khẩu để thêm nhân khẩu vào hộ'} 
+                  /> 
+                )} 
+              />
+            )}
             <Controller name="quanHeVoiChuHo" control={control} render={({ field }) => ( <TextField {...field} required label="Quan hệ với chủ hộ" error={!!errors.quanHeVoiChuHo} helperText={errors.quanHeVoiChuHo?.message} /> )} />
             <Controller name="ngayDangKyThuongTru" control={control} render={({ field }) => ( <TextField {...field} label="Ngày ĐK thường trú" type="date" InputLabelProps={{ shrink: true }} /> )} />
             <Controller name="diaChiTruocKhiChuyenDen" control={control} render={({ field }) => ( <TextField {...field} label="Địa chỉ trước đây" /> )} />

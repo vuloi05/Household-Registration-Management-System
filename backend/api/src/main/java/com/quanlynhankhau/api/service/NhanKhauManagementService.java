@@ -219,7 +219,47 @@ public class NhanKhauManagementService {
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy hộ khẩu"));
             nhanKhau.setHoKhau(hoKhau);
         }
-        return nhanKhauRepository.save(nhanKhau);
+        
+        // Đảm bảo ID không được set để tránh xung đột
+        nhanKhau.setId(null);
+        
+        try {
+            return nhanKhauRepository.save(nhanKhau);
+        } catch (Exception e) {
+            // Nếu có lỗi duplicate key, thử lại một lần nữa
+            if (e.getMessage().contains("duplicate key") || e.getMessage().contains("23505")) {
+                // Reset ID và thử lại
+                nhanKhau.setId(null);
+                return nhanKhauRepository.save(nhanKhau);
+            }
+            throw e;
+        }
+    }
+
+    /**
+     * Tạo mới nhân khẩu với mã hộ khẩu.
+     */
+    public NhanKhau createNhanKhauWithMaHoKhau(NhanKhau nhanKhau, String maHoKhau) {
+        if (maHoKhau != null && !maHoKhau.trim().isEmpty()) {
+            HoKhau hoKhau = hoKhauRepository.findByMaHoKhau(maHoKhau)
+                    .orElseThrow(() -> new RuntimeException("Mã hộ khẩu không tồn tại: " + maHoKhau));
+            nhanKhau.setHoKhau(hoKhau);
+        }
+        
+        // Đảm bảo ID không được set để tránh xung đột
+        nhanKhau.setId(null);
+        
+        try {
+            return nhanKhauRepository.save(nhanKhau);
+        } catch (Exception e) {
+            // Nếu có lỗi duplicate key, thử lại một lần nữa
+            if (e.getMessage().contains("duplicate key") || e.getMessage().contains("23505")) {
+                // Reset ID và thử lại
+                nhanKhau.setId(null);
+                return nhanKhauRepository.save(nhanKhau);
+            }
+            throw e;
+        }
     }
 
     /**
@@ -247,6 +287,37 @@ public class NhanKhauManagementService {
         if (nhanKhauDetails.getHoKhau() != null && nhanKhauDetails.getHoKhau().getId() != null) {
             HoKhau hoKhau = hoKhauRepository.findById(nhanKhauDetails.getHoKhau().getId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy hộ khẩu"));
+            existingNhanKhau.setHoKhau(hoKhau);
+        }
+
+        return nhanKhauRepository.save(existingNhanKhau);
+    }
+
+    /**
+     * Cập nhật thông tin nhân khẩu với mã hộ khẩu.
+     */
+    public NhanKhau updateNhanKhauWithMaHoKhau(Long id, NhanKhau nhanKhauDetails, String maHoKhau) {
+        NhanKhau existingNhanKhau = nhanKhauRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu với id: " + id));
+
+        // Cập nhật các trường
+        existingNhanKhau.setHoTen(nhanKhauDetails.getHoTen());
+        existingNhanKhau.setBiDanh(nhanKhauDetails.getBiDanh());
+        existingNhanKhau.setNgaySinh(nhanKhauDetails.getNgaySinh());
+        existingNhanKhau.setNoiSinh(nhanKhauDetails.getNoiSinh());
+        existingNhanKhau.setQueQuan(nhanKhauDetails.getQueQuan());
+        existingNhanKhau.setDanToc(nhanKhauDetails.getDanToc());
+        existingNhanKhau.setNgheNghiep(nhanKhauDetails.getNgheNghiep());
+        existingNhanKhau.setNoiLamViec(nhanKhauDetails.getNoiLamViec());
+        existingNhanKhau.setCmndCccd(nhanKhauDetails.getCmndCccd());
+        existingNhanKhau.setNgayCap(nhanKhauDetails.getNgayCap());
+        existingNhanKhau.setNoiCap(nhanKhauDetails.getNoiCap());
+        existingNhanKhau.setQuanHeVoiChuHo(nhanKhauDetails.getQuanHeVoiChuHo());
+
+        // Cập nhật hộ khẩu dựa trên mã hộ khẩu
+        if (maHoKhau != null && !maHoKhau.trim().isEmpty()) {
+            HoKhau hoKhau = hoKhauRepository.findByMaHoKhau(maHoKhau)
+                    .orElseThrow(() -> new RuntimeException("Mã hộ khẩu không tồn tại: " + maHoKhau));
             existingNhanKhau.setHoKhau(hoKhau);
         }
 
