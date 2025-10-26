@@ -94,18 +94,51 @@ public class NhanKhauManagementService {
     }
 
     /**
-     * Lọc theo tìm kiếm (tên hoặc CCCD).
+     * Lọc theo tìm kiếm (tên, CCCD, nghề nghiệp, mã hộ khẩu, ngày sinh).
+     * Hỗ trợ tìm kiếm đa trường: "Nguyễn Văn A 023456789 HK001"
      */
     private boolean applySearchFilter(NhanKhau nhanKhau, String search) {
         if (search == null || search.isEmpty()) {
             return true;
         }
-        String searchLower = search.toLowerCase();
-        boolean matchName = nhanKhau.getHoTen() != null && 
-                            nhanKhau.getHoTen().toLowerCase().contains(searchLower);
-        boolean matchCccd = nhanKhau.getCmndCccd() != null && 
-                            nhanKhau.getCmndCccd().toLowerCase().contains(searchLower);
-        return matchName || matchCccd;
+        
+        String searchLower = search.toLowerCase().trim();
+        
+        // Chuẩn bị các trường để tìm kiếm
+        String hoTenLower = nhanKhau.getHoTen() != null ? nhanKhau.getHoTen().toLowerCase() : "";
+        String cmndCccdLower = nhanKhau.getCmndCccd() != null ? nhanKhau.getCmndCccd().toLowerCase() : "";
+        String ngheNghiepLower = nhanKhau.getNgheNghiep() != null ? nhanKhau.getNgheNghiep().toLowerCase() : "";
+        String maHoKhauLower = nhanKhau.getHoKhau() != null && nhanKhau.getHoKhau().getMaHoKhau() != null 
+            ? nhanKhau.getHoKhau().getMaHoKhau().toLowerCase() : "";
+        String ngaySinhStr = nhanKhau.getNgaySinh() != null ? nhanKhau.getNgaySinh().toString() : "";
+        
+        // Tìm kiếm đơn giản: kiểm tra trong tất cả các trường
+        if (hoTenLower.contains(searchLower) || 
+            cmndCccdLower.contains(searchLower) ||
+            ngheNghiepLower.contains(searchLower) ||
+            maHoKhauLower.contains(searchLower) ||
+            ngaySinhStr.contains(searchLower)) {
+            return true;
+        }
+        
+        // Tìm kiếm kết hợp nhiều trường
+        String[] words = searchLower.split("\\s+");
+        int matchCount = 0;
+        
+        for (String word : words) {
+            if (!word.isEmpty()) {
+                if (hoTenLower.contains(word) || 
+                    cmndCccdLower.contains(word) ||
+                    ngheNghiepLower.contains(word) ||
+                    maHoKhauLower.contains(word) ||
+                    ngaySinhStr.contains(word)) {
+                    matchCount++;
+                }
+            }
+        }
+        
+        // Trả về true nếu tất cả các từ đều khớp ít nhất một trường
+        return matchCount == words.length;
     }
 
     /**

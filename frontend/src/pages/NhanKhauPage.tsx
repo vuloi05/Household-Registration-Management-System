@@ -1,5 +1,5 @@
 // src/pages/NhanKhauPage.tsx
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -116,12 +116,74 @@ export default function NhanKhauPage() {
     return age;
   };
 
-  // Lọc và tìm kiếm dữ liệu (không cần nữa vì backend đã xử lý)
-  // Nhưng vẫn giữ để lấy danh sách locations unique
-  const locations = useMemo(() => {
-    const uniqueLocations = [...new Set(nhanKhauList.map((nk) => nk.queQuan).filter(Boolean))];
-    return uniqueLocations.sort();
-  }, [nhanKhauList]);
+  // Không cần lấy locations từ data nữa vì đã có danh sách đầy đủ các tỉnh thành
+
+  // Danh sách đầy đủ các tỉnh thành Việt Nam
+  const vietnamProvinces = [
+    'Hà Nội',
+    'TP. Hồ Chí Minh',
+    'Đà Nẵng',
+    'Hải Phòng',
+    'Cần Thơ',
+    'An Giang',
+    'Bà Rịa - Vũng Tàu',
+    'Bắc Giang',
+    'Bắc Kạn',
+    'Bạc Liêu',
+    'Bắc Ninh',
+    'Bến Tre',
+    'Bình Định',
+    'Bình Dương',
+    'Bình Phước',
+    'Bình Thuận',
+    'Cà Mau',
+    'Cao Bằng',
+    'Đắk Lắk',
+    'Đắk Nông',
+    'Điện Biên',
+    'Đồng Nai',
+    'Đồng Tháp',
+    'Gia Lai',
+    'Hà Giang',
+    'Hà Nam',
+    'Hà Tĩnh',
+    'Hải Dương',
+    'Hậu Giang',
+    'Hòa Bình',
+    'Hưng Yên',
+    'Khánh Hòa',
+    'Kiên Giang',
+    'Kon Tum',
+    'Lai Châu',
+    'Lâm Đồng',
+    'Lạng Sơn',
+    'Lào Cai',
+    'Long An',
+    'Nam Định',
+    'Nghệ An',
+    'Ninh Bình',
+    'Ninh Thuận',
+    'Phú Thọ',
+    'Phú Yên',
+    'Quảng Bình',
+    'Quảng Nam',
+    'Quảng Ngãi',
+    'Quảng Ninh',
+    'Quảng Trị',
+    'Sóc Trăng',
+    'Sơn La',
+    'Tây Ninh',
+    'Thái Bình',
+    'Thái Nguyên',
+    'Thanh Hóa',
+    'Thừa Thiên Huế',
+    'Tiền Giang',
+    'Trà Vinh',
+    'Tuyên Quang',
+    'Vĩnh Long',
+    'Vĩnh Phúc',
+    'Yên Bái',
+  ];
 
   // Xử lý thêm nhân khẩu
   const handleAddNhanKhau = async (data: NhanKhauFormValues) => {
@@ -294,7 +356,7 @@ export default function NhanKhauPage() {
           <Box sx={{ mb: 3 }}>
             <TextField
               fullWidth
-              placeholder="Tìm kiếm theo họ tên hoặc số CCCD..."
+              placeholder="Tìm kiếm theo họ tên, CCCD, nghề nghiệp, mã hộ khẩu, ngày sinh..."
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               InputProps={{
@@ -311,6 +373,7 @@ export default function NhanKhauPage() {
                   </InputAdornment>
                 ),
               }}
+              helperText="Bạn có thể nhập cả Họ tên và CCCD để tìm kiếm : Nguyễn Mạnh Tí 023456789"
             />
           </Box>
 
@@ -365,9 +428,9 @@ export default function NhanKhauPage() {
                       onChange={(e) => handleLocationFilterChange(e.target.value)}
                     >
                       <MenuItem value="all">Tất cả</MenuItem>
-                      {locations.map((location) => (
-                        <MenuItem key={location} value={location}>
-                          {location}
+                      {vietnamProvinces.map((province) => (
+                        <MenuItem key={province} value={province}>
+                          {province}
                         </MenuItem>
                       ))}
                     </Select>
@@ -400,53 +463,71 @@ export default function NhanKhauPage() {
             </Box>
           ) : (
             <TableContainer>
-            <Table sx={{ minWidth: 1200 }}>
+            <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell>STT</TableCell>
-                  <TableCell sx={{ whiteSpace: 'nowrap', minWidth: 160 }}>Họ và Tên</TableCell>
-                  <TableCell>Ngày sinh</TableCell>
-                  <TableCell sx={{ whiteSpace: 'nowrap', minWidth: 80 }}>Tuổi</TableCell>
-                  <TableCell>Giới tính</TableCell>
-                  <TableCell>CCCD</TableCell>
-                  <TableCell sx={{ maxWidth: 180 }}>Nghề nghiệp</TableCell>
-                  <TableCell>Quan hệ</TableCell>
-                  <TableCell>Mã hộ khẩu</TableCell>
-                  <TableCell align="center">Thao tác</TableCell>
+                  <TableCell width="50">STT</TableCell>
+                  <TableCell width="180">Họ và Tên</TableCell>
+                  <TableCell width="110">Ngày sinh</TableCell>
+                  <TableCell width="60">Tuổi</TableCell>
+                  <TableCell width="90">Giới tính</TableCell>
+                  <TableCell width="120">CCCD</TableCell>
+                  <TableCell width="140">Nghề nghiệp</TableCell>
+                  <TableCell width="110">Quan hệ</TableCell>
+                  <TableCell width="100">Mã HK</TableCell>
+                  <TableCell width="140" align="center">Thao tác</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {nhanKhauList.map((nhanKhau, index) => (
                   <TableRow key={nhanKhau.id} hover>
                       <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                        <Typography variant="body2" fontWeight={600}>
-                          {nhanKhau.hoTen}
-                        </Typography>
+                      <TableCell sx={{ 
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        maxWidth: 180
+                      }}>
+                        <Tooltip title={nhanKhau.hoTen}>
+                          <Typography variant="body2" fontWeight={600} noWrap>
+                            {nhanKhau.hoTen}
+                          </Typography>
+                        </Tooltip>
                       </TableCell>
-                      <TableCell>
+                      <TableCell sx={{ fontSize: '0.85rem' }}>
                         {new Date(nhanKhau.ngaySinh).toLocaleDateString('vi-VN')}
                       </TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{calculateAge(nhanKhau.ngaySinh)} tuổi</TableCell>
+                      <TableCell>{calculateAge(nhanKhau.ngaySinh)}</TableCell>
                       <TableCell>
                         <Chip
                           label={nhanKhau.gioiTinh || 'N/A'}
                           size="small"
                           color={nhanKhau.gioiTinh === 'Nam' ? 'primary' : 'secondary'}
+                          sx={{ fontSize: '0.75rem', height: 24 }}
                         />
                       </TableCell>
-                      <TableCell>{nhanKhau.cmndCccd || 'N/A'}</TableCell>
-                      <TableCell sx={{ maxWidth: 180, wordWrap: 'break-word' }}>{nhanKhau.ngheNghiep || 'N/A'}</TableCell>
+                      <TableCell sx={{ fontSize: '0.85rem' }}>{nhanKhau.cmndCccd || 'N/A'}</TableCell>
+                      <TableCell sx={{ 
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        maxWidth: 140
+                      }}>
+                        <Tooltip title={nhanKhau.ngheNghiep || 'N/A'}>
+                          <span>{nhanKhau.ngheNghiep || 'N/A'}</span>
+                        </Tooltip>
+                      </TableCell>
                       <TableCell>
                         <Chip
                           label={nhanKhau.quanHeVoiChuHo}
                           size="small"
                           variant="outlined"
+                          sx={{ fontSize: '0.7rem', height: 24 }}
                         />
                       </TableCell>
-                      <TableCell>{nhanKhau.maHoKhau || 'N/A'}</TableCell>
+                      <TableCell sx={{ fontSize: '0.85rem' }}>{nhanKhau.maHoKhau || 'N/A'}</TableCell>
                       <TableCell align="center">
-                        <Stack direction="row" spacing={1} justifyContent="center">
+                        <Stack direction="row" spacing={0.5} justifyContent="center">
                           <Tooltip title="Xem chi tiết">
                             <IconButton
                               size="small"
