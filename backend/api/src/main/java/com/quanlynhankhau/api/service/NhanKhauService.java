@@ -8,6 +8,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.quanlynhankhau.api.dto.NhanKhauDTO;
 import com.quanlynhankhau.api.entity.HoKhau;
 import com.quanlynhankhau.api.entity.NhanKhau;
 import com.quanlynhankhau.api.repository.HoKhauRepository;
@@ -23,8 +24,11 @@ public class NhanKhauService {
     private HoKhauRepository hoKhauRepository; // Cần repo này để tìm hộ khẩu
 
     // Lấy tất cả nhân khẩu của một hộ khẩu cụ thể
-    public List<NhanKhau> getAllNhanKhauByHoKhauId(Long hoKhauId) {
-        return nhanKhauRepository.findByHoKhauId(hoKhauId);
+    public List<NhanKhauDTO> getAllNhanKhauByHoKhauId(Long hoKhauId) {
+        List<NhanKhau> nhanKhauList = nhanKhauRepository.findByHoKhauId(hoKhauId);
+        return nhanKhauList.stream()
+                .map(this::convertToDTO)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     // Thêm một nhân khẩu mới vào một hộ khẩu
@@ -66,9 +70,16 @@ public class NhanKhauService {
         existingNhanKhau.setNoiLamViec(nhanKhauDetails.getNoiLamViec());
         existingNhanKhau.setNgayCap(nhanKhauDetails.getNgayCap());
         existingNhanKhau.setNoiCap(nhanKhauDetails.getNoiCap());
-        // ... bạn có thể thêm các trường khác ở đây
+        
+        // 3. Cập nhật hộ khẩu nếu có thay đổi
+        if (nhanKhauDetails.getHoKhau() != null) {
+            // Tìm hộ khẩu mới dựa trên ID
+            HoKhau newHoKhau = hoKhauRepository.findById(nhanKhauDetails.getHoKhau().getId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy hộ khẩu với id: " + nhanKhauDetails.getHoKhau().getId()));
+            existingNhanKhau.setHoKhau(newHoKhau);
+        }
 
-        // 3. Lưu lại và trả về kết quả
+        // 4. Lưu lại và trả về kết quả
         return nhanKhauRepository.save(existingNhanKhau);
     }
 
@@ -91,6 +102,36 @@ public class NhanKhauService {
      */
     public Optional<NhanKhau> findByCmndCccd(String cmndCccd) {
         return nhanKhauRepository.findByCmndCccd(cmndCccd);
+    }
+
+    /**
+     * Convert entity NhanKhau sang DTO.
+     */
+    private NhanKhauDTO convertToDTO(NhanKhau nhanKhau) {
+        NhanKhauDTO dto = new NhanKhauDTO();
+        dto.setId(nhanKhau.getId());
+        dto.setHoTen(nhanKhau.getHoTen());
+        dto.setBiDanh(nhanKhau.getBiDanh());
+        dto.setNgaySinh(nhanKhau.getNgaySinh());
+        dto.setGioiTinh(nhanKhau.getGioiTinh());
+        dto.setNoiSinh(nhanKhau.getNoiSinh());
+        dto.setQueQuan(nhanKhau.getQueQuan());
+        dto.setDanToc(nhanKhau.getDanToc());
+        dto.setNgheNghiep(nhanKhau.getNgheNghiep());
+        dto.setNoiLamViec(nhanKhau.getNoiLamViec());
+        dto.setCmndCccd(nhanKhau.getCmndCccd());
+        dto.setNgayCap(nhanKhau.getNgayCap());
+        dto.setNoiCap(nhanKhau.getNoiCap());
+        dto.setQuanHeVoiChuHo(nhanKhau.getQuanHeVoiChuHo());
+
+        // Thông tin hộ khẩu
+        if (nhanKhau.getHoKhau() != null) {
+            dto.setHoKhauId(nhanKhau.getHoKhau().getId());
+            dto.setMaHoKhau(nhanKhau.getHoKhau().getMaHoKhau());
+            dto.setDiaChiHoKhau(nhanKhau.getHoKhau().getDiaChi());
+        }
+
+        return dto;
     }
 
 }

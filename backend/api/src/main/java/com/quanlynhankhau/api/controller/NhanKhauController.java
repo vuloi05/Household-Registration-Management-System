@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*; //import tất cả
 import org.springframework.security.access.prepost.PreAuthorize;
 
+import com.quanlynhankhau.api.dto.NhanKhauDTO;
 import com.quanlynhankhau.api.entity.NhanKhau;
 import com.quanlynhankhau.api.service.NhanKhauService;
 
@@ -29,8 +30,8 @@ public class NhanKhauController {
     // - URL: http://localhost:8080/api/hokhau/{hoKhauId}/nhankhau
     @GetMapping
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<List<NhanKhau>> getNhanKhauByHoKhauId(@PathVariable Long hoKhauId) {
-        List<NhanKhau> nhanKhauList = nhanKhauService.getAllNhanKhauByHoKhauId(hoKhauId);
+    public ResponseEntity<List<NhanKhauDTO>> getNhanKhauByHoKhauId(@PathVariable Long hoKhauId) {
+        List<NhanKhauDTO> nhanKhauList = nhanKhauService.getAllNhanKhauByHoKhauId(hoKhauId);
         return new ResponseEntity<>(nhanKhauList, HttpStatus.OK);
     }
 
