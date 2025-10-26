@@ -1,5 +1,5 @@
 // src/pages/NhanKhauPage.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -47,26 +47,31 @@ import {
   deleteNhanKhauManagement,
   type NhanKhau,
 } from '../api/nhanKhauApi';
+import { Html5Qrcode } from "html5-qrcode";
 
 export default function NhanKhauPage() {
   const { enqueueSnackbar } = useSnackbar();
-  
+
+  // State mở/tắt scanner
+  const [qrScannerOpen, setQrScannerOpen] = useState(false);
+  const [qrResult, setQrResult] = useState<string | null>(null);
+
   // State cho dữ liệu nhân khẩu
   const [nhanKhauList, setNhanKhauList] = useState<NhanKhau[]>([]);
   const [loading, setLoading] = useState(false);
   const [totalItems, setTotalItems] = useState(0);
-  
+
   // State cho tìm kiếm và lọc
   const [searchQuery, setSearchQuery] = useState('');
   const [ageFilter, setAgeFilter] = useState('all');
   const [genderFilter, setGenderFilter] = useState('all');
   const [locationFilter, setLocationFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // State cho phân trang
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  
+
   // State cho form và modal
   const [formOpen, setFormOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -86,7 +91,7 @@ export default function NhanKhauPage() {
         genderFilter: genderFilter !== 'all' ? genderFilter : undefined,
         locationFilter: locationFilter !== 'all' ? locationFilter : undefined,
       });
-      
+
       setNhanKhauList(response.data);
       setTotalItems(response.totalItems);
     } catch (error) {
@@ -101,6 +106,78 @@ export default function NhanKhauPage() {
     loadNhanKhauData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, rowsPerPage, searchQuery, ageFilter, genderFilter, locationFilter]);
+
+  useEffect(() => {
+    let html5QrCode: Html5Qrcode | null = null;
+
+    if (qrScannerOpen) {
+      html5QrCode = new Html5Qrcode("qr-reader");
+
+      html5QrCode.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: 250
+        },
+        (decodedText) => {
+          setQrResult(decodedText);
+          setQrScannerOpen(false);
+          html5QrCode?.stop();
+
+          // Tách chuỗi theo dấu |
+              const parts = decodedText.split("|");
+              if (parts.length < 5) {
+                enqueueSnackbar("Dữ liệu QR không hợp lệ!", { variant: "error" });
+                return;
+              }
+
+              const [cccd, hoTen, ngaySinhStr, queQuan, ngayCapStr] = parts;
+
+              // Hàm parse ddMMyyyy thành đối tượng Date
+              const parseDate = (str: string) => {
+                if (str.length !== 8) return null;
+                const day = parseInt(str.substring(0, 2));
+                const month = parseInt(str.substring(2, 4)) - 1; // Tháng trong JS bắt đầu từ 0
+                const year = parseInt(str.substring(4, 8));
+                return new Date(year, month, day);
+              };
+
+              const ngaySinh = parseDate(ngaySinhStr);
+              const ngayCap = parseDate(ngayCapStr);
+
+              if (!ngaySinh || !ngayCap) {
+                enqueueSnackbar("Định dạng ngày không hợp lệ!", { variant: "error" });
+                return;
+              }
+
+              const nhanKhauData = {
+                cmndCccd: cccd,
+                hoTen,
+                ngaySinh, // Date object
+                queQuan,
+                ngayCap
+              };
+
+              console.log("Dữ liệu nhân khẩu từ QR:", nhanKhauData);
+
+              // Tìm trong danh sách hiện có
+              const matched = nhanKhauList.find(nk => nk.cmndCccd === cccd);
+              if (matched) handleViewDetail(matched);
+              else enqueueSnackbar(`Không tìm thấy nhân khẩu với CCCD: ${cccd}`, { variant: 'warning' });
+            })
+            .catch(err => {
+              console.error("Không quét được QR từ hình ảnh:", err);
+              enqueueSnackbar("Không quét được QR từ hình ảnh", { variant: 'error' });
+            })
+            .finally(() => {
+              html5QrCode.clear();
+            });
+    }
+
+    return () => {
+      html5QrCode?.stop().catch(() => {});
+    };
+  }, [qrScannerOpen]);
 
   // Tính tuổi từ ngày sinh
   const calculateAge = (birthDate: string): number => {
@@ -190,16 +267,23 @@ export default function NhanKhauPage() {
       enqueueSnackbar('Thêm nhân khẩu thành công', { variant: 'success' });
       setFormOpen(false);
       loadNhanKhauData(); // Reload data
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating nhan khau:', error);
-      enqueueSnackbar('Không thể thêm nhân khẩu', { variant: 'error' });
+
+      // Xử lý lỗi từ backend
+      if (error.response?.data?.error) {
+        enqueueSnackbar(error.response.data.error, { variant: 'error' });
+      } else {
+        enqueueSnackbar('Không thể thêm nhân khẩu', { variant: 'error' });
+      }
     }
   };
+
 
   // Xử lý cập nhật nhân khẩu
   const handleUpdateNhanKhau = async (data: NhanKhauFormValues) => {
     if (!selectedNhanKhau) return;
-    
+
     try {
       await updateNhanKhauManagement(selectedNhanKhau.id, data);
       enqueueSnackbar('Cập nhật nhân khẩu thành công', { variant: 'success' });
@@ -216,7 +300,7 @@ export default function NhanKhauPage() {
   // Xử lý xóa nhân khẩu
   const handleDeleteNhanKhau = async () => {
     if (!selectedNhanKhau) return;
-    
+
     try {
       await deleteNhanKhauManagement(selectedNhanKhau.id);
       enqueueSnackbar('Xóa nhân khẩu thành công', { variant: 'success' });
@@ -239,7 +323,12 @@ export default function NhanKhauPage() {
   // Xử lý mở form chỉnh sửa
   const handleOpenEditForm = (nhanKhau: NhanKhau) => {
     setSelectedNhanKhau(nhanKhau);
-    setEditingNhanKhau(nhanKhau as NhanKhauFormValues);
+    // Đảm bảo maHoKhau được map đúng từ dữ liệu nhân khẩu
+    const formData: NhanKhauFormValues = {
+      ...nhanKhau,
+      maHoKhau: nhanKhau.maHoKhau || '', // Đảm bảo maHoKhau có giá trị
+    };
+    setEditingNhanKhau(formData);
     setFormOpen(true);
   };
 
@@ -339,6 +428,12 @@ export default function NhanKhauPage() {
             Xuất PDF
           </Button>
           <Button
+            variant="outlined"
+            onClick={() => setQrScannerOpen(!qrScannerOpen)}
+          >
+            {qrScannerOpen ? 'Đóng QR Scanner' : 'Quét CCCD'}
+          </Button>
+          <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={handleOpenAddForm}
@@ -346,6 +441,11 @@ export default function NhanKhauPage() {
             Thêm Nhân khẩu
           </Button>
         </Stack>
+      </Box>
+      <Box sx={{ mb: 3 }}>
+        {qrScannerOpen && (
+          <Box id="qr-reader" sx={{ width: '100%', maxWidth: 400, mx: 'auto' }} />
+        )}
       </Box>
 
       {/* Thanh tìm kiếm */}
@@ -492,7 +592,7 @@ export default function NhanKhauPage() {
                 {nhanKhauList.map((nhanKhau, index) => (
                   <TableRow key={nhanKhau.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                     <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-                    <TableCell sx={{ 
+                    <TableCell sx={{
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap'
@@ -516,7 +616,7 @@ export default function NhanKhauPage() {
                       />
                     </TableCell>
                     <TableCell sx={{ fontSize: '0.85rem' }}>{nhanKhau.cmndCccd || 'N/A'}</TableCell>
-                    <TableCell sx={{ 
+                    <TableCell sx={{
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap'
@@ -607,6 +707,7 @@ export default function NhanKhauPage() {
         }}
         onSubmit={editingNhanKhau ? handleUpdateNhanKhau : handleAddNhanKhau}
         initialData={editingNhanKhau}
+        showMaHoKhauField={true} // Hiển thị ô nhập mã hộ khẩu cho trang quản lý nhân khẩu
       />
 
       {/* Modal chi tiết nhân khẩu */}
