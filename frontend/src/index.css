@@ -24,10 +24,18 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  padding: 0;
+  width: 100%;
+  height: 100vh;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  /* Cố định scrollbar để tránh layout shift */
+  scrollbar-gutter: stable;
+}
+
+/* Đảm bảo tất cả elements sử dụng border-box */
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
 h1 {

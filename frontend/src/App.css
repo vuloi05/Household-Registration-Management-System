@@ -1,8 +1,21 @@
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100%;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  overflow-x: hidden;
+  /* Đảm bảo layout không bị shift */
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Cố định layout cho toàn bộ ứng dụng */
+html {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
 }
 
 .logo {

@@ -13,12 +13,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         component="main"
         sx={{
           flexGrow: 1,
+          width: '100%',
+          maxWidth: '100%',
           bgcolor: 'background.default',
           p: 3,            // thêm padding 3 (khoảng 24px) cho nội dung
           mt: '72px',      // đẩy xuống cách header khoảng 8px (64 + 8)
           ml: '8px',       // cách sidebar một chút
           minHeight: '100vh',
           borderRadius: '12px', // tuỳ chọn: bo góc nhẹ cho đẹp
+          boxSizing: 'border-box', // đảm bảo padding được tính trong width
         }}
       >
         {children}

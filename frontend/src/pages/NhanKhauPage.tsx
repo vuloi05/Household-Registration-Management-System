@@ -2,8 +2,6 @@
 import { useState, useEffect } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   TextField,
   Button,
@@ -317,248 +315,258 @@ export default function NhanKhauPage() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Card>
-        <CardContent>
-          {/* Header */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h5" component="h1">
-              Quản lý Nhân khẩu
-            </Typography>
-            <Stack direction="row" spacing={2}>
+    <Box sx={{ width: '100%', maxWidth: '100%' }}>
+      {/* Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, width: '100%' }}>
+        <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+          Quản lý Nhân khẩu
+        </Typography>
+        <Stack direction="row" spacing={2}>
+          <Button
+            variant="outlined"
+            startIcon={<FileDownloadIcon />}
+            onClick={handleExportExcel}
+            disabled={totalItems === 0}
+          >
+            Xuất Excel
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<FileDownloadIcon />}
+            onClick={handleExportPDF}
+            disabled={totalItems === 0}
+          >
+            Xuất PDF
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleOpenAddForm}
+          >
+            Thêm Nhân khẩu
+          </Button>
+        </Stack>
+      </Box>
+
+      {/* Thanh tìm kiếm */}
+      <Box sx={{ mb: 3, width: '100%' }}>
+        <TextField
+          fullWidth
+          placeholder="Tìm kiếm theo họ tên, CCCD, nghề nghiệp, mã hộ khẩu, ngày sinh..."
+          value={searchQuery}
+          onChange={(e) => handleSearchChange(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+            endAdornment: searchQuery && (
+              <InputAdornment position="end">
+                <IconButton size="small" onClick={() => handleSearchChange('')}>
+                  <ClearIcon />
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+          helperText="Bạn có thể nhập cả Họ tên và CCCD để tìm kiếm : Nguyễn Mạnh Tí 023456789"
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+            }
+          }}
+        />
+      </Box>
+
+      {/* Nút hiển thị/ẩn bộ lọc */}
+      <Box sx={{ mb: 2 }}>
+        <Button
+          startIcon={<FilterListIcon />}
+          onClick={() => setShowFilters(!showFilters)}
+          variant="outlined"
+          size="small"
+        >
+          {showFilters ? 'Ẩn bộ lọc' : 'Hiển thị bộ lọc'}
+        </Button>
+      </Box>
+
+      {/* Bộ lọc */}
+      {showFilters && (
+        <Paper sx={{ p: 2, mb: 3, bgcolor: 'background.default' }}>
+          <Stack spacing={2}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Độ tuổi</InputLabel>
+                <Select
+                  value={ageFilter}
+                  label="Độ tuổi"
+                  onChange={(e) => handleAgeFilterChange(e.target.value)}
+                >
+                  <MenuItem value="all">Tất cả</MenuItem>
+                  <MenuItem value="under18">Dưới 18 tuổi</MenuItem>
+                  <MenuItem value="18-35">18-35 tuổi</MenuItem>
+                  <MenuItem value="36-60">36-60 tuổi</MenuItem>
+                  <MenuItem value="over60">Trên 60 tuổi</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth size="small">
+                <InputLabel>Giới tính</InputLabel>
+                <Select
+                  value={genderFilter}
+                  label="Giới tính"
+                  onChange={(e) => handleGenderFilterChange(e.target.value)}
+                >
+                  <MenuItem value="all">Tất cả</MenuItem>
+                  <MenuItem value="Nam">Nam</MenuItem>
+                  <MenuItem value="Nữ">Nữ</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth size="small">
+                <InputLabel>Quê quán</InputLabel>
+                <Select
+                  value={locationFilter}
+                  label="Quê quán"
+                  onChange={(e) => handleLocationFilterChange(e.target.value)}
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        maxHeight: 300,
+                        width: 'auto',
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem value="all">Tất cả</MenuItem>
+                  {vietnamProvinces.map((province) => (
+                    <MenuItem key={province} value={province}>
+                      {province}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
               <Button
+                fullWidth
                 variant="outlined"
-                startIcon={<FileDownloadIcon />}
-                onClick={handleExportExcel}
-                disabled={totalItems === 0}
+                startIcon={<ClearIcon />}
+                onClick={handleClearFilters}
+                sx={{ minWidth: { sm: '150px' } }}
               >
-                Xuất Excel
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<FileDownloadIcon />}
-                onClick={handleExportPDF}
-                disabled={totalItems === 0}
-              >
-                Xuất PDF
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleOpenAddForm}
-              >
-                Thêm Nhân khẩu
+                Xóa bộ lọc
               </Button>
             </Stack>
+          </Stack>
+        </Paper>
+      )}
+
+      {/* Kết quả tìm kiếm */}
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="body2" color="text.secondary">
+          Tìm thấy <strong>{totalItems}</strong> nhân khẩu
+        </Typography>
+      </Box>
+
+      {/* Bảng dữ liệu */}
+      <Paper sx={{ borderRadius: 2, p: 2, width: '100%' }}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+            <CircularProgress />
           </Box>
-
-          {/* Thanh tìm kiếm */}
-          <Box sx={{ mb: 3 }}>
-            <TextField
-              fullWidth
-              placeholder="Tìm kiếm theo họ tên, CCCD, nghề nghiệp, mã hộ khẩu, ngày sinh..."
-              value={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-                endAdornment: searchQuery && (
-                  <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => handleSearchChange('')}>
-                      <ClearIcon />
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              helperText="Bạn có thể nhập cả Họ tên và CCCD để tìm kiếm : Nguyễn Mạnh Tí 023456789"
-            />
-          </Box>
-
-          {/* Nút hiển thị/ẩn bộ lọc */}
-          <Box sx={{ mb: 2 }}>
-            <Button
-              startIcon={<FilterListIcon />}
-              onClick={() => setShowFilters(!showFilters)}
-              variant="outlined"
-              size="small"
-            >
-              {showFilters ? 'Ẩn bộ lọc' : 'Hiển thị bộ lọc'}
-            </Button>
-          </Box>
-
-          {/* Bộ lọc */}
-          {showFilters && (
-            <Paper sx={{ p: 2, mb: 3, bgcolor: 'background.default' }}>
-              <Stack spacing={2}>
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Độ tuổi</InputLabel>
-                    <Select
-                      value={ageFilter}
-                      label="Độ tuổi"
-                      onChange={(e) => handleAgeFilterChange(e.target.value)}
-                    >
-                      <MenuItem value="all">Tất cả</MenuItem>
-                      <MenuItem value="under18">Dưới 18 tuổi</MenuItem>
-                      <MenuItem value="18-35">18-35 tuổi</MenuItem>
-                      <MenuItem value="36-60">36-60 tuổi</MenuItem>
-                      <MenuItem value="over60">Trên 60 tuổi</MenuItem>
-                    </Select>
-                  </FormControl>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Giới tính</InputLabel>
-                    <Select
-                      value={genderFilter}
-                      label="Giới tính"
-                      onChange={(e) => handleGenderFilterChange(e.target.value)}
-                    >
-                      <MenuItem value="all">Tất cả</MenuItem>
-                      <MenuItem value="Nam">Nam</MenuItem>
-                      <MenuItem value="Nữ">Nữ</MenuItem>
-                    </Select>
-                  </FormControl>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Quê quán</InputLabel>
-                    <Select
-                      value={locationFilter}
-                      label="Quê quán"
-                      onChange={(e) => handleLocationFilterChange(e.target.value)}
-                    >
-                      <MenuItem value="all">Tất cả</MenuItem>
-                      {vietnamProvinces.map((province) => (
-                        <MenuItem key={province} value={province}>
-                          {province}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    startIcon={<ClearIcon />}
-                    onClick={handleClearFilters}
-                    sx={{ minWidth: { sm: '150px' } }}
-                  >
-                    Xóa bộ lọc
-                  </Button>
-                </Stack>
-              </Stack>
-            </Paper>
-          )}
-
-          {/* Kết quả tìm kiếm */}
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              Tìm thấy <strong>{totalItems}</strong> nhân khẩu
-            </Typography>
-          </Box>
-
-          {/* Bảng dữ liệu */}
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <TableContainer>
-            <Table size="small">
+        ) : (
+          <TableContainer sx={{ width: '100%' }}>
+            <Table sx={{ width: '100%', tableLayout: 'fixed' }} size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell width="50">STT</TableCell>
-                  <TableCell width="180">Họ và Tên</TableCell>
-                  <TableCell width="110">Ngày sinh</TableCell>
-                  <TableCell width="60">Tuổi</TableCell>
-                  <TableCell width="90">Giới tính</TableCell>
-                  <TableCell width="120">CCCD</TableCell>
-                  <TableCell width="140">Nghề nghiệp</TableCell>
-                  <TableCell width="110">Quan hệ</TableCell>
-                  <TableCell width="100">Mã HK</TableCell>
-                  <TableCell width="140" align="center">Thao tác</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '5%' }}>STT</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '18%' }}>Họ và Tên</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '11%' }}>Ngày sinh</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '6%' }}>Tuổi</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '9%' }}>Giới tính</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '12%' }}>CCCD</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>Nghề nghiệp</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '11%' }}>Quan hệ</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '10%' }}>Mã HK</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold', width: '14%' }}>Thao tác</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {nhanKhauList.map((nhanKhau, index) => (
-                  <TableRow key={nhanKhau.id} hover>
-                      <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-                      <TableCell sx={{ 
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        maxWidth: 180
-                      }}>
-                        <Tooltip title={nhanKhau.hoTen}>
-                          <Typography variant="body2" fontWeight={600} noWrap>
-                            {nhanKhau.hoTen}
-                          </Typography>
+                  <TableRow key={nhanKhau.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                    <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+                    <TableCell sx={{ 
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      <Tooltip title={nhanKhau.hoTen}>
+                        <Typography variant="body2" fontWeight={600} noWrap>
+                          {nhanKhau.hoTen}
+                        </Typography>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell sx={{ fontSize: '0.85rem' }}>
+                      {new Date(nhanKhau.ngaySinh).toLocaleDateString('vi-VN')}
+                    </TableCell>
+                    <TableCell>{calculateAge(nhanKhau.ngaySinh)}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={nhanKhau.gioiTinh || 'N/A'}
+                        size="small"
+                        color={nhanKhau.gioiTinh === 'Nam' ? 'primary' : 'secondary'}
+                        sx={{ fontSize: '0.75rem', height: 24 }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ fontSize: '0.85rem' }}>{nhanKhau.cmndCccd || 'N/A'}</TableCell>
+                    <TableCell sx={{ 
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      <Tooltip title={nhanKhau.ngheNghiep || 'N/A'}>
+                        <span>{nhanKhau.ngheNghiep || 'N/A'}</span>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={nhanKhau.quanHeVoiChuHo}
+                        size="small"
+                        variant="outlined"
+                        sx={{ fontSize: '0.7rem', height: 24 }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ fontSize: '0.85rem' }}>{nhanKhau.maHoKhau || 'N/A'}</TableCell>
+                    <TableCell align="center">
+                      <Stack direction="row" spacing={0.5} justifyContent="center">
+                        <Tooltip title="Xem chi tiết">
+                          <IconButton
+                            size="small"
+                            color="info"
+                            onClick={() => handleViewDetail(nhanKhau)}
+                          >
+                            <VisibilityIcon fontSize="small" />
+                          </IconButton>
                         </Tooltip>
-                      </TableCell>
-                      <TableCell sx={{ fontSize: '0.85rem' }}>
-                        {new Date(nhanKhau.ngaySinh).toLocaleDateString('vi-VN')}
-                      </TableCell>
-                      <TableCell>{calculateAge(nhanKhau.ngaySinh)}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={nhanKhau.gioiTinh || 'N/A'}
-                          size="small"
-                          color={nhanKhau.gioiTinh === 'Nam' ? 'primary' : 'secondary'}
-                          sx={{ fontSize: '0.75rem', height: 24 }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ fontSize: '0.85rem' }}>{nhanKhau.cmndCccd || 'N/A'}</TableCell>
-                      <TableCell sx={{ 
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        maxWidth: 140
-                      }}>
-                        <Tooltip title={nhanKhau.ngheNghiep || 'N/A'}>
-                          <span>{nhanKhau.ngheNghiep || 'N/A'}</span>
+                        <Tooltip title="Chỉnh sửa">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleOpenEditForm(nhanKhau)}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
                         </Tooltip>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={nhanKhau.quanHeVoiChuHo}
-                          size="small"
-                          variant="outlined"
-                          sx={{ fontSize: '0.7rem', height: 24 }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ fontSize: '0.85rem' }}>{nhanKhau.maHoKhau || 'N/A'}</TableCell>
-                      <TableCell align="center">
-                        <Stack direction="row" spacing={0.5} justifyContent="center">
-                          <Tooltip title="Xem chi tiết">
-                            <IconButton
-                              size="small"
-                              color="info"
-                              onClick={() => handleViewDetail(nhanKhau)}
-                            >
-                              <VisibilityIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Chỉnh sửa">
-                            <IconButton
-                              size="small"
-                              color="primary"
-                              onClick={() => handleOpenEditForm(nhanKhau)}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Xóa">
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleOpenDeleteDialog(nhanKhau)}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        <Tooltip title="Xóa">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleOpenDeleteDialog(nhanKhau)}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))}
                 {nhanKhauList.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
@@ -571,24 +579,23 @@ export default function NhanKhauPage() {
               </TableBody>
             </Table>
           </TableContainer>
-          )}
+        )}
+      </Paper>
 
-          {/* Phân trang */}
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 25, 50]}
-            component="div"
-            count={totalItems}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            labelRowsPerPage="Số hàng mỗi trang:"
-            labelDisplayedRows={({ from, to, count }) =>
-              `${from}-${to} của ${count}`
-            }
-          />
-        </CardContent>
-      </Card>
+      {/* Phân trang */}
+      <TablePagination
+        rowsPerPageOptions={[5, 10, 25, 50]}
+        component="div"
+        count={totalItems}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        labelRowsPerPage="Số hàng mỗi trang:"
+        labelDisplayedRows={({ from, to, count }) =>
+          `${from}-${to} của ${count}`
+        }
+      />
 
       {/* Form thêm/sửa nhân khẩu */}
       <NhanKhauForm
