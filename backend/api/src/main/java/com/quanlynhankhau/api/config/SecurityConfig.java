@@ -42,6 +42,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Cho phép API đăng nhập
                         .requestMatchers("/api/auth/**").permitAll()
+                        
+                        // Cho phép API mobile công khai (bao gồm auth và household/person)
+                        .requestMatchers("/api/mobile/**").permitAll()
 
                         // Cho phép các request OPTIONS (preflight) của CORS
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()

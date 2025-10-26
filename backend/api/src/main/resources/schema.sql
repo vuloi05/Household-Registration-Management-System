@@ -41,6 +41,7 @@ CREATE TABLE nhan_khau (
     dia_chi_truoc_khi_chuyen_den  VARCHAR(255),
     quan_he_voi_chu_ho            VARCHAR(255),
     ho_khau_id                    BIGINT, -- Khóa ngoại, có thể null ban đầu
+    password                      VARCHAR(255), -- Mật khẩu để đăng nhập mobile app
     
     -- Ràng buộc khóa ngoại: một nhân khẩu thuộc về một hộ khẩu
     CONSTRAINT fk_nhankhau_hokhau FOREIGN KEY (ho_khau_id) REFERENCES ho_khau(id)

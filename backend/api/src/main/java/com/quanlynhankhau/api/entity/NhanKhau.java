@@ -48,6 +48,9 @@ public class NhanKhau {
 
     private String quanHeVoiChuHo;
 
+    // Mật khẩu để đăng nhập mobile app (tất cả đều là 123456)
+    private String password;
+
     // --- MỐI QUAN HỆ MANY-TO-ONE ---
     /**
      * @JsonBackReference: Đánh dấu đây là "phía con" của mối quan hệ.
