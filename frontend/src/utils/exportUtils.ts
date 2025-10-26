@@ -2,6 +2,7 @@
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { setupVietnameseFont } from './fonts/setupFonts';
 
 // Interface cho nhân khẩu
 interface NhanKhau {
@@ -101,9 +102,9 @@ export const exportToExcel = (data: NhanKhau[], filename: string = 'Danh_sach_nh
 };
 
 /**
- * Xuất dữ liệu ra file PDF
+ * Xuất dữ liệu ra file PDF với font tiếng Việt có dấu
  */
-export const exportToPDF = (data: NhanKhau[], title: string = 'Danh sach Nhan khau') => {
+export const exportToPDF = (data: NhanKhau[], title: string = 'Danh sách Nhân khẩu') => {
   // Khởi tạo jsPDF với orientation landscape để có nhiều không gian
   const doc = new jsPDF({
     orientation: 'landscape',
@@ -111,27 +112,32 @@ export const exportToPDF = (data: NhanKhau[], title: string = 'Danh sach Nhan kh
     format: 'a4'
   });
 
-  // Tiêu đề - sử dụng font cơ bản không dấu
+  // Thêm font tiếng Việt
+  setupVietnameseFont(doc);
+
+  // Tiêu đề - GIỮ NGUYÊN TIẾNG VIỆT CÓ DẤU
   doc.setFontSize(16);
-  doc.text('DANH SACH NHAN KHAU', doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+  doc.setFont('Roboto', 'bold');
+  doc.text('DANH SÁCH NHÂN KHẨU', doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
   
   // Ngày xuất
   doc.setFontSize(10);
+  doc.setFont('Roboto', 'normal');
   const today = new Date().toLocaleDateString('vi-VN');
-  doc.text(`Ngay xuat: ${today}`, doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
-  doc.text(`Tong so: ${data.length} nguoi`, doc.internal.pageSize.getWidth() / 2, 27, { align: 'center' });
+  doc.text(`Ngày xuất: ${today}`, doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
+  doc.text(`Tổng số: ${data.length} người`, doc.internal.pageSize.getWidth() / 2, 27, { align: 'center' });
 
-  // Chuẩn bị dữ liệu cho bảng - chuyển tất cả chữ có dấu
+  // Chuẩn bị dữ liệu cho bảng - GIỮ NGUYÊN TIẾNG VIỆT CÓ DẤU
   const tableData = data.map((nhanKhau, index) => [
     (index + 1).toString(),
-    removeVietnameseTones(nhanKhau.hoTen),
+    nhanKhau.hoTen, // Giữ nguyên tiếng Việt
     formatDate(nhanKhau.ngaySinh),
     calculateAge(nhanKhau.ngaySinh).toString(),
-    nhanKhau.gioiTinh ? removeVietnameseTones(nhanKhau.gioiTinh) : '',
+    nhanKhau.gioiTinh || '', // Giữ nguyên tiếng Việt
     nhanKhau.cmndCccd || '',
-    nhanKhau.ngheNghiep ? removeVietnameseTones(nhanKhau.ngheNghiep) : '',
-    nhanKhau.queQuan ? removeVietnameseTones(nhanKhau.queQuan) : '',
-    removeVietnameseTones(nhanKhau.quanHeVoiChuHo),
+    nhanKhau.ngheNghiep || '', // Giữ nguyên tiếng Việt
+    nhanKhau.queQuan || '', // Giữ nguyên tiếng Việt
+    nhanKhau.quanHeVoiChuHo, // Giữ nguyên tiếng Việt
     nhanKhau.maHoKhau || '',
   ]);
 
@@ -141,20 +147,20 @@ export const exportToPDF = (data: NhanKhau[], title: string = 'Danh sach Nhan kh
     head: [
       [
         'STT',
-        'Ho va Ten',
-        'Ngay sinh',
-        'Tuoi',
-        'Gioi tinh',
+        'Họ và Tên',
+        'Ngày sinh',
+        'Tuổi',
+        'Giới tính',
         'CCCD',
-        'Nghe nghiep',
-        'Que quan',
-        'Quan he',
-        'Ma HK',
+        'Nghề nghiệp',
+        'Quê quán',
+        'Quan hệ',
+        'Mã HK',
       ],
     ],
     body: tableData,
     styles: {
-      font: 'helvetica',
+      font: 'Roboto', // Sử dụng font Roboto
       fontSize: 8,
       cellPadding: 2,
     },
@@ -185,14 +191,4 @@ export const exportToPDF = (data: NhanKhau[], title: string = 'Danh sach Nhan kh
   // Xuất file
   const timestamp = new Date().toISOString().split('T')[0];
   doc.save(`${title.replace(/\s+/g, '_')}_${timestamp}.pdf`);
-};
-
-// Hàm bỏ dấu tiếng Việt
-const removeVietnameseTones = (str: string): string => {
-  if (!str) return '';
-  
-  str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  str = str.replace(/đ/g, 'd').replace(/Đ/g, 'D');
-  
-  return str;
 };

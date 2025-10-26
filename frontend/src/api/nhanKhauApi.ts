@@ -99,7 +99,7 @@ export const searchNhanKhauByCmndCccd = async (cmndCccd: string): Promise<NhanKh
     try {
         const response = await axiosClient.get(`/nhankhau/search?cmndCccd=${cmndCccd}`);
         return response.data;
-    } catch (error) {
+    } catch (error: any) {
         // Nếu không tìm thấy (404), trả về null
         if (error.response?.status === 404) {
             return null;
@@ -131,7 +131,7 @@ export const checkHouseholdInfo = async (cmndCccd: string): Promise<HouseholdChe
     try {
         const response = await axiosClient.get(`/nhankhau/check-household?cmndCccd=${cmndCccd}`);
         return response.data;
-    } catch (error) {
+    } catch (error: any) {
         // Nếu không tìm thấy (404), trả về null
         if (error.response?.status === 404) {
             return null;
