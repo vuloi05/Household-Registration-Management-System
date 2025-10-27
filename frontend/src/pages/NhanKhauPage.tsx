@@ -23,6 +23,7 @@ import {
   Tooltip,
   Paper,
   CircularProgress,
+  Autocomplete,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -181,6 +182,7 @@ export default function NhanKhauPage() {
     'Vĩnh Long',
     'Vĩnh Phúc',
     'Yên Bái',
+    'Hà Tây',
   ];
 
   // Xử lý thêm nhân khẩu
@@ -433,29 +435,30 @@ export default function NhanKhauPage() {
                   <MenuItem value="Nữ">Nữ</MenuItem>
                 </Select>
               </FormControl>
-              <FormControl fullWidth size="small">
-                <InputLabel>Quê quán</InputLabel>
-                <Select
-                  value={locationFilter}
-                  label="Quê quán"
-                  onChange={(e) => handleLocationFilterChange(e.target.value)}
-                  MenuProps={{
-                    PaperProps: {
-                      style: {
-                        maxHeight: 300,
-                        width: 'auto',
-                      },
-                    },
-                  }}
-                >
-                  <MenuItem value="all">Tất cả</MenuItem>
-                  {vietnamProvinces.map((province) => (
-                    <MenuItem key={province} value={province}>
-                      {province}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Autocomplete
+                fullWidth
+                size="small"
+                options={['all', ...vietnamProvinces]}
+                value={locationFilter}
+                onChange={(_event, newValue) => {
+                  handleLocationFilterChange(newValue || 'all');
+                }}
+                getOptionLabel={(option) => option === 'all' ? 'Tất cả' : option}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Quê quán"
+                    placeholder="Chọn hoặc nhập tỉnh/thành phố"
+                  />
+                )}
+                isOptionEqualToValue={(option, value) => option === value}
+                autoHighlight
+                ListboxProps={{
+                  style: {
+                    maxHeight: 300,
+                  },
+                }}
+              />
               <Button
                 fullWidth
                 variant="outlined"
