@@ -185,16 +185,16 @@ public class NhanKhauManagementService {
     }
 
     /**
-     * Lọc theo địa chỉ.
+     * Lọc theo quê quán.
      */
     private boolean applyLocationFilter(NhanKhau nhanKhau, String locationFilter) {
-        if (locationFilter == null || locationFilter.isEmpty()) {
+        if (locationFilter == null || locationFilter.isEmpty() || locationFilter.equals("all")) {
             return true;
         }
 
-        // Lọc theo địa chỉ hộ khẩu
-        if (nhanKhau.getHoKhau() != null && nhanKhau.getHoKhau().getDiaChi() != null) {
-            return nhanKhau.getHoKhau().getDiaChi().toLowerCase()
+        // Lọc theo quê quán của nhân khẩu
+        if (nhanKhau.getQueQuan() != null) {
+            return nhanKhau.getQueQuan().toLowerCase()
                     .contains(locationFilter.toLowerCase());
         }
 
