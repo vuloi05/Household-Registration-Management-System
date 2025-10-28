@@ -34,11 +34,13 @@ import {
   FilterList as FilterListIcon,
   Clear as ClearIcon,
   FileDownload as FileDownloadIcon,
+  QrCodeScanner as QrCodeScannerIcon,
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import NhanKhauForm from '../components/forms/NhanKhauForm';
 import NhanKhauDetailModal from '../components/details/NhanKhauDetailModal';
 import ConfirmationDialog from '../components/shared/ConfirmationDialog';
+import QRScannerModal from '../components/shared/QRScannerModal';
 import type { NhanKhauFormValues } from '../types/nhanKhau';
 import { exportToExcel, exportToPDF } from '../utils/exportUtils';
 import {
@@ -51,23 +53,26 @@ import {
 
 export default function NhanKhauPage() {
   const { enqueueSnackbar } = useSnackbar();
-  
+
+  // State mở/tắt QR scanner modal
+  const [qrScannerModalOpen, setQrScannerModalOpen] = useState(false);
+
   // State cho dữ liệu nhân khẩu
   const [nhanKhauList, setNhanKhauList] = useState<NhanKhau[]>([]);
   const [loading, setLoading] = useState(false);
   const [totalItems, setTotalItems] = useState(0);
-  
+
   // State cho tìm kiếm và lọc
   const [searchQuery, setSearchQuery] = useState('');
   const [ageFilter, setAgeFilter] = useState('all');
   const [genderFilter, setGenderFilter] = useState('all');
   const [locationFilter, setLocationFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // State cho phân trang
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  
+
   // State cho form và modal
   const [formOpen, setFormOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -87,7 +92,7 @@ export default function NhanKhauPage() {
         genderFilter: genderFilter !== 'all' ? genderFilter : undefined,
         locationFilter: locationFilter !== 'all' ? locationFilter : undefined,
       });
-      
+
       setNhanKhauList(response.data);
       setTotalItems(response.totalItems);
     } catch (error) {
@@ -102,6 +107,54 @@ export default function NhanKhauPage() {
     loadNhanKhauData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, rowsPerPage, searchQuery, ageFilter, genderFilter, locationFilter]);
+
+  // Xử lý kết quả quét QR
+  const handleQRScanSuccess = (decodedText: string) => {
+    // Tách chuỗi theo dấu |
+    const parts = decodedText.split("|");
+    if (parts.length < 5) {
+      enqueueSnackbar("Dữ liệu QR không hợp lệ!", { variant: "error" });
+      return;
+    }
+
+    const [cccd, hoTen, ngaySinhStr, queQuan, ngayCapStr] = parts;
+
+    // Hàm parse ddMMyyyy thành đối tượng Date
+    const parseDate = (str: string) => {
+      if (str.length !== 8) return null;
+      const day = parseInt(str.substring(0, 2));
+      const month = parseInt(str.substring(2, 4)) - 1; // Tháng trong JS bắt đầu từ 0
+      const year = parseInt(str.substring(4, 8));
+      return new Date(year, month, day);
+    };
+
+    const ngaySinh = parseDate(ngaySinhStr);
+    const ngayCap = parseDate(ngayCapStr);
+
+    if (!ngaySinh || !ngayCap) {
+      enqueueSnackbar("Định dạng ngày không hợp lệ!", { variant: "error" });
+      return;
+    }
+
+    const nhanKhauData: Partial<NhanKhauFormValues> = {
+      cmndCccd: cccd,
+      hoTen,
+      ngaySinh: ngaySinh.toISOString().split('T')[0], // Convert to string format
+      queQuan,
+      ngayCap: ngayCap.toISOString().split('T')[0] // Convert to string format
+    };
+
+    console.log("Dữ liệu nhân khẩu từ QR:", nhanKhauData);
+
+    // Tìm trong danh sách hiện có
+    const matched = nhanKhauList.find(nk => nk.cmndCccd === cccd);
+    if (matched) {
+      handleViewDetail(matched);
+      enqueueSnackbar(`Đã tìm thấy nhân khẩu: ${hoTen}`, { variant: 'success' });
+    } else {
+      enqueueSnackbar(`Không tìm thấy nhân khẩu với CCCD: ${cccd}`, { variant: 'warning' });
+    }
+  };
 
   // Tính tuổi từ ngày sinh
   const calculateAge = (birthDate: string): number => {
@@ -192,12 +245,17 @@ export default function NhanKhauPage() {
       enqueueSnackbar('Thêm nhân khẩu thành công', { variant: 'success' });
       setFormOpen(false);
       loadNhanKhauData(); // Reload data
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating nhan khau:', error);
       
       // Xử lý lỗi từ backend
-      if (error.response?.data?.error) {
-        enqueueSnackbar(error.response.data.error, { variant: 'error' });
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { error?: string } } };
+        if (axiosError.response?.data?.error) {
+          enqueueSnackbar(axiosError.response.data.error, { variant: 'error' });
+        } else {
+          enqueueSnackbar('Không thể thêm nhân khẩu', { variant: 'error' });
+        }
       } else {
         enqueueSnackbar('Không thể thêm nhân khẩu', { variant: 'error' });
       }
@@ -208,7 +266,7 @@ export default function NhanKhauPage() {
   // Xử lý cập nhật nhân khẩu
   const handleUpdateNhanKhau = async (data: NhanKhauFormValues) => {
     if (!selectedNhanKhau) return;
-    
+
     try {
       await updateNhanKhauManagement(selectedNhanKhau.id, data);
       enqueueSnackbar('Cập nhật nhân khẩu thành công', { variant: 'success' });
@@ -225,7 +283,7 @@ export default function NhanKhauPage() {
   // Xử lý xóa nhân khẩu
   const handleDeleteNhanKhau = async () => {
     if (!selectedNhanKhau) return;
-    
+
     try {
       await deleteNhanKhauManagement(selectedNhanKhau.id);
       enqueueSnackbar('Xóa nhân khẩu thành công', { variant: 'success' });
@@ -252,6 +310,8 @@ export default function NhanKhauPage() {
     const formData: NhanKhauFormValues = {
       ...nhanKhau,
       maHoKhau: nhanKhau.maHoKhau || '', // Đảm bảo maHoKhau có giá trị
+      ngayCap: nhanKhau.ngayCap || '', // Đảm bảo ngayCap có giá trị
+      noiCap: nhanKhau.noiCap || '', // Đảm bảo noiCap có giá trị
     };
     setEditingNhanKhau(formData);
     setFormOpen(true);
@@ -375,11 +435,23 @@ export default function NhanKhauPage() {
                 <SearchIcon />
               </InputAdornment>
             ),
-            endAdornment: searchQuery && (
+            endAdornment: (
               <InputAdornment position="end">
-                <IconButton size="small" onClick={() => handleSearchChange('')}>
-                  <ClearIcon />
-                </IconButton>
+                <Stack direction="row" spacing={0.5}>
+                  {searchQuery && (
+                    <IconButton size="small" onClick={() => handleSearchChange('')}>
+                      <ClearIcon />
+                    </IconButton>
+                  )}
+                  <Tooltip title="Quét CCCD">
+                    <IconButton 
+                      size="small" 
+                      onClick={() => setQrScannerModalOpen(true)}
+                    >
+                      <QrCodeScannerIcon />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
               </InputAdornment>
             ),
           }}
@@ -507,7 +579,7 @@ export default function NhanKhauPage() {
                 {nhanKhauList.map((nhanKhau, index) => (
                   <TableRow key={nhanKhau.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                     <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-                    <TableCell sx={{ 
+                    <TableCell sx={{
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap'
@@ -531,7 +603,7 @@ export default function NhanKhauPage() {
                       />
                     </TableCell>
                     <TableCell sx={{ fontSize: '0.85rem' }}>{nhanKhau.cmndCccd || 'N/A'}</TableCell>
-                    <TableCell sx={{ 
+                    <TableCell sx={{
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap'
@@ -645,6 +717,13 @@ export default function NhanKhauPage() {
           setDeleteDialogOpen(false);
           setSelectedNhanKhau(null);
         }}
+      />
+
+      {/* QR Scanner Modal */}
+      <QRScannerModal
+        open={qrScannerModalOpen}
+        onClose={() => setQrScannerModalOpen(false)}
+        onScanSuccess={handleQRScanSuccess}
       />
     </Box>
   );
