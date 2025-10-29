@@ -88,8 +88,8 @@ Bạn cần mở 3 cửa sổ terminal riêng biệt để chạy song song back
         ```
     *   Frontend sẽ khởi động và chạy tại `http://localhost:5173`.
 
-3.  **Chạy AI Agent Server:**
-    *   Mở terminal 3, di chuyển vào thư mục ai-server:
+3.  **Chạy AI Agent Server (local):**
+    *   Mở terminal 3, di chuyển vào thư mục `ai-server`:
         ```bash
         cd ai-server
         ```
@@ -104,11 +104,33 @@ Bạn cần mở 3 cửa sổ terminal riêng biệt để chạy song song back
         ```bash
         pip install -r requirements.txt
         ```
+    *   (Tuỳ chọn) Cấu hình file `.env` để bật ghi dữ liệu lên AWS:
+        ```bash
+        # ai-server/.env
+        PORT=5000
+        DEBUG=True
+        
+        # Ghi dữ liệu chat lên AWS (tuỳ chọn)
+        AWS_REGION=ap-southeast-1
+        AWS_S3_BUCKET=your-s3-bucket-name
+        AWS_DDB_TABLE=ai_agent_conversations
+        ```
+        - Yêu cầu có AWS credentials trên máy: `aws configure` (lưu ở `~/.aws/credentials`).
+        - Khi bật, mỗi tin nhắn/response sẽ ghi vào:
+          - S3: `s3://$AWS_S3_BUCKET/chat-logs/YYYY/MM/DD.ndjson`
+          - DynamoDB: bảng `$AWS_DDB_TABLE` (PK: `pk`, SK: `sk`).
     *   Chạy lệnh:
         ```bash
         python main.py
         ```
     *   AI Server sẽ khởi động và chạy tại `http://localhost:5000`.
+
+4.  **Khai báo URL AI server cho Frontend:**
+    - Tạo file `frontend/.env` (hoặc cập nhật)
+      ```bash
+      VITE_AI_SERVER_URL=http://localhost:5000
+      ```
+    - Frontend sẽ gọi AI server theo biến này. Khi chuyển sang dùng server trên AWS, đổi sang `http(s)://<domain-hoặc-ip-aws>`.
 
 Bây giờ, hãy mở trình duyệt và truy cập vào `http://localhost:5173` để sử dụng ứng dụng. Chatbot AI sẽ xuất hiện ở góc dưới bên phải.
 

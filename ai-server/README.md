@@ -18,10 +18,12 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
-4. Copy `.env.example` thành `.env`:
+4. Copy `.env` mẫu và chỉnh sửa:
 ```bash
-copy .env.example .env  # Windows
-cp .env.example .env   # Linux/Mac
+# Windows
+copy .env.example .env
+# Linux/Mac
+cp .env.example .env
 ```
 
 5. Chạy server:
@@ -30,6 +32,24 @@ python main.py
 ```
 
 Server sẽ chạy tại: http://localhost:5000
+
+## Cấu hình môi trường (.env)
+
+```bash
+# Server
+PORT=5000
+DEBUG=True
+
+# (Tùy chọn) OpenAI API Key
+# OPENAI_API_KEY=your_openai_api_key_here
+
+# (Tùy chọn) AWS để lưu dữ liệu học tập
+AWS_REGION=ap-southeast-1
+AWS_S3_BUCKET=your-s3-bucket-name
+AWS_DDB_TABLE=ai_agent_conversations
+
+# Lưu ý: Cần cấu hình AWS credentials trên máy local (ví dụ ~/.aws/credentials)
+```
 
 ## API Endpoints
 
@@ -56,6 +76,49 @@ Gửi tin nhắn cho chatbot
 }
 ```
 
+## Lưu dữ liệu lên AWS (tự học thụ động)
+
+Khi cấu hình AWS, mỗi tin nhắn sẽ được lưu lên:
+- S3: `s3://$AWS_S3_BUCKET/chat-logs/YYYY/MM/DD.ndjson`
+- DynamoDB: bảng `$AWS_DDB_TABLE` với partition key `pk` và sort key `sk`
+
+### Tạo tài nguyên AWS tối thiểu
+
+1) S3 bucket
+- Tạo bucket (ví dụ: `your-s3-bucket-name`)
+- Bật Block Public Access (mặc định)
+
+2) DynamoDB table
+- Tên: `ai_agent_conversations`
+- Partition key (String): `pk`
+- Sort key (String): `sk`
+- On-demand capacity
+
+3) IAM user/role (máy local dùng profile AWS CLI)
+- Quyền tối thiểu (policy mẫu):
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:ListBucket"],
+      "Resource": [
+        "arn:aws:s3:::your-s3-bucket-name",
+        "arn:aws:s3:::your-s3-bucket-name/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["dynamodb:PutItem"],
+      "Resource": "arn:aws:dynamodb:ap-southeast-1:YOUR_ACCOUNT_ID:table/ai_agent_conversations"
+    }
+  ]
+}
+```
+
+> Gợi ý: cấu hình AWS CLI bằng `aws configure` để lưu credentials ở `~/.aws/credentials`.
+
 ## Tích hợp với AI Models
 
 Để tích hợp AI models như OpenAI, thêm vào file `.env`:
@@ -63,7 +126,7 @@ Gửi tin nhắn cho chatbot
 OPENAI_API_KEY=your_api_key_here
 ```
 
-Và uncomment code trong `process_message()` để sử dụng.
+Và mở rộng `process_message()` để gọi API.
 
 ## Docker (Optional)
 

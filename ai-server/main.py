@@ -7,6 +7,15 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
+import json
+from datetime import datetime
+
+# Optional AWS SDK
+try:
+    import boto3
+    from botocore.exceptions import BotoCoreError, ClientError
+except Exception:  # boto3 optional for local-only mode
+    boto3 = None
 
 # Load environment variables
 load_dotenv()
@@ -18,11 +27,45 @@ CORS(app)  # Enable CORS for frontend
 PORT = int(os.getenv('PORT', 5000))
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
+# AWS Config (optional)
+AWS_REGION = os.getenv('AWS_REGION')
+AWS_S3_BUCKET = os.getenv('AWS_S3_BUCKET')  # where raw chat logs are stored
+AWS_DDB_TABLE = os.getenv('AWS_DDB_TABLE')  # DynamoDB table for structured conversations
+
+# Initialize AWS clients if configured
+s3_client = None
+ddb_client = None
+if boto3 and AWS_REGION and (AWS_S3_BUCKET or AWS_DDB_TABLE):
+    try:
+        s3_client = boto3.client('s3', region_name=AWS_REGION)
+    except Exception:
+        s3_client = None
+    try:
+        ddb_client = boto3.client('dynamodb', region_name=AWS_REGION)
+    except Exception:
+        ddb_client = None
+
 
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
-    return jsonify({"status": "healthy", "service": "AI Agent Server"})
+    return jsonify({
+        "status": "healthy",
+        "service": "AI Agent Server"
+    })
+
+
+@app.route('/health/aws', methods=['GET'])
+def health_aws():
+    """AWS configuration health: indicates whether AWS logging is active."""
+    return jsonify({
+        "boto3_available": bool(boto3),
+        "aws_region": AWS_REGION or "",
+        "s3_bucket": AWS_S3_BUCKET or "",
+        "ddb_table": AWS_DDB_TABLE or "",
+        "s3_enabled": bool(s3_client and AWS_S3_BUCKET),
+        "ddb_enabled": bool(ddb_client and AWS_DDB_TABLE)
+    })
 
 
 @app.route('/chat', methods=['POST'])
@@ -42,6 +85,17 @@ def chat():
         
         # Process the message with AI
         response = process_message(user_message, context)
+
+        # Persist conversation to AWS (optional)
+        persist_chat_event(
+            {
+                "timestamp": get_timestamp(),
+                "message": user_message,
+                "response": response,
+                "context": context,
+                "source": "local-ai-server",
+            }
+        )
         
         return jsonify({
             "success": True,
@@ -162,12 +216,64 @@ Bạn có thể hỏi tôi về bất kỳ tính năng nào của hệ thống. 
 
 def get_timestamp():
     """Get current timestamp"""
-    from datetime import datetime
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
+def persist_chat_event(event: dict) -> None:
+    """Persist a chat event to AWS S3 (raw ndjson) and DynamoDB (structured) if configured.
+    Safe no-op when AWS is not configured.
+    """
+    # S3: append-style by day (object per day). We'll upload as PutObject with newline JSON content (append emulation via get+put is omitted for simplicity).
+    try:
+        if s3_client and AWS_S3_BUCKET:
+            key = f"chat-logs/{datetime.now().strftime('%Y/%m/%d')}.ndjson"
+            line = json.dumps(event, ensure_ascii=False) + "\n"
+            # Try to get existing object then append; if not exists, create
+            try:
+                existing = s3_client.get_object(Bucket=AWS_S3_BUCKET, Key=key)
+                body = existing['Body'].read().decode('utf-8') + line
+            except s3_client.exceptions.NoSuchKey:  # type: ignore[attr-defined]
+                body = line
+            except Exception:
+                body = line
+            s3_client.put_object(Bucket=AWS_S3_BUCKET, Key=key, Body=body.encode('utf-8'), ContentType='application/x-ndjson')
+    except (BotoCoreError, ClientError, Exception):
+        pass
+
+    # DynamoDB: write one item per message
+    try:
+        if ddb_client and AWS_DDB_TABLE:
+            ddb_client.put_item(
+                TableName=AWS_DDB_TABLE,
+                Item={
+                    'pk': {'S': f"chat#{datetime.now().strftime('%Y%m%d')}"},
+                    'sk': {'S': f"{datetime.now().strftime('%Y%m%d%H%M%S%f')}"},
+                    'timestamp': {'S': event.get('timestamp', '')},
+                    'message': {'S': event.get('message', '')[:2000]},
+                    'response': {'S': event.get('response', '')[:2000]},
+                    'context': {'S': event.get('context', '')[:1000]},
+                    'source': {'S': event.get('source', 'local-ai-server')},
+                }
+            )
+    except (BotoCoreError, ClientError, Exception):
+        pass
+
+
 if __name__ == '__main__':
-    print(f"🚀 Starting AI Agent Server on port {PORT}")
+    # Avoid non-ASCII characters in Windows consoles that may not support UTF-8
+    print(f"Starting AI Agent Server on port {PORT}")
     print(f"Debug mode: {DEBUG}")
+    # Print concise AWS summary so operators can verify quickly
+    print(
+        "AWS config => boto3:%s region:%s s3:%s ddb:%s | enabled s3:%s ddb:%s"
+        % (
+            bool(boto3),
+            AWS_REGION or "",
+            AWS_S3_BUCKET or "",
+            AWS_DDB_TABLE or "",
+            bool(s3_client and AWS_S3_BUCKET),
+            bool(ddb_client and AWS_DDB_TABLE),
+        )
+    )
     app.run(host='0.0.0.0', port=PORT, debug=DEBUG)
 
