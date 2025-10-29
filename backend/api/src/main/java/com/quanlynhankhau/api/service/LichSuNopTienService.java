@@ -2,12 +2,16 @@
 
 package com.quanlynhankhau.api.service;
 
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.quanlynhankhau.api.dto.HoKhauResponseDTO;
 import com.quanlynhankhau.api.dto.LichSuNopTienResponseDTO;
 import com.quanlynhankhau.api.dto.NhanKhauBasicDTO;
-import com.quanlynhankhau.api.dto.HoKhauResponseDTO;
 import com.quanlynhankhau.api.dto.NopTienRequestDTO;
 import com.quanlynhankhau.api.dto.ThongKeKhoanThuDTO;
 import com.quanlynhankhau.api.entity.HoKhau;
@@ -16,10 +20,6 @@ import com.quanlynhankhau.api.entity.LichSuNopTien;
 import com.quanlynhankhau.api.repository.HoKhauRepository;
 import com.quanlynhankhau.api.repository.KhoanThuRepository;
 import com.quanlynhankhau.api.repository.LichSuNopTienRepository;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class LichSuNopTienService {
@@ -126,4 +126,5 @@ public class LichSuNopTienService {
         // Trả về một DTO chứa tất cả các thông tin đã tính toán
         return new ThongKeKhoanThuDTO(soHoDaNop, tongSoHo, tongSoTien);
     }
+
 }
