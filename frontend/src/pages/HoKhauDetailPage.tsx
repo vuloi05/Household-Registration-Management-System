@@ -204,7 +204,12 @@ export default function HoKhauDetailPage() {
         open={openNhanKhauForm}
         onClose={handleCloseForm}
         onSubmit={handleNhanKhauFormSubmit}
-        initialData={editingNhanKhau}
+        initialData={editingNhanKhau ? {
+          ...editingNhanKhau,
+          ngayCap: editingNhanKhau.ngayCap || '',
+          noiCap: editingNhanKhau.noiCap || '',
+          maHoKhau: editingNhanKhau.maHoKhau || '',
+        } : null}
         showMaHoKhauField={false} // Không hiển thị ô nhập mã hộ khẩu cho trang chi tiết hộ khẩu
       />
       <ConfirmationDialog

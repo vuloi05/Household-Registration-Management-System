@@ -251,7 +251,9 @@ export default function NhanKhauPage() {
     // Đảm bảo maHoKhau được map đúng từ dữ liệu nhân khẩu
     const formData: NhanKhauFormValues = {
       ...nhanKhau,
-      maHoKhau: nhanKhau.maHoKhau || '', // Đảm bảo maHoKhau có giá trị
+      ngayCap: nhanKhau.ngayCap || '',
+      noiCap: nhanKhau.noiCap || '',
+      maHoKhau: nhanKhau.maHoKhau || '',
     };
     setEditingNhanKhau(formData);
     setFormOpen(true);

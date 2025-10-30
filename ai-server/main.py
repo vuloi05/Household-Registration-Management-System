@@ -32,9 +32,18 @@ AWS_REGION = os.getenv('AWS_REGION')
 AWS_S3_BUCKET = os.getenv('AWS_S3_BUCKET')  # where raw chat logs are stored
 AWS_DDB_TABLE = os.getenv('AWS_DDB_TABLE')  # DynamoDB table for structured conversations
 
+# Bedrock & Learning Config (optional)
+ENABLE_BEDROCK = os.getenv('ENABLE_BEDROCK', 'false').lower() == 'true'
+BEDROCK_REGION = os.getenv('BEDROCK_REGION', AWS_REGION or '')
+BEDROCK_MODEL_ID = os.getenv('BEDROCK_MODEL_ID', 'anthropic.claude-3-haiku-20240307-v1:0')
+LEARNING_FROM_AWS = os.getenv('LEARNING_FROM_AWS', 'false').lower() == 'true'
+LEARNING_MAX_ITEMS = int(os.getenv('LEARNING_MAX_ITEMS', '16'))
+LEARNING_S3_PREFIX = os.getenv('LEARNING_S3_PREFIX', 'chat-logs')
+
 # Initialize AWS clients if configured
 s3_client = None
 ddb_client = None
+bedrock_client = None
 if boto3 and AWS_REGION and (AWS_S3_BUCKET or AWS_DDB_TABLE):
     try:
         s3_client = boto3.client('s3', region_name=AWS_REGION)
@@ -44,6 +53,13 @@ if boto3 and AWS_REGION and (AWS_S3_BUCKET or AWS_DDB_TABLE):
         ddb_client = boto3.client('dynamodb', region_name=AWS_REGION)
     except Exception:
         ddb_client = None
+
+# Initialize Bedrock client if enabled
+if boto3 and ENABLE_BEDROCK and BEDROCK_REGION:
+    try:
+        bedrock_client = boto3.client('bedrock-runtime', region_name=BEDROCK_REGION)
+    except Exception:
+        bedrock_client = None
 
 
 @app.route('/health', methods=['GET'])
@@ -118,8 +134,47 @@ def process_message(message: str, context: str = "") -> str:
     Returns:
         Phản hồi từ AI
     """
-    # Tạm thời sử dụng logic rule-based
-    # Có thể tích hợp OpenAI API, LangChain, hoặc các model AI khác
+    # Nếu Bedrock được bật, sử dụng mô hình để sinh phản hồi, có thể kèm ngữ cảnh học được
+    if bedrock_client and ENABLE_BEDROCK:
+        try:
+            learned_context = ""
+            if LEARNING_FROM_AWS:
+                learned_context = fetch_recent_context_from_aws(max_items=LEARNING_MAX_ITEMS)
+
+            system_prompt = (
+                "Bạn là trợ lý AI cho hệ thống Quản lý Nhân khẩu. Trả lời ngắn gọn, chính xác, tiếng Việt. "
+                "Nếu có ngữ cảnh bên dưới, hãy tận dụng để trả lời phù hợp với hệ thống."
+            )
+            messages = [
+                {"role": "user", "content": [
+                    {"type": "text", "text": (
+                        f"[NGỮ CẢNH HỌC ĐƯỢC]\n{learned_context}\n\n"
+                        f"[YÊU CẦU NGƯỜI DÙNG]\n{message}\n"
+                        f"[BỔ SUNG]\n{context}"
+                    )}
+                ]}
+            ]
+
+            body = {
+                "modelId": BEDROCK_MODEL_ID,
+                "messages": messages,
+                "system": [{"text": system_prompt}],
+                "inferenceConfig": {"maxTokens": 512, "temperature": 0.2}
+            }
+
+            resp = bedrock_client.invoke_model(
+                modelId=BEDROCK_MODEL_ID,
+                body=json.dumps(body)
+            )
+            payload = json.loads(resp.get('body', '{}'))
+            # Claude responses via Bedrock messages API
+            parts = payload.get('output', {}).get('message', {}).get('content', [])
+            text_out = "\n".join([p.get('text', '') for p in parts if p.get('type') == 'text'])
+            if text_out.strip():
+                return text_out.strip()
+        except Exception:
+            # fallback xuống logic rule-based
+            pass
     
     message_lower = message.lower()
     
@@ -214,6 +269,63 @@ Bạn có thể hỏi tôi về bất kỳ tính năng nào của hệ thống. 
     # - Local LLM (Ollama, LM Studio)
 
 
+def fetch_recent_context_from_aws(max_items: int = 16) -> str:
+    """Lấy một số đoạn hội thoại gần nhất từ DynamoDB hoặc S3 làm ngữ cảnh.
+    Trả về một chuỗi văn bản ngắn gọn.
+    """
+    snippets: list[str] = []
+
+    # Ưu tiên DynamoDB nếu có
+    try:
+        if ddb_client and AWS_DDB_TABLE:
+            # thử truy vấn theo pk của hôm nay, nếu thiếu thì lùi 1 ngày
+            for days_back in range(0, 2):
+                pk = f"chat#{datetime.now().strftime('%Y%m%d')}" if days_back == 0 else \
+                     f"chat#{(datetime.now()).strftime('%Y%m%d')}"
+                resp = ddb_client.query(
+                    TableName=AWS_DDB_TABLE,
+                    KeyConditionExpression='pk = :pk',
+                    ExpressionAttributeValues={':pk': {'S': pk}},
+                    ScanIndexForward=False,
+                    Limit=max_items,
+                )
+                items = resp.get('Items', [])
+                for it in items:
+                    msg = it.get('message', {}).get('S', '')
+                    ans = it.get('response', {}).get('S', '')
+                    if msg and ans:
+                        snippets.append(f"Hỏi: {msg}\nĐáp: {ans}")
+                if snippets:
+                    break
+    except Exception:
+        pass
+
+    # Nếu chưa có hoặc không cấu hình DDB, thử S3 (lấy log của hôm nay)
+    try:
+        if not snippets and s3_client and AWS_S3_BUCKET:
+            key = f"{LEARNING_S3_PREFIX}/{datetime.now().strftime('%Y/%m/%d')}.ndjson"
+            obj = s3_client.get_object(Bucket=AWS_S3_BUCKET, Key=key)
+            body = obj['Body'].read().decode('utf-8')
+            lines = [ln for ln in body.strip().split('\n') if ln.strip()][-max_items:]
+            for ln in lines:
+                try:
+                    ev = json.loads(ln)
+                except Exception:
+                    continue
+                msg = ev.get('message', '')
+                ans = ev.get('response', '')
+                if msg and ans:
+                    snippets.append(f"Hỏi: {msg}\nĐáp: {ans}")
+    except Exception:
+        pass
+
+    if not snippets:
+        return ""
+    # giới hạn chiều dài để tránh vượt token
+    joined = "\n\n".join(snippets[:max_items])
+    return joined[:4000]
+
+
 def get_timestamp():
     """Get current timestamp"""
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -265,7 +377,7 @@ if __name__ == '__main__':
     print(f"Debug mode: {DEBUG}")
     # Print concise AWS summary so operators can verify quickly
     print(
-        "AWS config => boto3:%s region:%s s3:%s ddb:%s | enabled s3:%s ddb:%s"
+        "AWS config => boto3:%s region:%s s3:%s ddb:%s | enabled s3:%s ddb:%s | bedrock:%s model:%s"
         % (
             bool(boto3),
             AWS_REGION or "",
@@ -273,6 +385,8 @@ if __name__ == '__main__':
             AWS_DDB_TABLE or "",
             bool(s3_client and AWS_S3_BUCKET),
             bool(ddb_client and AWS_DDB_TABLE),
+            bool(bedrock_client and ENABLE_BEDROCK),
+            BEDROCK_MODEL_ID if ENABLE_BEDROCK else "",
         )
     )
     app.run(host='0.0.0.0', port=PORT, debug=DEBUG)

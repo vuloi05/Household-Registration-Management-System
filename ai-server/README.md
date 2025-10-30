@@ -48,6 +48,21 @@ AWS_REGION=ap-southeast-1
 AWS_S3_BUCKET=your-s3-bucket-name
 AWS_DDB_TABLE=ai_agent_conversations
 
+# (Tùy chọn) Tự học từ AWS + Amazon Bedrock
+# Bật sử dụng Bedrock để trả lời
+ENABLE_BEDROCK=true
+# Region của Bedrock (nên cùng vùng với AWS_REGION)
+BEDROCK_REGION=ap-southeast-1
+# Model Id (ví dụ Claude 3 Haiku)
+BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
+
+# Bật lấy ngữ cảnh tự học từ log AWS (DDB/S3)
+LEARNING_FROM_AWS=true
+# Số mẫu hội thoại tối đa lấy làm ngữ cảnh
+LEARNING_MAX_ITEMS=16
+# Prefix S3 chứa file ndjson log
+LEARNING_S3_PREFIX=chat-logs
+
 # Lưu ý: Cần cấu hình AWS credentials trên máy local (ví dụ ~/.aws/credentials)
 ```
 

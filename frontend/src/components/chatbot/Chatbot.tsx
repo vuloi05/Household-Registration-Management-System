@@ -6,12 +6,15 @@ import {
   IconButton,
   Typography,
   CircularProgress,
+  Slide,
 } from '@mui/material';
 import {
   Send as SendIcon,
   SmartToy as ChatIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
+import { keyframes } from '@mui/system';
+import { alpha } from '@mui/material/styles';
 
 interface Message {
   text: string;
@@ -110,13 +113,32 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
     }
   };
 
+  // Basic, safe Markdown renderer for small subset: bold, italics, line breaks
+  // Escapes HTML first to avoid XSS and then applies simple Markdown replacements
+  const renderMarkdown = (rawText: string): string => {
+    const escapeHtml = (unsafe: string) =>
+      unsafe
+        .replaceAll(/&/g, '&amp;')
+        .replaceAll(/</g, '&lt;')
+        .replaceAll(/>/g, '&gt;');
+
+    let html = escapeHtml(rawText);
+    // Bold: **text**
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // Italic: *text* (after bold to avoid conflicts)
+    html = html.replace(/(^|[^*])\*(?!\s)(.+?)\*(?!\*)/g, (_m, p1, p2) => `${p1}<em>${p2}</em>`);
+    // Line breaks
+    html = html.replace(/\n/g, '<br />');
+    return html;
+  };
+
   if (!isOpen) {
     return (
       <Box
         sx={{
           position: 'fixed',
-          bottom: 20,
-          right: 20,
+          bottom: { xs: 6, sm: 14, md: 20 },
+          right: { xs: 6, sm: 14, md: 20 },
           zIndex: 1000,
         }}
       >
@@ -125,12 +147,17 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
           sx={{
             bgcolor: 'primary.main',
             color: 'white',
-            width: 60,
-            height: 60,
+            width: { xs: 36, sm: 48, md: 56 },
+            height: { xs: 36, sm: 48, md: 56 },
             '&:hover': {
               bgcolor: 'primary.dark',
+              transform: 'translateY(-1px) scale(1.04)',
+              boxShadow: (theme) => `0 8px 20px ${alpha(theme.palette.primary.main, 0.35)}`,
             },
-            boxShadow: 3,
+            transition: 'transform .2s ease, box-shadow .2s ease',
+            boxShadow: (theme) => `0 6px 16px ${alpha(theme.palette.primary.main, 0.25)}`,
+            border: (theme) => `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
+            backdropFilter: 'blur(4px)',
           }}
         >
           <ChatIcon />
@@ -139,42 +166,64 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
     );
   }
 
+  const subtlePulse = keyframes`
+    0% { box-shadow: 0 0 0 0 rgba(244,67,54,0.22); }
+    70% { box-shadow: 0 0 0 10px rgba(244,67,54,0); }
+    100% { box-shadow: 0 0 0 0 rgba(244,67,54,0); }
+  `;
+
   return (
-    <Paper
-      elevation={10}
-      sx={{
-        position: 'fixed',
-        bottom: 20,
-        right: 20,
-        width: 400,
-        height: 600,
-        display: 'flex',
-        flexDirection: 'column',
-        zIndex: 1000,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-      }}
-    >
+    <Slide direction="up" in={isOpen} mountOnEnter unmountOnExit>
+      <Paper
+        elevation={0}
+        sx={{
+          position: 'fixed',
+          bottom: { xs: 6, sm: 14, md: 20 },
+          right: { xs: 6, sm: 14, md: 20 },
+          width: { xs: '72vw', sm: 300, md: 340 },
+          height: { xs: '38vh', sm: 380, md: 480 },
+          maxWidth: '80vw',
+          maxHeight: '60vh',
+          display: 'flex',
+          flexDirection: 'column',
+          zIndex: 1000,
+          borderRadius: 3,
+          overflow: 'hidden',
+          background: (theme) => `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.86)}, ${alpha(theme.palette.background.paper, 0.92)})`,
+          border: (theme) => `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
+          boxShadow: (theme) => `0 8px 30px ${alpha(theme.palette.common.black, 0.25)}, inset 0 0 0 1px ${alpha(theme.palette.common.white, 0.04)}`,
+          backdropFilter: 'blur(10px)',
+          animation: `${subtlePulse} 3s ease-out 1`,
+        }}
+      >
       {/* Header */}
       <Box
         sx={{
-          bgcolor: 'primary.main',
+          bgcolor: 'transparent',
           color: 'white',
-          p: 2,
+          p: { xs: 1, sm: 1.25, md: 1.5 },
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          backgroundImage: (theme) => `linear-gradient(135deg, ${theme.palette.primary.main}, ${alpha('#8e0e0e', 0.9)})`,
+          borderBottom: (theme) => `1px solid ${alpha(theme.palette.common.white, 0.12)}`,
+          boxShadow: (theme) => `0 2px 8px ${alpha(theme.palette.primary.dark, 0.35)}`,
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <ChatIcon />
-          <Typography variant="h6" fontWeight="bold">
+          <Typography variant="subtitle1" fontWeight="bold">
             AI Assistant
           </Typography>
         </Box>
         <IconButton
           onClick={() => setIsOpen(false)}
           size="small"
-          sx={{ color: 'white' }}
+          sx={{
+            color: 'white',
+            '&:hover': { transform: 'rotate(90deg) scale(1.05)' },
+            transition: 'transform .2s ease',
+          }}
         >
           <CloseIcon />
         </IconButton>
@@ -182,11 +231,39 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
 
       {/* Messages */}
       <Box
+        className="chat-scroll"
         sx={{
           flex: 1,
           overflowY: 'auto',
-          p: 2,
-          bgcolor: '#f5f5f5',
+          p: { xs: 1, sm: 1.25, md: 1.5 },
+          bgcolor: (theme) => alpha(theme.palette.common.black, 0.02),
+          backgroundImage: 'radial-gradient(transparent 1px, rgba(0,0,0,0.02) 1px)',
+          backgroundSize: '8px 8px',
+          overscrollBehavior: 'contain',
+          // Firefox
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(0,0,0,0.28) transparent',
+          // WebKit/Blink
+          '&::-webkit-scrollbar': {
+            width: '10px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'transparent',
+            margin: '6px 0',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: 'linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.32))',
+            borderRadius: '999px',
+            border: '2px solid transparent',
+            backgroundClip: 'padding-box',
+          },
+          '&:hover::-webkit-scrollbar-thumb': {
+            background: 'linear-gradient(180deg, rgba(0,0,0,0.28), rgba(0,0,0,0.44))',
+            boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.15)',
+          },
+          '&:active::-webkit-scrollbar-thumb, &::-webkit-scrollbar-thumb:active': {
+            background: 'linear-gradient(180deg, rgba(0,0,0,0.36), rgba(0,0,0,0.56))',
+          },
         }}
       >
         {messages.map((msg, index) => (
@@ -201,16 +278,28 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
             <Paper
               elevation={1}
               sx={{
-                p: 1.5,
-                maxWidth: '80%',
-                bgcolor: msg.sender === 'user' ? 'primary.main' : 'white',
+                p: 1.25,
+                maxWidth: { xs: '66%', sm: '72%', md: '78%' },
+                bgcolor: msg.sender === 'user' ? 'transparent' : 'white',
                 color: msg.sender === 'user' ? 'white' : 'text.primary',
-                borderRadius: 2,
+                borderRadius: 2.5,
+                backgroundImage: (theme) => msg.sender === 'user'
+                  ? `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.95)}, ${alpha('#b31217', 0.92)})`
+                  : 'none',
+                border: (theme) => msg.sender === 'user'
+                  ? `1px solid ${alpha(theme.palette.common.white, 0.15)}`
+                  : `1px solid ${alpha('#000', 0.06)}`,
+                boxShadow: msg.sender === 'user'
+                  ? `0 6px 14px ${alpha('#b31217', 0.28)}`
+                  : `0 2px 10px ${alpha('#000', 0.06)}`,
               }}
             >
-              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                {msg.text}
-              </Typography>
+              <Typography
+                variant="body2"
+                component="div"
+                sx={{ whiteSpace: 'normal' }}
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.text) }}
+              />
               {msg.timestamp && (
                 <Typography
                   variant="caption"
@@ -218,7 +307,7 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
                     display: 'block',
                     mt: 0.5,
                     opacity: 0.7,
-                    fontSize: '0.7rem',
+                    fontSize: '0.68rem',
                   }}
                 >
                   {msg.timestamp}
@@ -229,7 +318,7 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
         ))}
         {isLoading && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Paper elevation={1} sx={{ p: 1.5, borderRadius: 2 }}>
+            <Paper elevation={1} sx={{ p: 1.25, borderRadius: 2 }}>
               <CircularProgress size={16} />
             </Paper>
           </Box>
@@ -240,10 +329,10 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
       {/* Input */}
       <Box
         sx={{
-          p: 2,
+          p: { xs: 1, sm: 1.25, md: 1.5 },
           borderTop: '1px solid #e0e0e0',
           display: 'flex',
-          gap: 1,
+          gap: { xs: 0.5, sm: 1 },
           bgcolor: 'white',
         }}
       >
@@ -256,6 +345,15 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}
           disabled={isLoading}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 999,
+              backgroundColor: alpha('#000', 0.02),
+              '& fieldset': { borderColor: 'rgba(0,0,0,0.08)' },
+              '&:hover fieldset': { borderColor: (theme) => alpha(theme.palette.primary.main, 0.4) },
+              '&.Mui-focused fieldset': { borderColor: 'primary.main' },
+            },
+          }}
         />
         <IconButton
           color="primary"
@@ -265,7 +363,8 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
           <SendIcon />
         </IconButton>
       </Box>
-    </Paper>
+      </Paper>
+    </Slide>
   );
 }
 
