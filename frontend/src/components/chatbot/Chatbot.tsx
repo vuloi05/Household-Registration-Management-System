@@ -17,6 +17,7 @@ import { keyframes } from '@mui/system';
 import { alpha } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
+import Button from '@mui/material/Button';
 
 export type AgentAction = {
   type: string;
@@ -138,49 +139,92 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
     actions.forEach(pushAgentAction);
   };
 
+  // new helper: Typewriter effect append
+  function appendTextByStep(setter: (t: string) => void, text: string, ms = 15, callback?: () => void) {
+    let i = 0;
+    function step() {
+      if (i <= text.length) {
+        setter(text.slice(0, i))
+        i++;
+        setTimeout(step, ms)
+      } else if (callback) { callback(); }
+    }
+    step();
+  }
+
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
-
     const userMessage: Message = {
       text: input,
       sender: 'user',
       timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
     };
-
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
-
     try {
-      const response = await fetch(`${finalApiUrl}/chat`, {
+      // (A) ENABLE STREAM MODE:
+      const resp = await fetch(`${finalApiUrl}/chat?stream=true`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: userMessage.text,
-          context: '', // Có thể thêm context nếu cần
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMessage.text, context: '' }),
       });
-
-      if (!response.ok) {
-        throw new Error('Không thể kết nối với AI server');
+      if (resp.status === 200 && resp.headers.get('content-type')?.includes('text/event-stream')) {
+        // (A1) Streaming mode
+        const reader = resp.body.getReader();
+        let botMsg = '';
+        let allResult = '';
+        let agentActions: AgentAction[] | undefined;
+        setMessages((prev) => [...prev, { text: '', sender: 'bot' }]);
+        let msgIdx: number = -1;
+        setMessages((prev) => {
+          msgIdx = prev.length;
+          return prev;
+        });
+        let decoder = new TextDecoder();
+        let finished = false;
+        while (!finished) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value);
+          // tách các event stream
+          chunk.split('\n\n').forEach((part) => {
+            if (part.startsWith('data: ')) {
+              let content = part.replace('data: ', '');
+              if (content === '[END] ') finished = true;
+              else {
+                allResult += content;
+                setMessages((prev) => {
+                  // cập nhật tin nhắn cuối (bot)
+                  const newArr = [...prev];
+                  let contentNow = allResult;
+                  if (newArr.length && newArr[newArr.length-1].sender === 'bot') {
+                    newArr[newArr.length-1] = { ...newArr[newArr.length-1], text: contentNow, timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })};
+                  }
+                  return newArr;
+                });
+              }
+            } else if (part.startsWith('agent_actions: ')) {
+              try {
+                agentActions = JSON.parse(part.replace('agent_actions: ', ''));
+              } catch(e) {}
+            }
+          });
+        }
+        setIsLoading(false);
+        // Xử lý agent actions cuối
+        if (agentActions && Array.isArray(agentActions)) handleAgentActions(agentActions);
+      } else {
+        // (A2) Fallback về JSON mode cũ nếu backend không hỗ trợ streaming
+        const data = await resp.json();
+        if (data.actions && Array.isArray(data.actions)) handleAgentActions(data.actions);
+        const botMessage: Message = {
+          text: data.response,
+          sender: 'bot',
+          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        };
+        setMessages((prev) => [...prev, botMessage]);
       }
-
-      const data = await response.json();
-
-      // (1) Thực hiện agent actions nếu có:
-      if (data.actions && Array.isArray(data.actions)) {
-        handleAgentActions(data.actions);
-      }
-
-      const botMessage: Message = {
-        text: data.response,
-        sender: 'bot',
-        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      };
-
-      setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMessage: Message = {
@@ -217,6 +261,63 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
     // Line breaks
     html = html.replace(/\n/g, '<br />');
     return html;
+  };
+
+  // ========== BẮT ĐẦU PHẦN THÊM UI & LOGIC FEEDBACK ===========
+  // Removed Dialog/Edit related imports as we no longer support manual answer edit
+  // import Dialog from '@mui/material/Dialog';
+  // import DialogTitle from '@mui/material/DialogTitle';
+  // import DialogContent from '@mui/material/DialogContent';
+  // import DialogActions from '@mui/material/DialogActions';
+  // import Button from '@mui/material/Button';
+  // import EditIcon from '@mui/icons-material/Edit';
+  const [feedbackSending, setFeedbackSending] = useState(false);
+
+  // Gửi feedback tới backend
+  const sendFeedback = async (type: 'confirm'|'wrong'|'correct', idx: number, answerOverride?: string) => {
+    const botMsg = messages[idx];
+    if (!botMsg || !botMsg.text) return;
+    const questionIdx = (() => {
+      for(let i=idx-1; i>=0; --i) if(messages[i].sender==='user') return i; return -1;
+    })();
+    if(questionIdx<0) return;
+    const question = messages[questionIdx]?.text||'';
+    setFeedbackSending(true);
+    try {
+      const payload = {
+        question,
+        answer: (answerOverride!==undefined ? answerOverride : botMsg.text),
+        feedback_type: type
+      };
+      const resp = await fetch(`${finalApiUrl}/qa-feedback`,{
+        method:'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const data = await resp.json().catch(()=>({}));
+      if (resp.ok) {
+        enqueueSnackbar('Gửi phản hồi thành công!', {variant:'success'});
+        if (type==='wrong' && data?.new_answer) {
+          // cập nhật lại tin nhắn bot hiện tại bằng đáp án mới
+          setMessages(prev => {
+            const arr = [...prev];
+            if (arr[idx] && arr[idx].sender==='bot') {
+              arr[idx] = { ...arr[idx], text: String(data.new_answer), timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) };
+            }
+            return arr;
+          });
+        }
+      } else {
+        enqueueSnackbar('Gửi phản hồi thất bại.', {variant:'error'});
+      }
+    } catch {
+      enqueueSnackbar('Có lỗi khi gửi feedback!', {variant:'error'});
+    } finally {
+      setFeedbackSending(false);
+      // removed edit dialog resets
+      // setEditIdx(null);
+      // setEditAnswer('');
+    }
   };
 
   if (!isOpen) {
@@ -401,6 +502,22 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
                     {msg.timestamp}
                   </Typography>
                 )}
+                {/* PHẦN BUTTON FEEDBACK CHỈ CHO BOT MESSAGE */}
+                {msg.sender==='bot' && !!messages[index-1] && messages[index-1].sender==='user' && (
+                  <Box sx={{ mt: 1, display:'flex', gap:0.5 }}>
+                    <Button
+                      variant="outlined" color="success" size="small"
+                      disabled={feedbackSending}
+                      onClick={() => sendFeedback('confirm', index)}
+                    >Xác nhận đúng</Button>
+                    <Button
+                      variant="outlined" color="error" size="small"
+                      disabled={feedbackSending}
+                      onClick={() => sendFeedback('wrong', index)}
+                    >Báo sai</Button>
+                    {/* Removed "Sửa đáp án" button */}
+                  </Box>
+                )}
               </Paper>
             </Box>
           ))}
@@ -413,7 +530,7 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
           )}
           <div ref={messagesEndRef} />
         </Box>
-
+        {/* Removed Dialog sửa đáp án */}
         {/* Input */}
         <Box
           sx={{

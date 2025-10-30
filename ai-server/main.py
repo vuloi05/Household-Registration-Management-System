@@ -3,14 +3,17 @@ AI Agent Server - Household Registration Management System
 Backend server để xử lý các yêu cầu AI chatbot
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import requests
 import re
+import threading
+import time
+from difflib import SequenceMatcher
 
 # Optional AWS SDK
 try:
@@ -57,6 +60,108 @@ if boto3 and AWS_REGION and (AWS_S3_BUCKET or AWS_DDB_TABLE):
     except Exception:
         ddb_client = None
 
+# === Q&A Knowledge Base ===
+qa_knowledge_base = [] # List[{'q': str, 'a': str}]
+
+# Load KB từ log AWS về - dùng lúc khởi động hoặc có thể tự động chạy lặp lại
+kb_lock = threading.Lock()
+def load_qa_knowledge_base():
+    global qa_knowledge_base
+    items = []
+    try:
+        # Ưu tiên DynamoDB
+        if ddb_client and AWS_DDB_TABLE:
+            resp = ddb_client.scan(TableName=AWS_DDB_TABLE, Limit=360)
+            for it in resp.get('Items', []):
+                msg = it.get('message', {}).get('S', '')
+                ans = it.get('response', {}).get('S', '')
+                msg = msg.strip()
+                ans = ans.strip()
+                if msg and ans and len(msg) > 3 and len(ans) > 2:
+                    items.append({'q': msg, 'a': ans})
+        # Thêm từ S3 nếu có
+        if s3_client and AWS_S3_BUCKET:
+            # Lấy 2 ngày gần nhất làm demo, có thể mở rộng ra nhiều ngày
+            for offset in range(0, 2):
+                date = datetime.now() if offset == 0 else datetime.now() - timedelta(days=1)
+                key = f"{LEARNING_S3_PREFIX}/{date.strftime('%Y/%m/%d')}.ndjson"
+                try:
+                    obj = s3_client.get_object(Bucket=AWS_S3_BUCKET, Key=key)
+                    body = obj['Body'].read().decode('utf-8')
+                    lines = [ln for ln in body.strip().split('\n') if ln.strip()]
+                    for ln in lines[-100:]:
+                        try:
+                            ev = json.loads(ln)
+                        except Exception:
+                            continue
+                        msg = ev.get('message', '').strip()
+                        ans = ev.get('response', '').strip()
+                        if msg and ans and len(msg)>3 and len(ans)>2:
+                            items.append({'q': msg, 'a': ans})
+                except Exception:
+                    continue
+    except Exception as e:
+        print(f"[WARN][KB-load] {e}")
+    # Loại bỏ trùng (ưu tiên xuất hiện cuối), remove blank
+    dedup = {}
+    for it in reversed(items):
+        k = it['q'].strip().lower()
+        if len(k)>3: dedup[k] = it
+    with kb_lock:
+        qa_knowledge_base = list(dedup.values())
+    print(f"[KB] Loaded {len(qa_knowledge_base)} QA items from AWS")
+
+# Tải KB khi khởi động
+if boto3 and (s3_client or ddb_client):
+    threading.Thread(target=load_qa_knowledge_base, daemon=True).start()
+
+# Hàm tra cứu KB nội bộ bằng matching
+# (cho production có thể dùng embedding/vector search)
+def find_best_local_answer(q: str, threshold: float = 0.85):
+    q = q.strip().lower()
+    best_score = 0
+    best_ans = None
+    with kb_lock:
+        for item in qa_knowledge_base:
+            qkb = item['q'].strip().lower()
+            if q == qkb:
+                return item['a']
+            score = SequenceMatcher(None, q, qkb).ratio()
+            if score > best_score and score >= threshold:
+                best_score = score
+                best_ans = item['a']
+    return best_ans
+
+# Helper: gọi Gemini API trực tiếp (bỏ qua KB, rule)
+def call_gemini(message: str, context: str = "") -> str:
+    if not GOOGLE_GEMINI_API_KEY:
+        return ""
+    try:
+        payload = {
+            "contents": [
+                {"role": "user", "parts": [{"text": (context + "\n" if context else "") + message}]}
+            ],
+        }
+        url = f"{GOOGLE_GEMINI_API_URL}?key={GOOGLE_GEMINI_API_KEY}"
+        headers = {"Content-Type": "application/json"}
+        response = requests.post(url, headers=headers, json=payload, timeout=45)
+        if response.ok:
+            result = response.json()
+            candidates = result.get('candidates', [])
+            if candidates:
+                content = candidates[0].get('content', {})
+                parts = content.get('parts', [])
+                if parts and 'text' in parts[0]:
+                    text = parts[0]['text']
+                    return text.strip()
+            return json.dumps(result, ensure_ascii=False)
+        else:
+            if response.status_code == 503:
+                return "Dịch vụ AI của Google hiện đang quá tải hoặc tạm thời không khả dụng. Vui lòng thử lại sau ít phút!"
+            return f"Gemini API request failed: {response.status_code} {response.text}"
+    except Exception as e:
+        return f"Gemini API call error: {str(e)}"
+
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -83,52 +188,96 @@ def health_aws():
 @app.route('/chat', methods=['POST'])
 def chat():
     """
-    Chat endpoint để xử lý tin nhắn từ chatbot
+    Chat endpoint để xử lý tin nhắn từ chatbot (hỗ trợ streaming nếu cần).
     POST /chat
     Body: {"message": "user message", "context": "optional context"}
+    Query param: stream=true để enable streaming (mặc định stream=false)
     """
+    stream_mode = str(request.args.get('stream', 'false')).lower() == 'true'
     try:
         data = request.json
         user_message = data.get('message', '')
         context = data.get('context', '')
-        
         if not user_message:
             return jsonify({"error": "Message is required"}), 400
-        
-        # Process the message with AI
+
+        # --- TRA CỨU Q&A LOCAL TRƯỚC (ưu tiên) ---
+        kb_ans = find_best_local_answer(user_message)
+        if kb_ans:
+            persist_chat_event({
+                "timestamp": get_timestamp(),
+                "message": user_message,
+                "response": kb_ans,
+                "context": context,
+                "source": "local-ai-server",
+            })
+            return jsonify({
+                "success": True,
+                "response": kb_ans,
+                "actions": infer_actions(user_message),
+                "timestamp": get_timestamp()
+            })
+
+        # Xử lý luật trả lời ngắn (không cần stream)
         response = process_message(user_message, context)
         actions = infer_actions(user_message)
 
-        # Persist conversation to AWS (optional)
-        persist_chat_event(
-            {
+        # Nếu không phải gọi Gemini API hoặc câu trả lời rất ngắn (rule), trả về như cũ
+        if not stream_mode or len(response) < 200 or ('GOOGLE_GEMINI_API_KEY' not in os.environ):
+            persist_chat_event({
                 "timestamp": get_timestamp(),
                 "message": user_message,
                 "response": response,
                 "context": context,
                 "source": "local-ai-server",
-            }
-        )
-        
-        return jsonify({
-            "success": True,
+            })
+            return jsonify({
+                "success": True,
+                "response": response,
+                "actions": actions,
+                "timestamp": get_timestamp()
+            })
+
+        # Nếu là trả lời rất dài (từ AI), phải stream từng chunk
+        def generate_streamed_response(full_response: str):
+            import time
+            # Cắt thành từng dòng hoặc đoạn ngắn (có thể chia nhỏ ký tự nếu muốn mượt)
+            chunk_len = 24  # Số ký tự mỗi chunk
+            for i in range(0, len(full_response), chunk_len):
+                chunk = full_response[i:i+chunk_len]
+                yield f"data: {chunk}\n\n"
+                time.sleep(0.04)  # delay nhẹ như typing effect
+            # Thông báo kết thúc, trả cả actions nếu có
+            yield f"data: [END] \n\n"
+            if actions:
+                yield f"agent_actions: {json.dumps(actions, ensure_ascii=False)}\n\n"
+
+        persist_chat_event({
+            "timestamp": get_timestamp(),
+            "message": user_message,
             "response": response,
-            "actions": actions,  # danh sách action cho frontend thực thi (agent)
-            "timestamp": get_timestamp()
+            "context": context,
+            "source": "local-ai-server",
         })
-        
+        return Response(stream_with_context(generate_streamed_response(response)), mimetype='text/event-stream')
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-def process_message(message: str, context: str = "") -> str:
+def process_message(message: str, context: str = "", bypass_kb: bool = False) -> str:
     message_lower = message.lower().strip()
     message_clean = re.sub(r"[!?.]", "", message_lower)
 
-    # Chào hỏi: chỉ regex các cụm cực kỳ phổ biến, bắt đầu hoặc nguyên câu
+    # --- TRA CỨU Q&A LOCAL TRƯỚC (ưu tiên) ---
+    if not bypass_kb:
+        kb_ans = find_best_local_answer(message)
+        if kb_ans:
+            return kb_ans
+
+    # Chào hỏi và các rule ngắn
     if re.fullmatch(r"(xin chào|chào|chào bạn|hello|hi)", message_clean):
         return "Xin chào! Tôi là trợ lý AI của hệ thống Quản lý Nhân khẩu. Tôi có thể giúp bạn tìm hiểu về các tính năng của hệ thống."
-    # Trợ giúp về hộ khẩu
     elif any(w in message_clean for w in ['hộ khẩu', 'ho khau', 'household']):
         return '''Để quản lý hộ khẩu, bạn có thể:
         
@@ -138,7 +287,6 @@ def process_message(message: str, context: str = "") -> str:
         4. **Xem chi tiết**: Click vào mã hộ khẩu để xem thông tin chi tiết
         
         Mỗi hộ khẩu bao gồm: Mã hộ khẩu, Địa chỉ, Chủ hộ và các thành viên trong hộ.'''
-    # Trợ giúp về nhân khẩu
     elif any(w in message_clean for w in ['nhân khẩu', 'nhan khau', 'person', 'thành viên']):
         return '''Để quản lý nhân khẩu:
         
@@ -149,7 +297,6 @@ def process_message(message: str, context: str = "") -> str:
         5. **Xuất dữ liệu**: Export Excel hoặc PDF
         
         Mỗi nhân khẩu cần thông tin: Họ tên, Ngày sinh, CCCD, Quê quán, Nghề nghiệp.'''
-    # Trợ giúp về thu phí
     elif any(w in message_clean for w in ['thu phí', 'khoản thu', 'khoan thu', 'payment', 'fee']):
         return '''Quản lý thu phí bao gồm:
         
@@ -161,7 +308,6 @@ def process_message(message: str, context: str = "") -> str:
         - Xem chi tiết khoản thu và danh sách đã nộp
         - Xem thống kê: Số hộ đã nộp, Tổng số tiền
         - Ghi nhận nộp tiền cho hộ khẩu'''
-    # Trợ giúp về thống kê
     elif any(w in message_clean for w in ['thống kê', 'thong ke', 'dashboard', 'statistics']):
         return '''Bảng thống kê cung cấp:
         
@@ -170,7 +316,6 @@ def process_message(message: str, context: str = "") -> str:
         3. **Biểu đồ**: Visualize dữ liệu độ tuổi
         
         Vào trang "Dashboard" để xem tất cả thống kê.'''
-    # Trợ giúp về đăng nhập
     elif any(w in message_clean for w in ['đăng nhập', 'dang nhap', 'login']):
         return '''Để đăng nhập hệ thống:
         
@@ -181,7 +326,6 @@ def process_message(message: str, context: str = "") -> str:
         Có 2 loại tài khoản:
         - **ADMIN**: Toàn quyền quản lý
         - **ACCOUNTANT**: Quản lý khoản thu và thu phí'''
-    # Trợ giúp chung
     elif any(w in message_clean for w in ['giúp', 'help', 'hướng dẫn', 'huong dan']):
         return '''Tôi có thể giúp bạn với:
         
@@ -192,32 +336,12 @@ def process_message(message: str, context: str = "") -> str:
         - Hướng dẫn Đăng nhập
         
         Hãy hỏi tôi về bất kỳ chức năng nào!'''
+
     # Nếu không khớp luật nào - gọi Gemini
     if GOOGLE_GEMINI_API_KEY:
-        try:
-            payload = {
-                "contents": [
-                    {"role": "user", "parts": [{"text": (context + "\n" if context else "") + message}]}
-                ],
-            }
-            url = f"{GOOGLE_GEMINI_API_URL}?key={GOOGLE_GEMINI_API_KEY}"
-            headers = {"Content-Type": "application/json"}
-            response = requests.post(url, headers=headers, json=payload, timeout=15)
-            if response.ok:
-                result = response.json()
-                candidates = result.get('candidates', [])
-                if candidates:
-                    content = candidates[0].get('content', {})
-                    parts = content.get('parts', [])
-                    if parts and 'text' in parts[0]:
-                        text = parts[0]['text']
-                        return text.strip()
-                return json.dumps(result, ensure_ascii=False)
-            else:
-                return f"Gemini API request failed: {response.status_code} {response.text}"
-        except Exception as e:
-            return f"Gemini API call error: {str(e)}"
-    # Fallback cực cuối (không có key Gemini): trả lời hệ thống
+        text = call_gemini(message, context)
+        if text:
+            return text
     return f"Cảm ơn bạn đã liên hệ! Tôi là trợ lý AI của hệ thống Quản lý Nhân khẩu. Bạn có thể hỏi tôi về bất kỳ tính năng nào của hệ thống."
 
 
@@ -486,6 +610,69 @@ def persist_chat_event(event: dict) -> None:
             )
     except (BotoCoreError, ClientError, Exception):
         pass
+
+
+@app.route('/qa-feedback', methods=['POST'])
+def qa_feedback():
+    global qa_knowledge_base
+    """Nhận feedback/sửa đáp án từ người dùng: {question, answer, feedback_type, context?} -> cập nhật KB nội bộ & log AWS. Nếu 'wrong' thì xoá khỏi KB và gọi Gemini để lấy đáp án mới, trả về new_answer."""
+    try:
+        data = request.json or {}
+        question = (data.get('question') or '').strip()
+        answer = (data.get('answer') or '').strip()
+        feedback_type = (data.get('feedback_type') or 'confirm').strip()  # confirm, correct, wrong
+        context = (data.get('context') or '').strip()
+        if not question:
+            return jsonify({"error": "question is required"}), 400
+
+        new_answer = None
+
+        if feedback_type == 'wrong':
+            # 1) Xoá khỏi KB local
+            with kb_lock:
+                qa_knowledge_base = [it for it in qa_knowledge_base if it['q'].strip().lower() != question.strip().lower()]
+            # 2) Gọi Gemini để lấy đáp án mới
+            generated = call_gemini(question, context)
+            if generated:
+                new_answer = generated
+                # 3) Cập nhật KB local bằng câu trả lời mới
+                with kb_lock:
+                    qa_knowledge_base.append({'q': question, 'a': new_answer})
+                # 4) Log lại lên AWS
+                persist_chat_event({
+                    'timestamp': get_timestamp(),
+                    'message': question,
+                    'response': new_answer,
+                    'context': context,
+                    'source': 'auto-corrected',
+                })
+        elif feedback_type in ('confirm', 'correct'):
+            if not answer:
+                return jsonify({"error": "answer is required for confirm/correct"}), 400
+            new_item = {'q': question, 'a': answer}
+            with kb_lock:
+                found = False
+                for idx, it in enumerate(qa_knowledge_base):
+                    if it['q'].strip().lower() == question.strip().lower():
+                        qa_knowledge_base[idx] = new_item
+                        found = True
+                        break
+                if not found:
+                    qa_knowledge_base.append(new_item)
+            persist_chat_event({
+                'timestamp': get_timestamp(),
+                'message': question,
+                'response': answer,
+                'context': context,
+                'source': f'user-feedback/{feedback_type}',
+            })
+        else:
+            return jsonify({"error": "invalid feedback_type"}), 400
+
+        print(f"[KB][feedback] {feedback_type} - {question[:30]} => {(new_answer or answer)[:40] if (new_answer or answer) else ''}")
+        return jsonify({"success": True, "new_answer": new_answer})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == '__main__':
