@@ -48,8 +48,10 @@ import {
   deleteNhanKhauManagement,
   type NhanKhau,
 } from '../api/nhanKhauApi';
+import { useLocation } from 'react-router-dom';
 
 export default function NhanKhauPage() {
+  const location = useLocation();
   const { enqueueSnackbar } = useSnackbar();
   
   // State cho dữ liệu nhân khẩu
@@ -102,6 +104,31 @@ export default function NhanKhauPage() {
     loadNhanKhauData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, rowsPerPage, searchQuery, ageFilter, genderFilter, locationFilter]);
+
+  // Lắng nghe agent action sau khi điều hướng
+  useEffect(() => {
+    const s = location.state as any;
+    if (s && s.agentAction) {
+      const act = s.agentAction;
+      // Search
+      if (act.type === 'search' && act.target === 'person_list' && act.params?.q) {
+        setSearchQuery(act.params.q);
+        enqueueSnackbar('Agent: Đang tìm kiếm nhân khẩu: ' + act.params.q, { variant: 'info' });
+      }
+      // Open detail modal nếu có personId (tìm trong list)
+      if (act.type === 'navigate' && act.target === 'person_detail' && act.params?.personId) {
+        const nk = nhanKhauList.find(nk => nk.cmndCccd === act.params.personId);
+        if (nk) {
+          setSelectedNhanKhau(nk);
+          setDetailOpen(true);
+          enqueueSnackbar('Agent: Đang mở chi tiết nhân khẩu: ' + nk.hoTen, { variant: 'info' });
+        } else {
+          enqueueSnackbar('Agent: Không tìm thấy nhân khẩu trong danh sách hiện tại', { variant: 'warning' });
+        }
+      }
+    }
+    // eslint-disable-next-line
+  }, [location.state, nhanKhauList]);
 
   // Tính tuổi từ ngày sinh
   const calculateAge = (birthDate: string): number => {
