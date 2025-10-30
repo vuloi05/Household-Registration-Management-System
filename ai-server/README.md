@@ -35,35 +35,34 @@ Server sẽ chạy tại: http://localhost:5000
 
 ## Cấu hình môi trường (.env)
 
-```bash
-# Server
+```env
+# Cấu hình server
 PORT=5000
 DEBUG=True
 
-# (Tùy chọn) OpenAI API Key
-# OPENAI_API_KEY=your_openai_api_key_here
-
-# (Tùy chọn) AWS để lưu dữ liệu học tập
-AWS_REGION=ap-southeast-1
-AWS_S3_BUCKET=your-s3-bucket-name
+# Ghi dữ liệu chat lên AWS (tùy chọn, để trống nếu không dùng)
+AWS_REGION=us-east-1
+AWS_S3_BUCKET=ai-training-data-bucket-kirito
 AWS_DDB_TABLE=ai_agent_conversations
 
-# (Tùy chọn) Tự học từ AWS + Amazon Bedrock
-# Bật sử dụng Bedrock để trả lời
-ENABLE_BEDROCK=true
-# Region của Bedrock (nên cùng vùng với AWS_REGION)
-BEDROCK_REGION=ap-southeast-1
-# Model Id (ví dụ Claude 3 Haiku)
-BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
+# Google Gemini (bắt buộc để AI hoạt động)
+GOOGLE_GEMINI_API_KEY=your_google_gemini_api_key
 
-# Bật lấy ngữ cảnh tự học từ log AWS (DDB/S3)
+# Tự học từ log AWS (nâng cao, có thể bỏ qua)
 LEARNING_FROM_AWS=true
-# Số mẫu hội thoại tối đa lấy làm ngữ cảnh
 LEARNING_MAX_ITEMS=16
-# Prefix S3 chứa file ndjson log
 LEARNING_S3_PREFIX=chat-logs
+```
+**Lưu ý:**
+- KHÔNG upload file `.env` chứa key thực lên repository/public.
+- Nếu chỉ muốn chat AI (không lưu log, không cần tự học), chỉ khai báo PORT, DEBUG, GOOGLE_GEMINI_API_KEY.
+- Key lấy tại Google AI Studio hoặc Google Cloud Console.
 
-# Lưu ý: Cần cấu hình AWS credentials trên máy local (ví dụ ~/.aws/credentials)
+### Hướng dẫn tạo file .env nhanh:
+```bash
+cd ai-server
+cp .env.example .env
+# Sau đó sửa lại các giá trị trong .env cho phù hợp
 ```
 
 ## API Endpoints

@@ -43,6 +43,26 @@ Phần mềm được xây dựng cho Ban quản lý tổ dân phố 7, phườn
     DB_PASSWORD=your_database_password_here
  ```
 
+6.  **Tạo file cấu hình .env cho AI Server (bắt buộc)**
+    - Vào thư mục `ai-server`, tạo file `.env` với các biến sau:
+
+    ```env
+    PORT=5000
+    DEBUG=True
+    # AWS lưu chat (nếu có)
+    AWS_REGION=us-east-1
+    AWS_S3_BUCKET=your_name_bucket
+    AWS_DDB_TABLE=your_name_ddb_table
+    # Google Gemini API Key (bắt buộc)
+    GOOGLE_GEMINI_API_KEY=your_google_gemini_api_key
+    # Tuỳ chọn - học từ lịch sử log
+    LEARNING_FROM_AWS=true
+    LEARNING_MAX_ITEMS=16
+    LEARNING_S3_PREFIX=chat-logs
+    ```
+    - Nếu bạn không dùng AWS, chỉ cần dòng PORT, DEBUG, GOOGLE_GEMINI_API_KEY.
+    - **KHÔNG đưa file .env thật lên git để tránh lộ khoá bí mật!**
+
 ### Các bước cài đặt
 
 1.  **Clone repository:**
@@ -111,9 +131,9 @@ Bạn cần mở 3 cửa sổ terminal riêng biệt để chạy song song back
         DEBUG=True
         
         # Ghi dữ liệu chat lên AWS (tuỳ chọn)
-        AWS_REGION=ap-southeast-1
+        AWS_REGION=us-east-1
         AWS_S3_BUCKET=your-s3-bucket-name
-        AWS_DDB_TABLE=ai_agent_conversations
+        AWS_DDB_TABLE=your_name_ddb_table
         ```
         - Yêu cầu có AWS credentials trên máy: `aws configure` (lưu ở `~/.aws/credentials`).
         - Khi bật, mỗi tin nhắn/response sẽ ghi vào:
