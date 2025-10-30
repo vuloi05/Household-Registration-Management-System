@@ -9,6 +9,8 @@ import os
 from dotenv import load_dotenv
 import json
 from datetime import datetime
+import requests
+import re
 
 # Optional AWS SDK
 try:
@@ -33,17 +35,18 @@ AWS_S3_BUCKET = os.getenv('AWS_S3_BUCKET')  # where raw chat logs are stored
 AWS_DDB_TABLE = os.getenv('AWS_DDB_TABLE')  # DynamoDB table for structured conversations
 
 # Bedrock & Learning Config (optional)
-ENABLE_BEDROCK = os.getenv('ENABLE_BEDROCK', 'false').lower() == 'true'
-BEDROCK_REGION = os.getenv('BEDROCK_REGION', AWS_REGION or '')
-BEDROCK_MODEL_ID = os.getenv('BEDROCK_MODEL_ID', 'anthropic.claude-3-haiku-20240307-v1:0')
 LEARNING_FROM_AWS = os.getenv('LEARNING_FROM_AWS', 'false').lower() == 'true'
 LEARNING_MAX_ITEMS = int(os.getenv('LEARNING_MAX_ITEMS', '16'))
 LEARNING_S3_PREFIX = os.getenv('LEARNING_S3_PREFIX', 'chat-logs')
 
+# Google Gemini Config (optional)
+GOOGLE_GEMINI_API_KEY = os.getenv('GOOGLE_GEMINI_API_KEY')
+# GOOGLE_GEMINI_API_URL cập nhật sang model mới nhất Google khuyến nghị
+GOOGLE_GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+
 # Initialize AWS clients if configured
 s3_client = None
 ddb_client = None
-bedrock_client = None
 if boto3 and AWS_REGION and (AWS_S3_BUCKET or AWS_DDB_TABLE):
     try:
         s3_client = boto3.client('s3', region_name=AWS_REGION)
@@ -53,13 +56,6 @@ if boto3 and AWS_REGION and (AWS_S3_BUCKET or AWS_DDB_TABLE):
         ddb_client = boto3.client('dynamodb', region_name=AWS_REGION)
     except Exception:
         ddb_client = None
-
-# Initialize Bedrock client if enabled
-if boto3 and ENABLE_BEDROCK and BEDROCK_REGION:
-    try:
-        bedrock_client = boto3.client('bedrock-runtime', region_name=BEDROCK_REGION)
-    except Exception:
-        bedrock_client = None
 
 
 @app.route('/health', methods=['GET'])
@@ -124,78 +120,25 @@ def chat():
 
 
 def process_message(message: str, context: str = "") -> str:
-    """
-    Xử lý tin nhắn và tạo phản hồi
-    
-    Args:
-        message: Tin nhắn từ người dùng
-        context: Context bổ sung (optional)
-    
-    Returns:
-        Phản hồi từ AI
-    """
-    # Nếu Bedrock được bật, sử dụng mô hình để sinh phản hồi, có thể kèm ngữ cảnh học được
-    if bedrock_client and ENABLE_BEDROCK:
-        try:
-            learned_context = ""
-            if LEARNING_FROM_AWS:
-                learned_context = fetch_recent_context_from_aws(max_items=LEARNING_MAX_ITEMS)
+    message_lower = message.lower().strip()
+    message_clean = re.sub(r"[!?.]", "", message_lower)
 
-            system_prompt = (
-                "Bạn là trợ lý AI cho hệ thống Quản lý Nhân khẩu. Trả lời ngắn gọn, chính xác, tiếng Việt. "
-                "Nếu có ngữ cảnh bên dưới, hãy tận dụng để trả lời phù hợp với hệ thống."
-            )
-            messages = [
-                {"role": "user", "content": [
-                    {"type": "text", "text": (
-                        f"[NGỮ CẢNH HỌC ĐƯỢC]\n{learned_context}\n\n"
-                        f"[YÊU CẦU NGƯỜI DÙNG]\n{message}\n"
-                        f"[BỔ SUNG]\n{context}"
-                    )}
-                ]}
-            ]
-
-            body = {
-                "modelId": BEDROCK_MODEL_ID,
-                "messages": messages,
-                "system": [{"text": system_prompt}],
-                "inferenceConfig": {"maxTokens": 512, "temperature": 0.2}
-            }
-
-            resp = bedrock_client.invoke_model(
-                modelId=BEDROCK_MODEL_ID,
-                body=json.dumps(body)
-            )
-            payload = json.loads(resp.get('body', '{}'))
-            # Claude responses via Bedrock messages API
-            parts = payload.get('output', {}).get('message', {}).get('content', [])
-            text_out = "\n".join([p.get('text', '') for p in parts if p.get('type') == 'text'])
-            if text_out.strip():
-                return text_out.strip()
-        except Exception:
-            # fallback xuống logic rule-based
-            pass
-    
-    message_lower = message.lower()
-    
-    # Hệ thống chào hỏi
-    if any(word in message_lower for word in ['xin chào', 'hello', 'hi', 'chào']):
+    # Chào hỏi: chỉ regex các cụm cực kỳ phổ biến, bắt đầu hoặc nguyên câu
+    if re.fullmatch(r"(xin chào|chào|chào bạn|hello|hi)", message_clean):
         return "Xin chào! Tôi là trợ lý AI của hệ thống Quản lý Nhân khẩu. Tôi có thể giúp bạn tìm hiểu về các tính năng của hệ thống."
-    
     # Trợ giúp về hộ khẩu
-    elif any(word in message_lower for word in ['hộ khẩu', 'ho khau', 'household']):
-        return """Để quản lý hộ khẩu, bạn có thể:
+    elif any(w in message_clean for w in ['hộ khẩu', 'ho khau', 'household']):
+        return '''Để quản lý hộ khẩu, bạn có thể:
         
         1. **Xem danh sách hộ khẩu**: Vào trang "Quản lý Hộ khẩu" để xem tất cả hộ khẩu
         2. **Tạo hộ khẩu mới**: Click nút "Thêm hộ khẩu" và điền thông tin
         3. **Chỉnh sửa hộ khẩu**: Click icon "Sửa" trên từng hộ khẩu
         4. **Xem chi tiết**: Click vào mã hộ khẩu để xem thông tin chi tiết
         
-        Mỗi hộ khẩu bao gồm: Mã hộ khẩu, Địa chỉ, Chủ hộ và các thành viên trong hộ."""
-    
+        Mỗi hộ khẩu bao gồm: Mã hộ khẩu, Địa chỉ, Chủ hộ và các thành viên trong hộ.'''
     # Trợ giúp về nhân khẩu
-    elif any(word in message_lower for word in ['nhân khẩu', 'nhan khau', 'person', 'thành viên']):
-        return """Để quản lý nhân khẩu:
+    elif any(w in message_clean for w in ['nhân khẩu', 'nhan khau', 'person', 'thành viên']):
+        return '''Để quản lý nhân khẩu:
         
         1. **Xem danh sách**: Vào "Quản lý Nhân khẩu" để xem tất cả nhân khẩu
         2. **Thêm nhân khẩu**: Có thể thêm từ trang "Nhân khẩu" hoặc từ chi tiết hộ khẩu
@@ -203,11 +146,10 @@ def process_message(message: str, context: str = "") -> str:
         4. **Lọc**: Lọc theo độ tuổi, giới tính, địa chỉ
         5. **Xuất dữ liệu**: Export Excel hoặc PDF
         
-        Mỗi nhân khẩu cần thông tin: Họ tên, Ngày sinh, CCCD, Quê quán, Nghề nghiệp."""
-    
+        Mỗi nhân khẩu cần thông tin: Họ tên, Ngày sinh, CCCD, Quê quán, Nghề nghiệp.'''
     # Trợ giúp về thu phí
-    elif any(word in message_lower for word in ['thu phí', 'khoản thu', 'khoan thu', 'payment', 'fee']):
-        return """Quản lý thu phí bao gồm:
+    elif any(w in message_clean for w in ['thu phí', 'khoản thu', 'khoan thu', 'payment', 'fee']):
+        return '''Quản lý thu phí bao gồm:
         
         1. **Khoản thu bắt buộc**: Phí vệ sinh, phí an ninh,...
         2. **Khoản thu đóng góp**: Ủng hộ, từ thiện,...
@@ -216,21 +158,19 @@ def process_message(message: str, context: str = "") -> str:
         - Tạo khoản thu mới
         - Xem chi tiết khoản thu và danh sách đã nộp
         - Xem thống kê: Số hộ đã nộp, Tổng số tiền
-        - Ghi nhận nộp tiền cho hộ khẩu"""
-    
+        - Ghi nhận nộp tiền cho hộ khẩu'''
     # Trợ giúp về thống kê
-    elif any(word in message_lower for word in ['thống kê', 'thong ke', 'dashboard', 'statistics']):
-        return """Bảng thống kê cung cấp:
+    elif any(w in message_clean for w in ['thống kê', 'thong ke', 'dashboard', 'statistics']):
+        return '''Bảng thống kê cung cấp:
         
         1. **Tổng quan**: Số hộ khẩu, số nhân khẩu
         2. **Phân bố độ tuổi**: Mầm non, Tiểu học, THCS, THPT, Lao động, Nghỉ hưu
         3. **Biểu đồ**: Visualize dữ liệu độ tuổi
         
-        Vào trang "Dashboard" để xem tất cả thống kê."""
-    
+        Vào trang "Dashboard" để xem tất cả thống kê.'''
     # Trợ giúp về đăng nhập
-    elif any(word in message_lower for word in ['đăng nhập', 'dang nhap', 'login']):
-        return """Để đăng nhập hệ thống:
+    elif any(w in message_clean for w in ['đăng nhập', 'dang nhap', 'login']):
+        return '''Để đăng nhập hệ thống:
         
         1. Nhập Username (ví dụ: admin, ketoan)
         2. Nhập Password (mật khẩu đã được cấp)
@@ -238,11 +178,10 @@ def process_message(message: str, context: str = "") -> str:
         
         Có 2 loại tài khoản:
         - **ADMIN**: Toàn quyền quản lý
-        - **ACCOUNTANT**: Quản lý khoản thu và thu phí"""
-    
+        - **ACCOUNTANT**: Quản lý khoản thu và thu phí'''
     # Trợ giúp chung
-    elif any(word in message_lower for word in ['giúp', 'help', 'hướng dẫn', 'huong dan']):
-        return """Tôi có thể giúp bạn với:
+    elif any(w in message_clean for w in ['giúp', 'help', 'hướng dẫn', 'huong dan']):
+        return '''Tôi có thể giúp bạn với:
         
         - Quản lý Hộ khẩu
         - Quản lý Nhân khẩu
@@ -250,23 +189,34 @@ def process_message(message: str, context: str = "") -> str:
         - Xem Thống kê
         - Hướng dẫn Đăng nhập
         
-        Hãy hỏi tôi về bất kỳ chức năng nào!"""
-    
-    # Phản hồi mặc định
-    else:
-        return f"""Cảm ơn bạn đã liên hệ! Tôi là trợ lý AI của hệ thống Quản lý Nhân khẩu.
-        
-Hệ thống này giúp bạn:
-- Quản lý hộ khẩu và nhân khẩu
-- Quản lý các khoản thu phí
-- Xem thống kê và báo cáo
-
-Bạn có thể hỏi tôi về bất kỳ tính năng nào của hệ thống. Hoặc gõ "giúp" để xem danh sách chức năng."""
-    
-    # Có thể mở rộng với AI models sau:
-    # - OpenAI GPT API
-    # - LangChain với RAG
-    # - Local LLM (Ollama, LM Studio)
+        Hãy hỏi tôi về bất kỳ chức năng nào!'''
+    # Nếu không khớp luật nào - gọi Gemini
+    if GOOGLE_GEMINI_API_KEY:
+        try:
+            payload = {
+                "contents": [
+                    {"role": "user", "parts": [{"text": (context + "\n" if context else "") + message}]}
+                ],
+            }
+            url = f"{GOOGLE_GEMINI_API_URL}?key={GOOGLE_GEMINI_API_KEY}"
+            headers = {"Content-Type": "application/json"}
+            response = requests.post(url, headers=headers, json=payload, timeout=15)
+            if response.ok:
+                result = response.json()
+                candidates = result.get('candidates', [])
+                if candidates:
+                    content = candidates[0].get('content', {})
+                    parts = content.get('parts', [])
+                    if parts and 'text' in parts[0]:
+                        text = parts[0]['text']
+                        return text.strip()
+                return json.dumps(result, ensure_ascii=False)
+            else:
+                return f"Gemini API request failed: {response.status_code} {response.text}"
+        except Exception as e:
+            return f"Gemini API call error: {str(e)}"
+    # Fallback cực cuối (không có key Gemini): trả lời hệ thống
+    return f"Cảm ơn bạn đã liên hệ! Tôi là trợ lý AI của hệ thống Quản lý Nhân khẩu. Bạn có thể hỏi tôi về bất kỳ tính năng nào của hệ thống."
 
 
 def fetch_recent_context_from_aws(max_items: int = 16) -> str:
@@ -385,8 +335,8 @@ if __name__ == '__main__':
             AWS_DDB_TABLE or "",
             bool(s3_client and AWS_S3_BUCKET),
             bool(ddb_client and AWS_DDB_TABLE),
-            bool(bedrock_client and ENABLE_BEDROCK),
-            BEDROCK_MODEL_ID if ENABLE_BEDROCK else "",
+            False, # Removed Bedrock related print
+            "", # Removed Bedrock related print
         )
     )
     app.run(host='0.0.0.0', port=PORT, debug=DEBUG)
