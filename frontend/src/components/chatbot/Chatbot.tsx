@@ -99,7 +99,7 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
           pushBotMessage('✅ Đã mở trang Quản lý Hộ khẩu!');
         } else if (act.target === 'household_detail' && act.params?.householdId) {
           enqueueSnackbar(`Agent: Đang mở chi tiết hộ khẩu ${act.params.householdId}`, { variant: 'info' });
-          navigate(`/hokhau/${encodeURIComponent(act.params.householdId)}`);
+          navigate(`/ho-khau/${encodeURIComponent(act.params.householdId)}`);
           pushBotMessage(`✅ Đã mở chi tiết hộ khẩu: ${act.params.householdId}`);
         } else if (act.target === 'person_list') {
           enqueueSnackbar('Agent: Đang mở trang Quản lý Nhân khẩu', { variant: 'info' });
@@ -192,7 +192,14 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
             if (part.startsWith('data: ')) {
               let content = part.replace('data: ', '');
               if (content === '[END] ') finished = true;
-              else {
+              else if (content.trim().startsWith('{') && content.includes('"actions"')) {
+                try {
+                  const parsed = JSON.parse(content);
+                  if (parsed && Array.isArray(parsed.actions)) {
+                    agentActions = parsed.actions;
+                  }
+                } catch(e) {}
+              } else {
                 allResult += content;
                 setMessages((prev) => {
                   // cập nhật tin nhắn cuối (bot)

@@ -32,7 +32,7 @@ const router = createBrowserRouter([
         element: <NhanKhauPage />,
       },
       {
-        path: '/hokhau/:maHoKhau',
+        path: '/ho-khau/:maHoKhau',
         element: <HoKhauDetailPage />,
       },
       {

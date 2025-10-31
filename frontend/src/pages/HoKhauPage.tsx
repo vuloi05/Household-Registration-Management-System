@@ -182,7 +182,7 @@ export default function NhanKhauPage() {
                       <TableCell>{row.chuHo?.hoTen}</TableCell>
                       <TableCell>{row.diaChi}</TableCell>
                       <TableCell align="center">
-                        <IconButton title="Xem chi tiết" color="primary" component={RouterLink} to={`/hokhau/${row.maHoKhau}`}>
+                        <IconButton title="Xem chi tiết" color="primary" component={RouterLink} to={`/ho-khau/${row.maHoKhau}`}>
                           <InfoIcon />
                         </IconButton>
                         <IconButton title="Chỉnh sửa" color="secondary" onClick={() => handleOpenEditForm(row)}>
