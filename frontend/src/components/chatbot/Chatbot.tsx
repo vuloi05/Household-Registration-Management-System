@@ -595,7 +595,7 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
               }} 
             />
             <Typography variant="subtitle1" fontWeight="bold">
-              AI Assistant
+              Trợ lý ảo
             </Typography>
           </Box>
           <IconButton
