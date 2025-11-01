@@ -57,6 +57,63 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
+  
+  // Drag functionality state
+  const [position, setPosition] = useState<{ x: number; y: number }>(() => {
+    // Load saved position from localStorage or use default
+    const saved = localStorage.getItem('chatbotPosition');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.x !== undefined && parsed.y !== undefined) {
+          return { x: parsed.x, y: parsed.y };
+        }
+      } catch {
+        // Invalid JSON, fall through to default
+      }
+    }
+    // Default bottom-right position - will be set properly on mount
+    return { x: -1, y: -1 };
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [hasDragged, setHasDragged] = useState(false);
+  const hasDraggedRef = useRef(false);
+  const buttonRef = useRef<HTMLDivElement>(null);
+
+  // Initialize position on mount if not set
+  useEffect(() => {
+    const saved = localStorage.getItem('chatbotPosition');
+    if (!saved && (position.x === -1 || position.y === -1)) {
+      // Calculate default bottom-right position
+      const defaultX = window.innerWidth - 92; // Approximate button width + margin
+      const defaultY = window.innerHeight - 92; // Approximate button height + margin
+      setPosition({ x: defaultX, y: defaultY });
+    }
+  }, []);
+
+  // Handle window resize - constrain button position if needed
+  useEffect(() => {
+    const handleResize = () => {
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        const buttonWidth = rect.width;
+        const buttonHeight = rect.height;
+        const maxX = window.innerWidth - buttonWidth;
+        const maxY = window.innerHeight - buttonHeight;
+        
+        if (position.x > maxX || position.y > maxY) {
+          const constrainedX = Math.max(0, Math.min(position.x, maxX));
+          const constrainedY = Math.max(0, Math.min(position.y, maxY));
+          setPosition({ x: constrainedX, y: constrainedY });
+          localStorage.setItem('chatbotPosition', JSON.stringify({ x: constrainedX, y: constrainedY }));
+        }
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [position]);
   // Queue để chuyển action tới các page cụ thể
   const agentActionQueue = useRef<AgentAction[]>([]);
   // Hàm dùng cho context
@@ -78,6 +135,96 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
       inputRef.current.focus();
     }
   }, [isOpen]);
+
+  // Drag handlers
+  const positionRef = useRef(position);
+  useEffect(() => {
+    positionRef.current = position;
+  }, [position]);
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Always allow dragging from the button container
+    setHasDragged(false);
+    hasDraggedRef.current = false;
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (rect) {
+      // Calculate offset from mouse to button's current position
+      setDragStart({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      });
+      setIsDragging(true);
+    }
+    e.stopPropagation();
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const buttonRect = buttonRef.current?.getBoundingClientRect();
+    if (!buttonRect) return;
+    
+    const startX = buttonRect.left;
+    const startY = buttonRect.top;
+    const initialMouseX = startX + dragStart.x;
+    const initialMouseY = startY + dragStart.y;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const moveX = Math.abs(e.clientX - initialMouseX);
+      const moveY = Math.abs(e.clientY - initialMouseY);
+      
+      // Consider it a drag if moved more than 5px
+      if (moveX > 5 || moveY > 5) {
+        if (!hasDraggedRef.current) {
+          hasDraggedRef.current = true;
+          setHasDragged(true);
+        }
+
+        // Calculate new position based on mouse position minus the drag offset
+        const newX = e.clientX - dragStart.x;
+        const newY = e.clientY - dragStart.y;
+        
+        // Constrain to viewport bounds
+        const currentRect = buttonRef.current?.getBoundingClientRect();
+        const buttonWidth = currentRect?.width || 72;
+        const buttonHeight = currentRect?.height || 72;
+        const maxX = window.innerWidth - buttonWidth;
+        const maxY = window.innerHeight - buttonHeight;
+        
+        const constrainedX = Math.max(0, Math.min(newX, maxX));
+        const constrainedY = Math.max(0, Math.min(newY, maxY));
+        
+        const newPosition = {
+          x: constrainedX,
+          y: constrainedY,
+        };
+        
+        setPosition(newPosition);
+        positionRef.current = newPosition;
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      if (hasDraggedRef.current) {
+        // Save position to localStorage only if we actually dragged
+        localStorage.setItem('chatbotPosition', JSON.stringify(positionRef.current));
+      }
+      // Reset hasDragged after a short delay to allow click handler to check it
+      setTimeout(() => {
+        setHasDragged(false);
+        hasDraggedRef.current = false;
+      }, 100);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragStart]);
 
   // Hàm mapping action agent thành thao tác UI (Có thêm gửi message xác nhận vào chat)
   const handleAgentActions = (actions: AgentAction[] | undefined) => {
@@ -326,18 +473,38 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
     }
   };
 
+  const handleButtonClick = (e: React.MouseEvent) => {
+    // Only open if we didn't just drag
+    if (!hasDragged && !isDragging && !hasDraggedRef.current) {
+      setIsOpen(true);
+    }
+  };
+
   if (!isOpen) {
+    const currentPosition = position.x >= 0 && position.y >= 0 ? position : { x: window.innerWidth - 92, y: window.innerHeight - 92 };
+    
     return (
       <Box
+        ref={buttonRef}
+        onMouseDown={handleMouseDown}
+        onClick={handleButtonClick}
         sx={{
           position: 'fixed',
-          bottom: { xs: 6, sm: 14, md: 20 },
-          right: { xs: 6, sm: 14, md: 20 },
-          zIndex: 1000,
+          left: `${currentPosition.x}px`,
+          top: `${currentPosition.y}px`,
+          zIndex: 1400, // Higher than MUI Drawer (1200) to appear above sidebar
+          cursor: isDragging ? 'grabbing' : 'grab',
+          userSelect: 'none',
+          touchAction: 'none',
         }}
       >
         <IconButton
-          onClick={() => setIsOpen(true)}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!hasDragged && !isDragging && !hasDraggedRef.current) {
+              setIsOpen(true);
+            }
+          }}
           sx={{
             bgcolor: 'primary.main',
             color: 'white',
@@ -345,23 +512,26 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
             height: { xs: 48, sm: 64, md: 72 },
             '&:hover': {
               bgcolor: 'primary.dark',
-              transform: 'translateY(-1px) scale(1.04)',
+              transform: isDragging ? 'none' : 'translateY(-1px) scale(1.04)',
               boxShadow: (theme) => `0 8px 20px ${alpha(theme.palette.primary.main, 0.35)}`,
             },
-            transition: 'transform .2s ease, box-shadow .2s ease',
+            transition: isDragging ? 'none' : 'transform .2s ease, box-shadow .2s ease',
             boxShadow: (theme) => `0 6px 16px ${alpha(theme.palette.primary.main, 0.25)}`,
             border: (theme) => `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
             backdropFilter: 'blur(4px)',
             p: 0.5,
+            pointerEvents: 'auto',
           }}
         >
           <img 
             src="/icon_chatbot.png" 
             alt="Chatbot" 
+            draggable={false}
             style={{ 
               width: '100%', 
               height: '100%', 
-              objectFit: 'contain' 
+              objectFit: 'contain',
+              pointerEvents: 'none',
             }} 
           />
         </IconButton>
@@ -390,7 +560,7 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
             maxHeight: '60vh',
             display: 'flex',
             flexDirection: 'column',
-            zIndex: 1000,
+            zIndex: 1400, // Higher than MUI Drawer (1200) to appear above sidebar
             borderRadius: 3,
             overflow: 'hidden',
             background: (theme) => `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.86)}, ${alpha(theme.palette.background.paper, 0.92)})`,
