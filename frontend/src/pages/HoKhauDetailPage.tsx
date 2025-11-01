@@ -13,7 +13,6 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 // Import API
-import { getHoKhauById } from '../api/hoKhauApi';
 import type { HoKhau } from '../api/hoKhauApi';
 import { getDanhSachNhanKhau, createNhanKhau, updateNhanKhau, deleteNhanKhau } from '../api/nhanKhauApi';
 import type { NhanKhau } from '../api/nhanKhauApi';
@@ -132,7 +131,7 @@ export default function HoKhauDetailPage() {
   const handleOpenDeleteDialog = (id: number) => setDeletingNhanKhauId(id);
   const handleCloseDeleteDialog = () => setDeletingNhanKhauId(null);
   const handleDeleteConfirm = async () => {
-      if (!hoKhau) return;
+      if (!hoKhau || deletingNhanKhauId === null) return;
       const currentHoKhauId = hoKhau.id;
       try {
         await deleteNhanKhau(currentHoKhauId, deletingNhanKhauId);
