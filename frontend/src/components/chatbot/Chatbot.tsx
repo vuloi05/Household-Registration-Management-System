@@ -11,12 +11,13 @@ import {
 import {
   Send as SendIcon,
   Close as CloseIcon,
+  ThumbUp as ThumbUpIcon,
+  ThumbDown as ThumbDownIcon,
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 import { alpha } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
-import Button from '@mui/material/Button';
 
 export type AgentAction = {
   type: string;
@@ -698,16 +699,48 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
                 {/* PHẦN BUTTON FEEDBACK CHỈ CHO BOT MESSAGE */}
                 {msg.sender==='bot' && !!messages[index-1] && messages[index-1].sender==='user' && (
                   <Box sx={{ mt: 1, display:'flex', gap:0.5 }}>
-                    <Button
-                      variant="outlined" color="success" size="small"
+                    <IconButton
                       disabled={feedbackSending}
                       onClick={() => sendFeedback('confirm', index)}
-                    >Xác nhận đúng</Button>
-                    <Button
-                      variant="outlined" color="error" size="small"
+                      sx={{
+                        width: 24,
+                        height: 24,
+                        padding: 0,
+                        border: 'none',
+                        color: 'rgba(0, 0, 0, 0.6)',
+                        backgroundColor: 'transparent',
+                        '&:hover': {
+                          color: 'rgba(0, 0, 0, 0.75)',
+                          backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                        },
+                        '&:disabled': {
+                          color: 'rgba(0, 0, 0, 0.26)',
+                        },
+                      }}
+                    >
+                      <ThumbUpIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
+                    <IconButton
                       disabled={feedbackSending}
                       onClick={() => sendFeedback('wrong', index)}
-                    >Báo sai</Button>
+                      sx={{
+                        width: 24,
+                        height: 24,
+                        padding: 0,
+                        border: 'none',
+                        color: 'rgba(0, 0, 0, 0.6)',
+                        backgroundColor: 'transparent',
+                        '&:hover': {
+                          color: 'rgba(0, 0, 0, 0.75)',
+                          backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                        },
+                        '&:disabled': {
+                          color: 'rgba(0, 0, 0, 0.26)',
+                        },
+                      }}
+                    >
+                      <ThumbDownIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
                     {/* Removed "Sửa đáp án" button */}
                   </Box>
                 )}
