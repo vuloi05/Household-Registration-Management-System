@@ -10,7 +10,6 @@ import {
 } from '@mui/material';
 import {
   Send as SendIcon,
-  SmartToy as ChatIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
@@ -342,8 +341,8 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
           sx={{
             bgcolor: 'primary.main',
             color: 'white',
-            width: { xs: 36, sm: 48, md: 56 },
-            height: { xs: 36, sm: 48, md: 56 },
+            width: { xs: 48, sm: 64, md: 72 },
+            height: { xs: 48, sm: 64, md: 72 },
             '&:hover': {
               bgcolor: 'primary.dark',
               transform: 'translateY(-1px) scale(1.04)',
@@ -353,9 +352,18 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
             boxShadow: (theme) => `0 6px 16px ${alpha(theme.palette.primary.main, 0.25)}`,
             border: (theme) => `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
             backdropFilter: 'blur(4px)',
+            p: 0.5,
           }}
         >
-          <ChatIcon />
+          <img 
+            src="/icon_chatbot.png" 
+            alt="Chatbot" 
+            style={{ 
+              width: '100%', 
+              height: '100%', 
+              objectFit: 'contain' 
+            }} 
+          />
         </IconButton>
       </Box>
     );
@@ -407,7 +415,15 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <ChatIcon />
+            <img 
+              src="/icon_chatbot.png" 
+              alt="Chatbot" 
+              style={{ 
+                width: '24px', 
+                height: '24px', 
+                objectFit: 'contain' 
+              }} 
+            />
             <Typography variant="subtitle1" fontWeight="bold">
               AI Assistant
             </Typography>

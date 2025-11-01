@@ -132,8 +132,10 @@ def qa_feedback():
         if feedback_type == 'wrong':
             with kb_lock:
                 qa_knowledge_base[:] = [it for it in qa_knowledge_base if it['q'].strip().lower() != question.strip().lower()]
+            # Prefer Ollama first, fallback to Gemini
+            from .ollama import call_ollama
             from .gemini import call_gemini
-            generated = call_gemini(question, context)
+            generated = call_ollama(question, context) or call_gemini(question, context)
             if generated:
                 new_answer = generated
                 with kb_lock:

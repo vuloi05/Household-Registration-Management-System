@@ -49,18 +49,25 @@ Phần mềm được xây dựng cho Ban quản lý tổ dân phố 7, phườn
     ```env
     PORT=5000
     DEBUG=True
+    
+    # Ưu tiên dùng Ollama (Local AI)
+    OLLAMA_HOST=http://localhost:11434
+    OLLAMA_MODEL=llama3.1
+
     # AWS lưu chat (nếu có)
     AWS_REGION=us-east-1
     AWS_S3_BUCKET=your_name_bucket
     AWS_DDB_TABLE=your_name_ddb_table
-    # Google Gemini API Key (bắt buộc)
+    
+    # Google Gemini API Key (tuỳ chọn - chỉ dùng khi fallback)
     GOOGLE_GEMINI_API_KEY=your_google_gemini_api_key
     # Tuỳ chọn - học từ lịch sử log
     LEARNING_FROM_AWS=true
     LEARNING_MAX_ITEMS=16
     LEARNING_S3_PREFIX=chat-logs
     ```
-    - Nếu bạn không dùng AWS, chỉ cần dòng PORT, DEBUG, GOOGLE_GEMINI_API_KEY.
+    - Nếu bạn không dùng AWS, chỉ cần các dòng: `PORT`, `DEBUG`, `OLLAMA_HOST`, `OLLAMA_MODEL`.
+    - `GOOGLE_GEMINI_API_KEY` là tuỳ chọn để dự phòng (fallback) khi Ollama không sẵn sàng.
     - **KHÔNG đưa file .env thật lên git để tránh lộ khoá bí mật!**
 
 ### Các bước cài đặt
@@ -124,6 +131,29 @@ Bạn cần mở 3 cửa sổ terminal riêng biệt để chạy song song back
         ```bash
         pip install -r requirements.txt
         ```
+    *   Cài đặt Ollama (Local AI):
+        - Windows (PowerShell):
+          ```powershell
+          winget install Ollama.Ollama
+          ```
+        - macOS (Homebrew):
+          ```bash
+          brew install --cask ollama
+          ```
+        - Linux:
+          ```bash
+          curl -fsSL https://ollama.com/install.sh | sh
+          ```
+        - Kéo model (ví dụ `llama3.1`):
+          ```bash
+          ollama pull llama3.1
+          ```
+        - Kiểm tra nhanh dịch vụ Ollama:
+          ```bash
+          curl http://localhost:11434/api/generate \
+            -H "Content-Type: application/json" \
+            -d '{"model":"llama3.1","prompt":"Say hello"}'
+          ```
     *   (Tuỳ chọn) Cấu hình file `.env` để bật ghi dữ liệu lên AWS:
         ```bash
         # ai-server/.env
@@ -144,6 +174,7 @@ Bạn cần mở 3 cửa sổ terminal riêng biệt để chạy song song back
         python main.py
         ```
     *   AI Server sẽ khởi động và chạy tại `http://localhost:5000`.
+    *   Luồng gọi model: Server sẽ gọi Ollama trước (`OLLAMA_MODEL`). Nếu Ollama không phản hồi, hệ thống sẽ tự động fallback sang Gemini (cần `GOOGLE_GEMINI_API_KEY`).
 
 4.  **Khai báo URL AI server cho Frontend:**
     - Tạo file `frontend/.env` (hoặc cập nhật)
