@@ -57,27 +57,35 @@ def chat():
         else:
             history = None
 
-        # Process message với các tính năng nâng cao
-        result = process_message(
-            user_message,
-            context,
-            bypass_kb=False,
-            session_id=session_id,
-            history=history,
-            system_info=system_info
-        )
-        
-        response_text = result['response']
-        source = result.get('source', 'unknown')
-        from_cache = result.get('from_cache', False)
-        validation = result.get('validation', {})
-        
+        # Thử suy luận hành động trước để tránh gọi AI không cần thiết
+        actions = infer_actions(user_message)
+
+        if actions:
+            # Bỏ qua tạo câu trả lời AI, chỉ trả về action
+            response_text = ""
+            source = 'agent/actions'
+            from_cache = False
+            validation = {'valid': True, 'score': 1.0}
+        else:
+            # Process message với các tính năng nâng cao (AI)
+            result = process_message(
+                user_message,
+                context,
+                bypass_kb=False,
+                session_id=session_id,
+                history=history,
+                system_info=system_info
+            )
+            response_text = result['response']
+            source = result.get('source', 'unknown')
+            from_cache = result.get('from_cache', False)
+            validation = result.get('validation', {})
+
         # Lưu vào conversation memory
         if settings.ENABLE_CONVERSATION_MEMORY and session_id:
             add_message(session_id, 'user', user_message)
-            add_message(session_id, 'assistant', response_text)
-        
-        actions = infer_actions(user_message)
+            if response_text:
+                add_message(session_id, 'assistant', response_text)
 
         # Persist chat event
         persist_chat_event({
