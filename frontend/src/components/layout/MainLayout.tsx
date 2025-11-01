@@ -2,6 +2,7 @@
 import { Box, CssBaseline } from '@mui/material';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import Chatbot from '../chatbot/Chatbot';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -31,6 +32,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       >
         {children}
       </Box>
+      {/* Chatbot AI Assistant - Fixed position */}
+      <Chatbot />
     </Box>
   );
 }

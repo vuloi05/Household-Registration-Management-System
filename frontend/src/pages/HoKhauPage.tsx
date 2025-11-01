@@ -4,7 +4,7 @@ import {
   Button, Typography, Box, Paper, TableContainer, Table, TableHead,
   TableRow, TableCell, TableBody, IconButton, CircularProgress, TextField, InputAdornment
 } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ConfirmationDialog from '../components/shared/ConfirmationDialog';
 import AddIcon from '@mui/icons-material/Add';
@@ -16,9 +16,12 @@ import HoKhauForm from '../components/forms/HoKhauForm';
 import type { HoKhauFormValues } from '../types/hoKhau';
 import { createHoKhau, getDanhSachHoKhau, updateHoKhau, deleteHoKhau } from '../api/hoKhauApi';
 import type { HoKhau } from '../api/hoKhauApi';
+import { useSnackbar } from 'notistack';
 
 
 export default function NhanKhauPage() {
+  const location = useLocation();
+  const { enqueueSnackbar } = useSnackbar();
   const [openForm, setOpenForm] = useState(false);
   const [hoKhauList, setHoKhauList] = useState<HoKhau[]>([]);
   const [filteredHoKhauList, setFilteredHoKhauList] = useState<HoKhau[]>([]);
@@ -57,6 +60,19 @@ export default function NhanKhauPage() {
       setFilteredHoKhauList(filtered);
     }
   }, [searchTerm, hoKhauList]);
+
+  // Lắng nghe agent action từ router state
+  useEffect(() => {
+    const s = location.state as any;
+    if (s && s.agentAction) {
+      const act = s.agentAction;
+      if (act.type === 'search' && act.target === 'household_list' && act.params?.q) {
+        setSearchTerm(act.params.q);
+        enqueueSnackbar('Agent: Đang tìm kiếm hộ khẩu: ' + act.params.q, { variant: 'info' });
+      }
+    }
+    // eslint-disable-next-line
+  }, [location.state]);
 
   const handleOpenCreateForm = () => {
     setEditingHoKhau(null);
@@ -166,7 +182,7 @@ export default function NhanKhauPage() {
                       <TableCell>{row.chuHo?.hoTen}</TableCell>
                       <TableCell>{row.diaChi}</TableCell>
                       <TableCell align="center">
-                        <IconButton title="Xem chi tiết" color="primary" component={RouterLink} to={`/hokhau/${row.id}`}>
+                        <IconButton title="Xem chi tiết" color="primary" component={RouterLink} to={`/ho-khau/${row.maHoKhau}`}>
                           <InfoIcon />
                         </IconButton>
                         <IconButton title="Chỉnh sửa" color="secondary" onClick={() => handleOpenEditForm(row)}>

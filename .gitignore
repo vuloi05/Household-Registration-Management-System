@@ -19,7 +19,6 @@ out/
 frontend/node_modules/
 frontend/dist/
 frontend/.env
-frontend/.env.*
 frontend/npm-debug.log*
 frontend/yarn-debug.log*
 frontend/yarn-error.log*
@@ -37,7 +36,6 @@ backend/api/release.properties
 backend/api/dependency-reduced-pom.xml
 backend/api/build-log.txt
 backend/api/.env
-backend/api/.env.*
 
 # ==================================
 # Operating System files

@@ -13,10 +13,10 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 // Import API
-import { getHoKhauById } from '../api/hoKhauApi';
 import type { HoKhau } from '../api/hoKhauApi';
 import { getDanhSachNhanKhau, createNhanKhau, updateNhanKhau, deleteNhanKhau } from '../api/nhanKhauApi';
 import type { NhanKhau } from '../api/nhanKhauApi';
+import { getDanhSachHoKhau } from '../api/hoKhauApi';
 
 // Import Component & Type
 import NhanKhauForm from '../components/forms/NhanKhauForm';
@@ -66,7 +66,7 @@ function NhanKhauTable({ data, onDetail, onEdit, onDelete }: { data: NhanKhau[],
  * Trang chính hiển thị thông tin chi tiết của một Hộ khẩu và quản lý các Nhân khẩu bên trong.
  */
 export default function HoKhauDetailPage() {
-  const { hoKhauId } = useParams<{ hoKhauId: string }>();
+  const { maHoKhau } = useParams<{ maHoKhau: string }>();
   const navigate = useNavigate();
   
   // State quản lý dữ liệu
@@ -83,17 +83,21 @@ export default function HoKhauDetailPage() {
   
   // Fetch dữ liệu Hộ khẩu và Nhân khẩu khi component được tải lần đầu hoặc khi hoKhauId thay đổi
   useEffect(() => {
-    if (hoKhauId) {
+    if (maHoKhau) {
       const fetchData = async () => {
         try {
           setLoading(true);
-          const id = parseInt(hoKhauId, 10);
-          const [hoKhauData, nhanKhauData] = await Promise.all([
-            getHoKhauById(id),
-            getDanhSachNhanKhau(id)
-          ]);
-          setHoKhau(hoKhauData);
-          setNhanKhauList(nhanKhauData);
+          // Gọi API lấy danh sách tất cả hộ khẩu và tìm đúng maHoKhau
+          const danhSach = await getDanhSachHoKhau();
+          const hoKhauData = danhSach.find(hk => hk.maHoKhau === maHoKhau);
+          if (!hoKhauData) {
+            setHoKhau(null);
+            setNhanKhauList([]);
+          } else {
+            setHoKhau(hoKhauData);
+            const nhanKhauData = await getDanhSachNhanKhau(hoKhauData.id);
+            setNhanKhauList(nhanKhauData);
+          }
         } catch (error) {
           console.error('Failed to fetch details:', error);
         } finally {
@@ -102,15 +106,15 @@ export default function HoKhauDetailPage() {
       };
       fetchData();
     }
-  }, [hoKhauId]);
+  }, [maHoKhau]);
   
   // ---- Logic cho Form (Thêm & Sửa) ----
   const handleOpenCreateForm = () => { setEditingNhanKhau(null); setOpenNhanKhauForm(true); };
   const handleOpenEditForm = (nhanKhau: NhanKhau) => { setEditingNhanKhau(nhanKhau); setOpenNhanKhauForm(true); };
   const handleCloseForm = () => { setOpenNhanKhauForm(false); setEditingNhanKhau(null); };
   const handleNhanKhauFormSubmit = async (data: NhanKhauFormValues) => {
-      if (!hoKhauId) return;
-      const currentHoKhauId = parseInt(hoKhauId, 10);
+      if (!hoKhau) return;
+      const currentHoKhauId = hoKhau.id;
       try {
         if (editingNhanKhau) {
           const updated = await updateNhanKhau(currentHoKhauId, editingNhanKhau.id, data);
@@ -127,8 +131,8 @@ export default function HoKhauDetailPage() {
   const handleOpenDeleteDialog = (id: number) => setDeletingNhanKhauId(id);
   const handleCloseDeleteDialog = () => setDeletingNhanKhauId(null);
   const handleDeleteConfirm = async () => {
-      if (!hoKhauId || !deletingNhanKhauId) return;
-      const currentHoKhauId = parseInt(hoKhauId, 10);
+      if (!hoKhau || deletingNhanKhauId === null) return;
+      const currentHoKhauId = hoKhau.id;
       try {
         await deleteNhanKhau(currentHoKhauId, deletingNhanKhauId);
         setNhanKhauList(list => list.filter(item => item.id !== deletingNhanKhauId));
@@ -204,15 +208,12 @@ export default function HoKhauDetailPage() {
         open={openNhanKhauForm}
         onClose={handleCloseForm}
         onSubmit={handleNhanKhauFormSubmit}
-        initialData={
-          editingNhanKhau
-            ? {
-                ...editingNhanKhau,
-                ngayCap: editingNhanKhau.ngayCap ?? "",
-                noiCap: editingNhanKhau.noiCap ?? "",
-              }
-            : null
-        }
+        initialData={editingNhanKhau ? {
+          ...editingNhanKhau,
+          ngayCap: editingNhanKhau.ngayCap || '',
+          noiCap: editingNhanKhau.noiCap || '',
+          maHoKhau: editingNhanKhau.maHoKhau || '',
+        } : null}
         showMaHoKhauField={false} // Không hiển thị ô nhập mã hộ khẩu cho trang chi tiết hộ khẩu
       />
       <ConfirmationDialog
