@@ -46,45 +46,45 @@ Phần mềm được xây dựng cho Ban quản lý tổ dân phố 7, phườn
 6.  **Tạo file cấu hình .env cho AI Server (bắt buộc)**
     - Vào thư mục `ai-server`, tạo file `.env` với các biến sau:
 
-    ```env
-    # Cấu hình server
-PORT=5000
-DEBUG=True
+    ```bash
+       # Cấu hình server
+       PORT=5000
+       DEBUG=True
 
-# Ghi dữ liệu chat lên AWS (tùy chọn, để trống nếu không dùng)
-AWS_REGION=us-east-1
-AWS_S3_BUCKET=ai-training-data-bucket-kirito
-AWS_DDB_TABLE=ai_agent_conversations
+      # Ghi dữ liệu chat lên AWS (tùy chọn, để trống nếu không dùng)
+      AWS_REGION=us-east-1
+      AWS_S3_BUCKET=ai-training-data-bucket-kirito
+      AWS_DDB_TABLE=ai_agent_conversations
 
-# Google Gemini (bắt buộc để AI hoạt động)
-GOOGLE_GEMINI_API_KEY=your_google_gemini_api_key
+      # Google Gemini (bắt buộc để AI hoạt động)
+      GOOGLE_GEMINI_API_KEY=your_google_gemini_api_key
 
-# Tự học từ log AWS (nâng cao, có thể bỏ qua)
-LEARNING_FROM_AWS=true
-LEARNING_MAX_ITEMS=16
-LEARNING_S3_PREFIX=chat-logs
+      # Tự học từ log AWS (nâng cao, có thể bỏ qua)
+      LEARNING_FROM_AWS=true
+      LEARNING_MAX_ITEMS=16
+      LEARNING_S3_PREFIX=chat-logs
 
-# Tự động reload knowledge base từ AWS (tự học liên tục)
-LEARNING_AUTO_RELOAD_ENABLED=true  # Bật/tắt tự động reload
-LEARNING_AUTO_RELOAD_INTERVAL=300  # Interval reload (giây), mặc định 5 phút (300s)
+      # Tự động reload knowledge base từ AWS (tự học liên tục)
+      LEARNING_AUTO_RELOAD_ENABLED=true  # Bật/tắt tự động reload
+      LEARNING_AUTO_RELOAD_INTERVAL=300  # Interval reload (giây), mặc định 5 phút (300s)
 
-# Tự học chủ động - Tự động phân tích và học từ conversations (không cần feedback)
-LEARNING_AUTO_LEARN_ENABLED=true  # Bật/tắt tự học chủ động
-LEARNING_AUTO_LEARN_INTERVAL=600  # Interval tự học (giây), mặc định 10 phút (600s)
-LEARNING_MIN_SCORE_THRESHOLD=0.5  # Điểm tối thiểu để học (0.0-1.0), mặc định 0.5
-LEARNING_MAX_AUTO_LEARN_ITEMS=10  # Số Q&A tối đa học mỗi lần chạy, mặc định 10
+      # Tự học chủ động - Tự động phân tích và học từ conversations (không cần feedback)
+      LEARNING_AUTO_LEARN_ENABLED=true  # Bật/tắt tự học chủ động
+      LEARNING_AUTO_LEARN_INTERVAL=600  # Interval tự học (giây), mặc định 10 phút (600s)
+      LEARNING_MIN_SCORE_THRESHOLD=0.5  # Điểm tối thiểu để học (0.0-1.0), mặc định 0.5
+      LEARNING_MAX_AUTO_LEARN_ITEMS=10  # Số Q&A tối đa học mỗi lần chạy, mặc định 10
 
-# Response caching và conversation memory
-ENABLE_RESPONSE_CACHE=true  # Bật/tắt response caching
-RESPONSE_CACHE_TTL=3600  # Cache TTL (giây), mặc định 1 giờ
-ENABLE_CONVERSATION_MEMORY=true  # Bật/tắt conversation memory
-SESSION_TIMEOUT_HOURS=24  # Session timeout (giờ), mặc định 24h
+      # Response caching và conversation memory
+      ENABLE_RESPONSE_CACHE=true  # Bật/tắt response caching
+      RESPONSE_CACHE_TTL=3600  # Cache TTL (giây), mặc định 1 giờ
+      ENABLE_CONVERSATION_MEMORY=true  # Bật/tắt conversation memory
+      SESSION_TIMEOUT_HOURS=24  # Session timeout (giờ), mặc định 24h
 
-# Response validation và API retry
-ENABLE_RESPONSE_VALIDATION=true  # Bật/tắt response validation
-API_RETRY_MAX_ATTEMPTS=3  # Số lần retry tối đa, mặc định 3
-API_RETRY_DELAY_SECONDS=1.0  # Delay giữa các lần retry (giây), mặc định 1s
-    ```
+      # Response validation và API retry
+      ENABLE_RESPONSE_VALIDATION=true  # Bật/tắt response validation
+      API_RETRY_MAX_ATTEMPTS=3  # Số lần retry tối đa, mặc định 3
+      API_RETRY_DELAY_SECONDS=1.0  # Delay giữa các lần retry (giây), mặc định 1s
+      ```
     - Nếu bạn không dùng AWS, chỉ cần các dòng: `PORT`, `DEBUG`, `OLLAMA_HOST`, `OLLAMA_MODEL`.
     - `GOOGLE_GEMINI_API_KEY` là tuỳ chọn để dự phòng (fallback) khi Ollama không sẵn sàng.
     - **KHÔNG đưa file .env thật lên git để tránh lộ khoá bí mật!**
