@@ -7,15 +7,17 @@ import java.util.List;
 // <<<< THAY ĐỔI 1: Xóa import JsonIgnore và thêm import JsonManagedReference >>>>
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 
 
 @Entity
 @Table(name = "ho_khau")
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class HoKhau {
 
     @Id

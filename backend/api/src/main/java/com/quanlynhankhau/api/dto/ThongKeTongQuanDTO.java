@@ -2,11 +2,11 @@
 package com.quanlynhankhau.api.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
 @AllArgsConstructor // Tạo constructor với tất cả các tham số
 public class ThongKeTongQuanDTO {
     private long soHoKhau;

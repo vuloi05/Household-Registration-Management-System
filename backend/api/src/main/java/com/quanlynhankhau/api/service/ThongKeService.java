@@ -66,6 +66,11 @@ public class ThongKeService {
         if (tuoi <= 60) return "Độ tuổi lao động (18-60)";
         return "Nghỉ hưu (>60)";
     }
+
+    public Map<String, Long> getThongKeTheoGioiTinh() {
+        return nhanKhauRepository.findAll().stream()
+                .collect(Collectors.groupingBy(NhanKhau::getGioiTinh, Collectors.counting()));
+    }
     
     // (Chúng ta sẽ thêm thống kê Giới tính sau khi cập nhật CSDL)
 }

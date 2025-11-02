@@ -30,4 +30,9 @@ public class ThongKeController {
     public ResponseEntity<Map<String, Long>> getThongKeTheoDoTuoi() {
         return ResponseEntity.ok(thongKeService.getThongKeTheoDoTuoi());
     }
+
+    @GetMapping("/gioitinh")
+    public ResponseEntity<Map<String, Long>> getThongKeTheoGioiTinh() {
+        return ResponseEntity.ok(thongKeService.getThongKeTheoGioiTinh());
+    }
 }
