@@ -6,10 +6,12 @@ import { useNavigate } from 'react-router-dom';
 import PeopleIcon from '@mui/icons-material/People';
 import HomeIcon from '@mui/icons-material/Home';
 import GroupsIcon from '@mui/icons-material/Groups';
-import PersonIcon from '@mui/icons-material/Person';
+import TransferWithinAStationIcon from '@mui/icons-material/TransferWithinAStation';
 
 // Sửa lại import
-import { getThongKeDoTuoi, getThongKeTongQuan } from '../api/thongKeApi';
+import { getThongKeDoTuoi, getThongKeTongQuan, getThongKeGioiTinh } from '../api/thongKeApi';
+import { getAllTamVang } from '../api/tamVangApi';
+import { getAllTamTru } from '../api/tamTruApi';
 import type { ThongKeDoTuoi, ThongKeTongQuan } from '../api/thongKeApi';
 
 import StatCard from '../components/dashboard/StatCard';
@@ -20,17 +22,26 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [tongQuanData, setTongQuanData] = useState<ThongKeTongQuan | null>(null);
   const [doTuoiData, setDoTuoiData] = useState<ThongKeDoTuoi | null>(null);
+  const [gioiTinhData, setGioiTinhData] = useState<Map<string, number> | null>(null);
+  const [soTamVang, setSoTamVang] = useState(0);
+  const [soTamTru, setSoTamTru] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [tongQuanRes, doTuoiRes] = await Promise.all([
+        const [tongQuanRes, doTuoiRes, gioiTinhRes, tamVangRes, tamTruRes] = await Promise.all([
           getThongKeTongQuan(),
-          getThongKeDoTuoi()
+          getThongKeDoTuoi(),
+          getThongKeGioiTinh(),
+          getAllTamVang(),
+          getAllTamTru(),
         ]);
         setTongQuanData(tongQuanRes);
         setDoTuoiData(doTuoiRes);
+        setGioiTinhData(gioiTinhRes);
+        setSoTamVang(tamVangRes.data.length);
+        setSoTamTru(tamTruRes.data.length);
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
       } finally {
@@ -51,8 +62,6 @@ export default function DashboardPage() {
   // Tính toán các chỉ số
   const soHoKhau = tongQuanData?.soHoKhau ?? 0;
   const soNhanKhau = tongQuanData?.soNhanKhau ?? 0;
-  const soTamTru = tongQuanData?.soTamTru ?? 0;
-  const trungBinhNguoiTrenHo = soHoKhau > 0 ? (soNhanKhau / soHoKhau).toFixed(1) : 0;
 
   return (
     <Box sx={{ width: '100%', maxWidth: '100%', p: { xs: 2, md: 0 } }}>
@@ -104,16 +113,20 @@ export default function DashboardPage() {
           onDetailClick={() => navigate('/nhan-khau')}
         />
         <StatCard 
+          title="Tạm vắng" 
+          value={soTamVang}
+          icon={<TransferWithinAStationIcon sx={{ fontSize: 36 }} />}
+          color="#ed6c02"
+          detailLink="/tam-vang-tam-tru"
+          onDetailClick={() => navigate('/tam-vang-tam-tru')}
+        />
+        <StatCard 
           title="Tạm trú" 
           value={soTamTru}
           icon={<GroupsIcon sx={{ fontSize: 36 }} />}
-          color="#ed6c02"
-        />
-        <StatCard 
-          title="TB người/hộ" 
-          value={trungBinhNguoiTrenHo}
-          icon={<PersonIcon sx={{ fontSize: 36 }} />}
           color="#00bcd4"
+          detailLink="/tam-vang-tam-tru"
+          onDetailClick={() => navigate('/tam-vang-tam-tru')}
         />
       </Box>
 
@@ -199,6 +212,50 @@ export default function DashboardPage() {
           </Box>
 
           <Divider sx={{ my: 3 }} />
+
+          {gioiTinhData && (
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                Phân bố theo giới tính
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                {Object.entries(gioiTinhData).map(([gender, count], index) => {
+                  const colors = ['#1976d2', '#f50057'];
+                  const percent = soNhanKhau > 0 ? ((count / soNhanKhau) * 100).toFixed(1) : 0;
+                  return (
+                    <Box key={gender}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                          {gender}
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {count} người ({percent}%)
+                        </Typography>
+                      </Box>
+                      <Box
+                        sx={{
+                          width: '100%',
+                          height: 8,
+                          bgcolor: 'grey.200',
+                          borderRadius: 1,
+                          overflow: 'hidden'
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            width: `${percent}%`,
+                            height: '100%',
+                            bgcolor: colors[index % colors.length],
+                            transition: 'width 0.5s ease-in-out'
+                          }}
+                        />
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Box>
+            </Box>
+          )}
 
           {/* Thống kê tóm tắt */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>

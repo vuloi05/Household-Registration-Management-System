@@ -4,15 +4,17 @@ package com.quanlynhankhau.api.dto;
 
 import java.time.LocalDate;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * DTO để nhận dữ liệu từ frontend khi tạo/cập nhật nhân khẩu.
  * Bao gồm cả mã hộ khẩu để có thể tìm hộ khẩu tương ứng.
  */
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class NhanKhauRequestDTO {
     
     private String hoTen;

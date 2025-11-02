@@ -21,4 +21,9 @@ export const getThongKeTongQuan = async (): Promise<ThongKeTongQuan> => {
 export const getThongKeDoTuoi = async (): Promise<ThongKeDoTuoi> => {
     const response = await axiosClient.get('/thongke/dotuoi');
     return response.data;
+}; 
+
+export const getThongKeGioiTinh = async (): Promise<Map<string, number>> => {
+    const response = await axiosClient.get('/thongke/gioitinh');
+    return response.data;
 };

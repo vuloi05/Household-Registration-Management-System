@@ -23,6 +23,19 @@ import type { LichSuNopTien } from '../api/nopTienApi';
 
 const formatCurrency = (value: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 
+const makeSearchableText = (item: LichSuNopTien): string => {
+      const plainAmount = (item.soTien ?? 0).toString();
+      return [
+        item.hoKhau.chuHo?.hoTen || '',
+        item.hoKhau.diaChi || '',
+        item.ngayNop || '',
+        formatCurrency(item.soTien || 0),
+        plainAmount
+      ]
+        .join(' ')
+        .toLowerCase();
+    };
+
 type ExportRow = {
   hoTen: string;
   diaChi: string;
@@ -31,7 +44,7 @@ type ExportRow = {
 };
 
 // Hàm xuất Excel
-const exportToExcel = (rows: ExportRow[], khoanThu: KhoanThu) => {
+const exportToExcel = (rows: ExportRow[]) => {
   const worksheetData = rows.map((item, index) => ({
     'STT': index + 1,
     'Họ tên Chủ hộ': item.hoTen || '',
@@ -124,11 +137,14 @@ export default function KhoanThuDetailPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredList, setFilteredList] = useState<LichSuNopTien[]>([]);
   const [allHouseholds, setAllHouseholds] = useState<HoKhau[]>([]);
+  const [unpaidHouseholds, setUnpaidHouseholds] = useState<HoKhau[]>([]);
+  const [showUnpaid, setShowUnpaid] = useState(false);
 
   // Export dialog state
   const [exportOpen, setExportOpen] = useState(false);
   const [exportType, setExportType] = useState<'excel' | 'pdf'>('excel');
   const [exportStatus, setExportStatus] = useState<'ALL' | 'PAID' | 'UNPAID'>('PAID');
+  const [exportSearchTerm, setExportSearchTerm] = useState('');
   const [exportFrom, setExportFrom] = useState<string>('');
   const [exportTo, setExportTo] = useState<string>('');
   const [toastOpen, setToastOpen] = useState(false);
@@ -149,6 +165,11 @@ export default function KhoanThuDetailPage() {
           setKhoanThu(khoanThuData);
           setLichSuList(lichSuData);
           setThongKe(thongKeData);
+
+          const paidHouseholdIds = new Set(lichSuData.map(item => item.hoKhau.id));
+          const allHouseholds = await getDanhSachHoKhau();
+          setAllHouseholds(allHouseholds);
+          setUnpaidHouseholds(allHouseholds.filter(h => !paidHouseholdIds.has(h.id)));
         } catch (error) { console.error('Failed to fetch details:', error); } 
         finally { setLoading(false); }
       };
@@ -182,19 +203,6 @@ export default function KhoanThuDetailPage() {
       .trim()
       .split(/\s+/)
       .filter(keyword => keyword.length > 0);
-
-    const makeSearchableText = (item: LichSuNopTien): string => {
-      const plainAmount = (item.soTien ?? 0).toString();
-      return [
-        item.hoKhau.chuHo?.hoTen || '',
-        item.hoKhau.diaChi || '',
-        item.ngayNop || '',
-        formatCurrency(item.soTien || 0),
-        plainAmount
-      ]
-        .join(' ')
-        .toLowerCase();
-    };
 
     // Ưu tiên khớp theo cụm từ (n-gram) dài để hỗ trợ tìm "bao trùm" nhiều thực thể
     const buildPhrases = (tokens: string[]): string[] => {
@@ -277,7 +285,11 @@ export default function KhoanThuDetailPage() {
         if (!exportFrom && !exportTo) return true;
         return inRange(r.ngayNop);
       });
-      return paid.map(r => ({
+      return paid.filter(item => {
+        if (!exportSearchTerm) return true;
+        const searchableText = makeSearchableText(item);
+        return searchableText.includes(exportSearchTerm.toLowerCase());
+      }).map(r => ({
         hoTen: r.hoKhau.chuHo?.hoTen || '',
         diaChi: r.hoKhau.diaChi || '',
         ngayNop: r.ngayNop || '',
@@ -399,6 +411,13 @@ export default function KhoanThuDetailPage() {
                 <MenuItem value="ALL">Tất cả</MenuItem>
               </Select>
             </FormControl>
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder="Lọc theo họ tên, địa chỉ..."
+              value={exportSearchTerm}
+              onChange={(e) => setExportSearchTerm(e.target.value)}
+            />
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <TextField
                 type="date"
@@ -432,7 +451,7 @@ export default function KhoanThuDetailPage() {
             try {
               const rows = buildExportRows();
               if (exportType === 'excel') {
-                exportToExcel(rows, khoanThu!);
+                exportToExcel(rows);
                 setToastSeverity('success');
                 setToastMsg('Xuất Excel thành công');
               } else {
@@ -537,7 +556,7 @@ export default function KhoanThuDetailPage() {
       </Box>
       
       <Paper sx={{ p: 2, width: '100%' }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>Danh sách các hộ</Typography>
+        <Typography variant="h6" sx={{ mb: 2 }}>Danh sách các hộ đã nộp</Typography>
         <TableContainer sx={{ width: '100%' }}>
           <Table sx={{ width: '100%', tableLayout: 'fixed' }}>
             <TableHead>
@@ -561,6 +580,36 @@ export default function KhoanThuDetailPage() {
           </Table>
         </TableContainer>
       </Paper>
+
+      <Box sx={{ mt: 3 }}>
+        <Button variant="outlined" onClick={() => setShowUnpaid(!showUnpaid)}>
+          {showUnpaid ? 'Ẩn danh sách hộ chưa nộp' : 'Hiển thị danh sách hộ chưa nộp'}
+        </Button>
+      </Box>
+
+      {showUnpaid && (
+        <Paper sx={{ p: 2, width: '100%', mt: 2 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>Danh sách các hộ chưa nộp</Typography>
+          <TableContainer sx={{ width: '100%' }}>
+            <Table sx={{ width: '100%', tableLayout: 'fixed' }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 'bold', width: '40%' }}>Họ tên Chủ hộ</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '60%' }}>Địa chỉ</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {unpaidHouseholds.map((hoKhau) => (
+                  <TableRow key={hoKhau.id}>
+                    <TableCell>{hoKhau.chuHo?.hoTen}</TableCell>
+                    <TableCell>{hoKhau.diaChi}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+      )}
     </Box>
   );
 }

@@ -24,6 +24,7 @@ import {
   Paper,
   CircularProgress,
   Autocomplete,
+  Menu,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -34,12 +35,15 @@ import {
   FilterList as FilterListIcon,
   Clear as ClearIcon,
   FileDownload as FileDownloadIcon,
+  MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import NhanKhauForm from '../components/forms/NhanKhauForm';
 import NhanKhauDetailModal from '../components/details/NhanKhauDetailModal';
 import ConfirmationDialog from '../components/shared/ConfirmationDialog';
+import BienDongNhanKhauForm from '../components/forms/BienDongNhanKhauForm';
 import type { NhanKhauFormValues } from '../types/nhanKhau';
+import type { BienDongNhanKhauFormValues } from '../types/bienDong';
 import { exportToExcel, exportToPDF } from '../utils/exportUtils';
 import {
   getAllNhanKhau,
@@ -48,6 +52,7 @@ import {
   deleteNhanKhauManagement,
   type NhanKhau,
 } from '../api/nhanKhauApi';
+import { ghiNhanBienDong } from '../api/bienDongApi';
 import { useLocation } from 'react-router-dom';
 
 export default function NhanKhauPage() {
@@ -72,10 +77,23 @@ export default function NhanKhauPage() {
   
   // State cho form và modal
   const [formOpen, setFormOpen] = useState(false);
+  const [bienDongFormOpen, setBienDongFormOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedNhanKhau, setSelectedNhanKhau] = useState<NhanKhau | null>(null);
   const [editingNhanKhau, setEditingNhanKhau] = useState<NhanKhauFormValues | null>(null);
+
+  // State for menu
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>, nhanKhau: NhanKhau) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedNhanKhau(nhanKhau);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   // Load dữ liệu từ API
   const loadNhanKhauData = async () => {
@@ -122,7 +140,8 @@ export default function NhanKhauPage() {
           setSelectedNhanKhau(nk);
           setDetailOpen(true);
           enqueueSnackbar('Agent: Đang mở chi tiết nhân khẩu: ' + nk.hoTen, { variant: 'info' });
-        } else {
+        }
+        else {
           enqueueSnackbar('Agent: Không tìm thấy nhân khẩu trong danh sách hiện tại', { variant: 'warning' });
         }
       }
@@ -265,6 +284,22 @@ export default function NhanKhauPage() {
     }
   };
 
+  const handleBienDongSubmit = async (data: BienDongNhanKhauFormValues) => {
+    try {
+      await ghiNhanBienDong(data);
+      enqueueSnackbar('Ghi nhận biến động thành công', { variant: 'success' });
+      setBienDongFormOpen(false);
+      loadNhanKhauData();
+    } catch (error: any) {
+      console.error('Error recording bien dong:', error);
+      if (error.response?.data?.error) {
+        enqueueSnackbar(error.response.data.error, { variant: 'error' });
+      } else {
+        enqueueSnackbar('Không thể ghi nhận biến động', { variant: 'error' });
+      }
+    }
+  };
+
   // Xử lý mở form thêm mới
   const handleOpenAddForm = () => {
     setSelectedNhanKhau(null);
@@ -274,6 +309,7 @@ export default function NhanKhauPage() {
 
   // Xử lý mở form chỉnh sửa
   const handleOpenEditForm = (nhanKhau: NhanKhau) => {
+    handleMenuClose();
     setSelectedNhanKhau(nhanKhau);
     // Đảm bảo maHoKhau được map đúng từ dữ liệu nhân khẩu
     const formData: NhanKhauFormValues = {
@@ -288,14 +324,22 @@ export default function NhanKhauPage() {
 
   // Xử lý xem chi tiết
   const handleViewDetail = (nhanKhau: NhanKhau) => {
+    handleMenuClose();
     setSelectedNhanKhau(nhanKhau);
     setDetailOpen(true);
   };
 
   // Xử lý mở dialog xóa
   const handleOpenDeleteDialog = (nhanKhau: NhanKhau) => {
+    handleMenuClose();
     setSelectedNhanKhau(nhanKhau);
     setDeleteDialogOpen(true);
+  };
+
+  const handleOpenBienDongForm = (nhanKhau: NhanKhau) => {
+    handleMenuClose();
+    setSelectedNhanKhau(nhanKhau);
+    setBienDongFormOpen(true);
   };
 
   // Xử lý xóa bộ lọc
@@ -607,6 +651,14 @@ export default function NhanKhauPage() {
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
+                        <Tooltip title="Thao tác khác">
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleMenuClick(e, nhanKhau)}
+                          >
+                            <MoreVertIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                       </Stack>
                     </TableCell>
                   </TableRow>
@@ -641,6 +693,15 @@ export default function NhanKhauPage() {
         }
       />
 
+      {/* Menu thao tác */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={() => handleOpenBienDongForm(selectedNhanKhau!)}>Ghi nhận biến động</MenuItem>
+      </Menu>
+
       {/* Form thêm/sửa nhân khẩu */}
       <NhanKhauForm
         open={formOpen}
@@ -653,6 +714,16 @@ export default function NhanKhauPage() {
         initialData={editingNhanKhau}
         showMaHoKhauField={true} // Hiển thị ô nhập mã hộ khẩu cho trang quản lý nhân khẩu
       />
+
+      {/* Form biến động nhân khẩu */}
+      {selectedNhanKhau && (
+        <BienDongNhanKhauForm
+          open={bienDongFormOpen}
+          onClose={() => setBienDongFormOpen(false)}
+          onSubmit={handleBienDongSubmit}
+          nhanKhauId={selectedNhanKhau.id}
+        />
+      )}
 
       {/* Modal chi tiết nhân khẩu */}
       <NhanKhauDetailModal

@@ -3,24 +3,19 @@
 package com.quanlynhankhau.api.entity;
 
 import java.time.LocalDate;
-// <<<< THAY ĐỔI 1: Xóa import JsonIgnore và thêm import JsonBackReference >>>>
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "nhan_khau")
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class NhanKhau {
 
     @Id
@@ -48,6 +43,16 @@ public class NhanKhau {
 
     private String quanHeVoiChuHo;
 
+    /**
+     * Trạng thái của nhân khẩu:
+     * - DANG_CU_TRU: Đang cư trú tại hộ khẩu này
+     * - DA_CHUYEN_DI: Đã chuyển đi nơi khác
+     * - DA_QUA_DOI: Đã qua đời
+     * - TAM_VANG: Đang tạm vắng
+     */
+    @Column(name = "trang_thai", length = 50)
+    private String trangThai = "DANG_CU_TRU"; // Giá trị mặc định
+
     // --- MỐI QUAN HỆ MANY-TO-ONE ---
     /**
      * @JsonBackReference: Đánh dấu đây là "phía con" của mối quan hệ.
@@ -59,4 +64,14 @@ public class NhanKhau {
     @JoinColumn(name = "ho_khau_id") // Tên cột khóa ngoại trong bảng nhan_khau
     @JsonBackReference("nhanKhau-hoKhau")
     private HoKhau hoKhau;
+
+
+    /**
+     * Quan hệ One-to-Many với LichSuBienDongNhanKhau
+     * Một nhân khẩu có thể có nhiều lịch sử biến động
+     */
+    @OneToMany(mappedBy = "nhanKhau", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("nhankhau-lichsubiendo")
+    private List<LichSuBienDongNhanKhau> danhSachBienDong;
+
 }

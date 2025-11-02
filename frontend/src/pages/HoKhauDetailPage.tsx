@@ -179,6 +179,13 @@ export default function HoKhauDetailPage() {
             <Typography><strong>Địa chỉ:</strong> {hoKhau.diaChi}</Typography>
             <Typography><strong>Ngày lập:</strong> {hoKhau.ngayLap}</Typography>
             <Typography><strong>Số thành viên:</strong> {nhanKhauList.length}</Typography>
+            <Button 
+              variant="text" 
+              onClick={() => navigate(`/ho-khau/${hoKhau.id}/lich-su-bien-dong`)} 
+              sx={{ mt: 2 }}
+            >
+              Xem lịch sử biến động
+            </Button>
           </Paper>
         </Box>
       

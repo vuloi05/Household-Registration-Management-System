@@ -1,4 +1,3 @@
-import React from 'react';
 import { Box, Paper, Typography, IconButton } from '@mui/material';
 import { ThumbUp as ThumbUpIcon, ThumbDown as ThumbDownIcon } from '@mui/icons-material';
 import { alpha } from '@mui/material/styles';
@@ -40,7 +39,7 @@ export function ChatbotMessage({
             msg.sender === 'user'
               ? `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.95)}, ${alpha('#b31217', 0.92)})`
               : 'none',
-          border: (theme) =>
+          border: (_theme) =>
             msg.sender === 'user'
               ? `1px solid rgba(255, 255, 255, 0.15)`
               : `1px solid rgba(0, 0, 0, 0.06)`,

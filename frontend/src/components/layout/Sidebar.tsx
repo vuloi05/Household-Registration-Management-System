@@ -5,6 +5,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
 import PersonIcon from '@mui/icons-material/Person';
 import PaymentsIcon from '@mui/icons-material/Payments';
+import TransferWithinAStationIcon from '@mui/icons-material/TransferWithinAStation';
 import { useAuth } from '../../context/AuthContext'; // Import hook useAuth
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 
@@ -20,6 +21,7 @@ const menuItems = [
   { text: 'Bảng điều khiển', icon: <DashboardIcon />, path: '/', roles: ['ROLE_ADMIN', 'ROLE_ACCOUNTANT'] },
   { text: 'Quản lý Hộ khẩu', icon: <PeopleIcon />, path: '/ho-khau', roles: ['ROLE_ADMIN'] },
   { text: 'Quản lý Nhân khẩu', icon: <PersonIcon />, path: '/nhan-khau', roles: ['ROLE_ADMIN'] },
+  { text: 'Tạm vắng / Tạm trú', icon: <TransferWithinAStationIcon />, path: '/tam-vang-tam-tru', roles: ['ROLE_ADMIN'] },
   { text: 'Quản lý Thu phí', icon: <PaymentsIcon />, path: '/thu-phi', roles: ['ROLE_ADMIN', 'ROLE_ACCOUNTANT'] },
 ];
 
