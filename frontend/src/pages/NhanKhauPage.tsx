@@ -128,10 +128,12 @@ export default function NhanKhauPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, rowsPerPage, searchQuery, ageFilter, genderFilter, locationFilter]);
 
-  // Nhận QR từ AppSheet -> tự nhập vào thanh tìm kiếm
+  // Nhận QR từ AppSheet -> chỉ lấy số CCCD (trường đầu tiên trước ký tự '|') để tìm kiếm
   const handleReceiveQRCode = (qr: string) => {
-    setSearchQuery(qr);
-    enqueueSnackbar('Đã nhận mã QR từ AppSheet', { variant: 'success' });
+    const parts = (qr || '').split('|').map(p => p.trim());
+    const cccd = parts[0] || qr;
+    setSearchQuery(cccd);
+    enqueueSnackbar('Đã điền CCCD từ QR vào ô tìm kiếm', { variant: 'success' });
   };
 
   // Lắng nghe agent action sau khi điều hướng
