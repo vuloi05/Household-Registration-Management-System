@@ -47,24 +47,24 @@ public class ThongKeService {
         
         // Sắp xếp lại Map để có thứ tự hợp lý
         Map<String, Long> sortedThongKe = new LinkedHashMap<>();
-        sortedThongKe.put("Mầm non (0-5)", thongKe.getOrDefault("Mầm non (0-5)", 0L));
-        sortedThongKe.put("Cấp 1 (6-10)", thongKe.getOrDefault("Cấp 1 (6-10)", 0L));
-        sortedThongKe.put("Cấp 2 (11-14)", thongKe.getOrDefault("Cấp 2 (11-14)", 0L));
-        sortedThongKe.put("Cấp 3 (15-17)", thongKe.getOrDefault("Cấp 3 (15-17)", 0L));
-        sortedThongKe.put("Độ tuổi lao động (18-60)", thongKe.getOrDefault("Độ tuổi lao động (18-60)", 0L));
-        sortedThongKe.put("Nghỉ hưu (>60)", thongKe.getOrDefault("Nghỉ hưu (>60)", 0L));
+        sortedThongKe.put("0-5", thongKe.getOrDefault("0-5", 0L));
+        sortedThongKe.put("6-10", thongKe.getOrDefault("6-10", 0L));
+        sortedThongKe.put("11-14", thongKe.getOrDefault("11-14", 0L));
+        sortedThongKe.put("15-17", thongKe.getOrDefault("15-17", 0L));
+        sortedThongKe.put("18-60", thongKe.getOrDefault("18-60", 0L));
+        sortedThongKe.put(">60", thongKe.getOrDefault(">60", 0L));
 
         return sortedThongKe;
     }
 
     // Hàm helper để phân loại nhóm tuổi
     private String getNhomTuoi(int tuoi) {
-        if (tuoi <= 5) return "Mầm non (0-5)";
-        if (tuoi <= 10) return "Cấp 1 (6-10)";
-        if (tuoi <= 14) return "Cấp 2 (11-14)";
-        if (tuoi <= 17) return "Cấp 3 (15-17)";
-        if (tuoi <= 60) return "Độ tuổi lao động (18-60)";
-        return "Nghỉ hưu (>60)";
+        if (tuoi <= 5) return "0-5";
+        if (tuoi <= 10) return "6-10";
+        if (tuoi <= 14) return "11-14";
+        if (tuoi <= 17) return "15-17";
+        if (tuoi <= 60) return "18-60";
+        return ">60";
     }
 
     public Map<String, Long> getThongKeTheoGioiTinh() {

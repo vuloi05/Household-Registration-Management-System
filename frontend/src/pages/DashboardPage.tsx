@@ -175,14 +175,22 @@ export default function DashboardPage() {
           
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
             {doTuoiData && Object.entries(doTuoiData).map(([nhom, soLuong], index) => {
-              const colors = ['#1976d2', '#2e7d32', '#ed6c02', '#00bcd4'];
+              const colors = ['#1976d2', '#2e7d32', '#ed6c02', '#00bcd4', '#d32f2f', '#7b1fa2'];
               const percent = soNhanKhau > 0 ? ((soLuong / soNhanKhau) * 100).toFixed(1) : 0;
+              const labelMap: Record<string, string> = {
+                '0-5': 'Mầm non (0-5)',
+                '6-10': 'Cấp 1 (6-10)',
+                '11-14': 'Cấp 2 (11-14)',
+                '15-17': 'Cấp 3 (15-17)',
+                '18-60': 'Độ tuổi lao động (18-60)',
+                '>60': 'Nghỉ hưu (>60)',
+              };
               
               return (
                 <Box key={nhom}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                     <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary' }}>
-                      {nhom}
+                      {labelMap[nhom] || nhom}
                     </Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
                       {soLuong} người ({percent}%)
