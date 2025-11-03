@@ -74,12 +74,14 @@ INSERT INTO nhan_khau(ho_ten, bi_danh, ngay_sinh, gioi_tinh, noi_sinh, que_quan,
 ('Trần Thị Thu', NULL, '1965-09-14', 'Nữ', 'Nghệ An', 'Nghệ An', 'Kinh', 'Buôn bán nhỏ', 'Chợ Hà Đông', '667788990011', '2015-01-01', 'Công an tỉnh Nghệ An', '2016-02-18', 'Nghệ An', 'Chủ hộ', 11),
 ('Nguyễn Văn Sáng', NULL, '1995-03-03', 'Nam', 'Nghệ An', 'Nghệ An', 'Kinh', 'Sinh viên', 'Đại học Kiến trúc', '667788990012', '2021-05-20', 'Cục CSQLHC về TTXH', '2022-09-01', 'Nghệ An', 'Cháu', 11);
 
--- Nhân khẩu cho Hộ khẩu 12 (id=12)
+-- Nhân khẩu cho Hộ khẩu 12 (id=12) - Sẽ có biến động tách khẩu
 INSERT INTO nhan_khau(ho_ten, bi_danh, ngay_sinh, gioi_tinh, noi_sinh, que_quan, dan_toc, nghe_nghiep, noi_lam_viec, cmnd_cccd, ngay_cap, noi_cap, ngay_dang_ky_thuong_tru, dia_chi_truoc_khi_chuyen_den, quan_he_voi_chu_ho, ho_khau_id) VALUES
 ('Nguyễn Quốc Tuấn', NULL, '1979-08-08', 'Nam', 'Hà Nội', 'Hà Nội', 'Kinh', 'Công chức', 'UBND Phường Nguyễn Trãi', '778899001122', '2019-01-01', 'Cục CSQLHC về TTXH', '2019-09-10', 'Phường Yết Kiêu, Hà Đông', 'Chủ hộ', 12),
 ('Lê Thị Thủy', NULL, '1981-12-12', 'Nữ', 'Hà Nam', 'Hà Nam', 'Kinh', 'Giáo viên', 'Trường THPT Nguyễn Huệ', '778899001123', '2019-01-01', 'Cục CSQLHC về TTXH', '2019-09-10', 'Phường Yết Kiêu, Hà Đông', 'Vợ', 12),
 ('Nguyễn Lê Minh Anh', NULL, '2007-05-25', 'Nữ', 'Hà Nội', 'Hà Nội', 'Kinh', 'Học sinh', 'Trường THPT Nguyễn Huệ', '778899001124', '2022-06-01', 'Cục CSQLHC về TTXH', '2019-09-10', 'Phường Yết Kiêu, Hà Đông', 'Con gái', 12),
-('Nguyễn Quốc An', NULL, '2014-02-17', 'Nam', 'Hà Nội', 'Hà Nội', 'Kinh', 'Học sinh', 'Trường Tiểu học Nguyễn Trãi', NULL, NULL, NULL, '2019-09-10', 'Phường Yết Kiêu, Hà Đông', 'Con trai', 12);
+('Nguyễn Quốc An', NULL, '2014-02-17', 'Nam', 'Hà Nội', 'Hà Nội', 'Kinh', 'Học sinh', 'Trường Tiểu học Nguyễn Trãi', NULL, NULL, NULL, '2019-09-10', 'Phường Yết Kiêu, Hà Đông', 'Con trai', 12),
+-- Nhân khẩu mới để chuẩn bị cho việc tách khẩu
+('Nguyễn Văn Tách', NULL, '1980-01-01', 'Nam', 'Hà Nội', 'Hà Nội', 'Kinh', 'Kinh doanh', 'Tự do', '778899001125', '2022-01-01', 'Cục CSQLHC về TTXH', '2022-02-01', 'Phường Yết Kiêu, Hà Đông', 'Anh trai', 12);
 
 -- Nhân khẩu cho Hộ khẩu 13 (id=13)
 INSERT INTO nhan_khau(ho_ten, bi_danh, ngay_sinh, gioi_tinh, noi_sinh, que_quan, dan_toc, nghe_nghiep, noi_lam_viec, cmnd_cccd, ngay_cap, noi_cap, ngay_dang_ky_thuong_tru, dia_chi_truoc_khi_chuyen_den, quan_he_voi_chu_ho, ho_khau_id) VALUES
@@ -305,7 +307,7 @@ INSERT INTO nhan_khau(ho_ten, bi_danh, ngay_sinh, gioi_tinh, noi_sinh, que_quan,
 ('Lê Văn Đô', NULL, '2001-08-07', 'Nam', 'Quảng Nam', 'Quảng Nam', 'Kinh', 'Cầu thủ bóng đá', 'CAHN', '515151515151', '2023-01-01', 'Cục CSQLHC về TTXH', '2023-09-14', 'Quảng Nam', 'Chủ hộ', 60),
 ('Nguyễn Thị Thảo', NULL, '2002-01-01', 'Nữ', 'Quảng Nam', 'Quảng Nam', 'Kinh', 'Sinh viên', 'Đại học Duy Tân', '515151515152', '2023-01-01', 'Cục CSQLHC về TTXH', '2023-09-14', 'Quảng Nam', 'Vợ', 60),
 ('Lê Văn Hùng', NULL, '1975-01-01', 'Nam', 'Quảng Nam', 'Quảng Nam', 'Kinh', 'Nông dân', '', '515151515153', '2015-01-01', 'Công an tỉnh Quảng Nam', '2023-09-14', 'Quảng Nam', 'Bố', 60),
-('Trần Thị Lan', NULL, '1978-01-01', 'Nữ', 'Quảng Nam', 'Quảng Nam', 'Kinh', 'Nội trợ', '', '5151515154', '2015-01-01', 'Công an tỉnh Quảng Nam', '2023-09-14', 'Quảng Nam', 'Mẹ', 60),
+('Trần Thị Lan', NULL, '1978-01-01', 'Nữ', 'Quảng Nam', 'Quảng Nam', 'Kinh', 'Nội trợ', '', '515151515154', '2015-01-01', 'Công an tỉnh Quảng Nam', '2023-09-14', 'Quảng Nam', 'Mẹ', 60),
 -- HK 61 (3 người)
 ('Hà Văn Phương', NULL, '1985-01-01', 'Nam', 'Hòa Bình', 'Hòa Bình', 'Mường', 'Lao động tự do', '', '525252525252', '2015-01-01', 'Cục CSQLHC về TTXH', '2015-04-16', 'Hòa Bình', 'Chủ hộ', 61),
 ('Bùi Thị Hoa', NULL, '1988-01-01', 'Nữ', 'Hòa Bình', 'Hòa Bình', 'Mường', 'Công nhân', '', '525252525253', '2015-01-01', 'Cục CSQLHC về TTXH', '2015-04-16', 'Hòa Bình', 'Vợ', 61),

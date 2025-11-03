@@ -141,4 +141,15 @@ public class BienDongNhanKhauController {
         List<LichSuThayDoiHoKhau> lichSu = bienDongService.getLichSuThayDoiHoKhau(hoKhauId);
         return ResponseEntity.ok(lichSu);
     }
+
+    /**
+     * API lấy tất cả lịch sử biến động
+     * GET /api/bien-dong
+     */
+    @GetMapping
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<BienDongNhanKhauDTO>> getAllLichSuBienDong() {
+        List<BienDongNhanKhauDTO> lichSu = bienDongService.getAllLichSuBienDong();
+        return ResponseEntity.ok(lichSu);
+    }
 }

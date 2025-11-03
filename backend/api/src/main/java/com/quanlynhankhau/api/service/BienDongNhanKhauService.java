@@ -171,6 +171,16 @@ public class BienDongNhanKhauService {
     }
 
     /**
+     * Lấy tất cả lịch sử biến động
+     */
+    public List<BienDongNhanKhauDTO> getAllLichSuBienDong() {
+        return lichSuBienDongRepository.findAll()
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Convert Entity sang DTO
      */
     private BienDongNhanKhauDTO convertToDTO(LichSuBienDongNhanKhau entity) {
