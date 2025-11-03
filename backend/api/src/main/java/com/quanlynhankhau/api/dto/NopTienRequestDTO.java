@@ -4,11 +4,13 @@ package com.quanlynhankhau.api.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class NopTienRequestDTO {
 
     // ID của hộ khẩu đã nộp tiền

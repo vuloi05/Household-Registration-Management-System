@@ -8,6 +8,8 @@ import NhanKhauPage from '../pages/NhanKhauPage';
 import ThuPhiPage from '../pages/ThuPhiPage';
 import HoKhauDetailPage from '../pages/HoKhauDetailPage';
 import KhoanThuDetailPage from '../pages/KhoanThuDetailPage';
+import LichSuBienDongPage from '../pages/LichSuBienDongPage';
+import TamVangTamTruPage from '../pages/TamVangTamTruPage';
 
 const router = createBrowserRouter([
   {
@@ -32,8 +34,16 @@ const router = createBrowserRouter([
         element: <NhanKhauPage />,
       },
       {
-        path: '/hokhau/:hoKhauId',
+        path: '/ho-khau/:maHoKhau',
         element: <HoKhauDetailPage />,
+      },
+      {
+        path: '/ho-khau/:hoKhauId/lich-su-bien-dong',
+        element: <LichSuBienDongPage />,
+      },
+      {
+        path: '/tam-vang-tam-tru',
+        element: <TamVangTamTruPage />,
       },
       {
         path: '/thu-phi',

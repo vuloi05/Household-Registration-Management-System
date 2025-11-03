@@ -23,6 +23,8 @@ import {
   Tooltip,
   Paper,
   CircularProgress,
+  Autocomplete,
+  Menu,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -34,13 +36,16 @@ import {
   Clear as ClearIcon,
   FileDownload as FileDownloadIcon,
   QrCodeScanner as QrCodeScannerIcon,
+  MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import NhanKhauForm from '../components/forms/NhanKhauForm';
 import NhanKhauDetailModal from '../components/details/NhanKhauDetailModal';
 import ConfirmationDialog from '../components/shared/ConfirmationDialog';
 import QRScannerModal from '../components/shared/QRScannerModal';
+import BienDongNhanKhauForm from '../components/forms/BienDongNhanKhauForm';
 import type { NhanKhauFormValues } from '../types/nhanKhau';
+import type { BienDongNhanKhauFormValues } from '../types/bienDong';
 import { exportToExcel, exportToPDF } from '../utils/exportUtils';
 import {
   getAllNhanKhau,
@@ -49,8 +54,11 @@ import {
   deleteNhanKhauManagement,
   type NhanKhau,
 } from '../api/nhanKhauApi';
+import { ghiNhanBienDong } from '../api/bienDongApi';
+import { useLocation } from 'react-router-dom';
 
 export default function NhanKhauPage() {
+  const location = useLocation();
   const { enqueueSnackbar } = useSnackbar();
 
   // State mở/tắt QR scanner modal
@@ -74,10 +82,23 @@ export default function NhanKhauPage() {
 
   // State cho form và modal
   const [formOpen, setFormOpen] = useState(false);
+  const [bienDongFormOpen, setBienDongFormOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedNhanKhau, setSelectedNhanKhau] = useState<NhanKhau | null>(null);
   const [editingNhanKhau, setEditingNhanKhau] = useState<NhanKhauFormValues | null>(null);
+
+  // State for menu
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>, nhanKhau: NhanKhau) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedNhanKhau(nhanKhau);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   // Load dữ liệu từ API
   const loadNhanKhauData = async () => {
@@ -109,7 +130,6 @@ export default function NhanKhauPage() {
 
   // Xử lý kết quả quét QR
   const handleQRScanSuccess = (decodedText: string) => {
-    // Tách chuỗi theo dấu |
     const parts = decodedText.split("|");
     if (parts.length < 5) {
       enqueueSnackbar("Dữ liệu QR không hợp lệ!", { variant: "error" });
@@ -118,11 +138,10 @@ export default function NhanKhauPage() {
 
     const [cccd, hoTen, ngaySinhStr, queQuan, ngayCapStr] = parts;
 
-    // Hàm parse ddMMyyyy thành đối tượng Date
     const parseDate = (str: string) => {
       if (str.length !== 8) return null;
       const day = parseInt(str.substring(0, 2));
-      const month = parseInt(str.substring(2, 4)) - 1; // Tháng trong JS bắt đầu từ 0
+      const month = parseInt(str.substring(2, 4)) - 1;
       const year = parseInt(str.substring(4, 8));
       return new Date(year, month, day);
     };
@@ -135,17 +154,6 @@ export default function NhanKhauPage() {
       return;
     }
 
-    const nhanKhauData: Partial<NhanKhauFormValues> = {
-      cmndCccd: cccd,
-      hoTen,
-      ngaySinh: ngaySinh.toISOString().split('T')[0], // Convert to string format
-      queQuan,
-      ngayCap: ngayCap.toISOString().split('T')[0] // Convert to string format
-    };
-
-    console.log("Dữ liệu nhân khẩu từ QR:", nhanKhauData);
-
-    // Tìm trong danh sách hiện có
     const matched = nhanKhauList.find(nk => nk.cmndCccd === cccd);
     if (matched) {
       handleViewDetail(matched);
@@ -154,6 +162,32 @@ export default function NhanKhauPage() {
       enqueueSnackbar(`Không tìm thấy nhân khẩu với CCCD: ${cccd}`, { variant: 'warning' });
     }
   };
+
+  // Lắng nghe agent action sau khi điều hướng
+  useEffect(() => {
+    const s = location.state as any;
+    if (s && s.agentAction) {
+      const act = s.agentAction;
+      // Search
+      if (act.type === 'search' && act.target === 'person_list' && act.params?.q) {
+        setSearchQuery(act.params.q);
+        enqueueSnackbar('Agent: Đang tìm kiếm nhân khẩu: ' + act.params.q, { variant: 'info' });
+      }
+      // Open detail modal nếu có personId (tìm trong list)
+      if (act.type === 'navigate' && act.target === 'person_detail' && act.params?.personId) {
+        const nk = nhanKhauList.find(nk => nk.cmndCccd === act.params.personId);
+        if (nk) {
+          setSelectedNhanKhau(nk);
+          setDetailOpen(true);
+          enqueueSnackbar('Agent: Đang mở chi tiết nhân khẩu: ' + nk.hoTen, { variant: 'info' });
+        }
+        else {
+          enqueueSnackbar('Agent: Không tìm thấy nhân khẩu trong danh sách hiện tại', { variant: 'warning' });
+        }
+      }
+    }
+    // eslint-disable-next-line
+  }, [location.state, nhanKhauList]);
 
   // Tính tuổi từ ngày sinh
   const calculateAge = (birthDate: string): number => {
@@ -234,6 +268,7 @@ export default function NhanKhauPage() {
     'Vĩnh Long',
     'Vĩnh Phúc',
     'Yên Bái',
+    'Hà Tây',
   ];
 
   // Xử lý thêm nhân khẩu
@@ -294,6 +329,22 @@ export default function NhanKhauPage() {
     }
   };
 
+  const handleBienDongSubmit = async (data: BienDongNhanKhauFormValues) => {
+    try {
+      await ghiNhanBienDong(data);
+      enqueueSnackbar('Ghi nhận biến động thành công', { variant: 'success' });
+      setBienDongFormOpen(false);
+      loadNhanKhauData();
+    } catch (error: any) {
+      console.error('Error recording bien dong:', error);
+      if (error.response?.data?.error) {
+        enqueueSnackbar(error.response.data.error, { variant: 'error' });
+      } else {
+        enqueueSnackbar('Không thể ghi nhận biến động', { variant: 'error' });
+      }
+    }
+  };
+
   // Xử lý mở form thêm mới
   const handleOpenAddForm = () => {
     setSelectedNhanKhau(null);
@@ -303,13 +354,14 @@ export default function NhanKhauPage() {
 
   // Xử lý mở form chỉnh sửa
   const handleOpenEditForm = (nhanKhau: NhanKhau) => {
+    handleMenuClose();
     setSelectedNhanKhau(nhanKhau);
     // Đảm bảo maHoKhau được map đúng từ dữ liệu nhân khẩu
     const formData: NhanKhauFormValues = {
       ...nhanKhau,
-      maHoKhau: nhanKhau.maHoKhau || '', // Đảm bảo maHoKhau có giá trị
-      ngayCap: nhanKhau.ngayCap || '', // Đảm bảo ngayCap có giá trị
-      noiCap: nhanKhau.noiCap || '', // Đảm bảo noiCap có giá trị
+      ngayCap: nhanKhau.ngayCap || '',
+      noiCap: nhanKhau.noiCap || '',
+      maHoKhau: nhanKhau.maHoKhau || '',
     };
     setEditingNhanKhau(formData);
     setFormOpen(true);
@@ -317,14 +369,22 @@ export default function NhanKhauPage() {
 
   // Xử lý xem chi tiết
   const handleViewDetail = (nhanKhau: NhanKhau) => {
+    handleMenuClose();
     setSelectedNhanKhau(nhanKhau);
     setDetailOpen(true);
   };
 
   // Xử lý mở dialog xóa
   const handleOpenDeleteDialog = (nhanKhau: NhanKhau) => {
+    handleMenuClose();
     setSelectedNhanKhau(nhanKhau);
     setDeleteDialogOpen(true);
+  };
+
+  const handleOpenBienDongForm = (nhanKhau: NhanKhau) => {
+    handleMenuClose();
+    setSelectedNhanKhau(nhanKhau);
+    setBienDongFormOpen(true);
   };
 
   // Xử lý xóa bộ lọc
@@ -442,8 +502,8 @@ export default function NhanKhauPage() {
                     </IconButton>
                   )}
                   <Tooltip title="Quét CCCD">
-                    <IconButton 
-                      size="small" 
+                    <IconButton
+                      size="small"
                       onClick={() => setQrScannerModalOpen(true)}
                     >
                       <QrCodeScannerIcon />
@@ -505,29 +565,30 @@ export default function NhanKhauPage() {
                   <MenuItem value="Nữ">Nữ</MenuItem>
                 </Select>
               </FormControl>
-              <FormControl fullWidth size="small">
-                <InputLabel>Quê quán</InputLabel>
-                <Select
-                  value={locationFilter}
-                  label="Quê quán"
-                  onChange={(e) => handleLocationFilterChange(e.target.value)}
-                  MenuProps={{
-                    PaperProps: {
-                      style: {
-                        maxHeight: 300,
-                        width: 'auto',
-                      },
-                    },
-                  }}
-                >
-                  <MenuItem value="all">Tất cả</MenuItem>
-                  {vietnamProvinces.map((province) => (
-                    <MenuItem key={province} value={province}>
-                      {province}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Autocomplete
+                fullWidth
+                size="small"
+                options={['all', ...vietnamProvinces]}
+                value={locationFilter}
+                onChange={(_event, newValue) => {
+                  handleLocationFilterChange(newValue || 'all');
+                }}
+                getOptionLabel={(option) => option === 'all' ? 'Tất cả' : option}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Quê quán"
+                    placeholder="Chọn hoặc nhập tỉnh/thành phố"
+                  />
+                )}
+                isOptionEqualToValue={(option, value) => option === value}
+                autoHighlight
+                ListboxProps={{
+                  style: {
+                    maxHeight: 300,
+                  },
+                }}
+              />
               <Button
                 fullWidth
                 variant="outlined"
@@ -647,6 +708,14 @@ export default function NhanKhauPage() {
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
+                        <Tooltip title="Thao tác khác">
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleMenuClick(e, nhanKhau)}
+                          >
+                            <MoreVertIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                       </Stack>
                     </TableCell>
                   </TableRow>
@@ -681,6 +750,15 @@ export default function NhanKhauPage() {
         }
       />
 
+      {/* Menu thao tác */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={() => handleOpenBienDongForm(selectedNhanKhau!)}>Ghi nhận biến động</MenuItem>
+      </Menu>
+
       {/* Form thêm/sửa nhân khẩu */}
       <NhanKhauForm
         open={formOpen}
@@ -693,6 +771,16 @@ export default function NhanKhauPage() {
         initialData={editingNhanKhau}
         showMaHoKhauField={true} // Hiển thị ô nhập mã hộ khẩu cho trang quản lý nhân khẩu
       />
+
+      {/* Form biến động nhân khẩu */}
+      {selectedNhanKhau && (
+        <BienDongNhanKhauForm
+          open={bienDongFormOpen}
+          onClose={() => setBienDongFormOpen(false)}
+          onSubmit={handleBienDongSubmit}
+          nhanKhauId={selectedNhanKhau.id}
+        />
+      )}
 
       {/* Modal chi tiết nhân khẩu */}
       <NhanKhauDetailModal

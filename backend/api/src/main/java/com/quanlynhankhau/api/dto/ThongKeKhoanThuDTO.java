@@ -3,11 +3,11 @@ package com.quanlynhankhau.api.dto;
 
 import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class ThongKeKhoanThuDTO {
     private long soHoDaNop;

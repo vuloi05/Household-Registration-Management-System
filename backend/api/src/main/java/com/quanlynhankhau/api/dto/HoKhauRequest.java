@@ -4,11 +4,13 @@ package com.quanlynhankhau.api.dto;
 
 import com.quanlynhankhau.api.entity.HoKhau;
 import com.quanlynhankhau.api.entity.NhanKhau;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class HoKhauRequest {
 
     // Thông tin cho bảng HoKhau
