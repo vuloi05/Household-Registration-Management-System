@@ -2,6 +2,8 @@
 
 package com.quanlynhankhau.api.controller;
 
+import com.quanlynhankhau.api.dto.TamTruDTO;
+import com.quanlynhankhau.api.dto.TamVangDTO;
 import com.quanlynhankhau.api.entity.TamVang;
 import com.quanlynhankhau.api.entity.TamTru;
 import com.quanlynhankhau.api.service.TamVangTamTruService;
@@ -20,7 +22,7 @@ public class TamVangTamTruController {
     private TamVangTamTruService tamVangTamTruService;
 
     @GetMapping("/tam-vang")
-    public ResponseEntity<List<TamVang>> getAllTamVang() {
+    public ResponseEntity<List<TamVangDTO>> getAllTamVang() {
         return ResponseEntity.ok(tamVangTamTruService.getAllTamVang());
     }
 
@@ -30,7 +32,7 @@ public class TamVangTamTruController {
     }
 
     @GetMapping("/tam-tru")
-    public ResponseEntity<List<TamTru>> getAllTamTru() {
+    public ResponseEntity<List<TamTruDTO>> getAllTamTru() {
         return ResponseEntity.ok(tamVangTamTruService.getAllTamTru());
     }
 
