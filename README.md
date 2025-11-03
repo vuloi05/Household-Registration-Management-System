@@ -106,6 +106,7 @@ Phần mềm được xây dựng cho Ban quản lý tổ dân phố 7, phườn
     ```bash
     cd frontend
     npm install
+    npm install @mui/lab
     ```
 
 ### Chạy dự án
