@@ -38,7 +38,7 @@ const router = createBrowserRouter([
         element: <HoKhauDetailPage />,
       },
       {
-        path: '/ho-khau/:hoKhauId/lich-su-bien-dong',
+        path: '/lich-su-bien-dong',
         element: <LichSuBienDongPage />,
       },
       {

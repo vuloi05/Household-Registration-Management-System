@@ -26,7 +26,7 @@ VALUES('HK005', 'Số 8, Ngõ GHI, Phường Vạn Phúc, Quận Hà Đông', '2
 INSERT INTO ho_khau(ma_ho_khau, dia_chi, ngay_lap) 
 VALUES('HK006', 'Số 78, Phố Tố Hữu, Phường Dương Nội, Quận Hà Đông', '2019-05-11');
 
--- Hộ khẩu 7: Gia đình bà Đỗ Thị Hoa (5 thành viên)
+-- Hộ khẩu 7: Gia đình bà Đỗ Thị Hoa (5 thành viên) -> Sẽ có biến động khai tử, đổi chủ hộ
 INSERT INTO ho_khau(ma_ho_khau, dia_chi, ngay_lap) 
 VALUES('HK007', 'Nhà 22, Khu tập thể Dệt, Phường Vạn Phúc, Quận Hà Đông', '2017-02-28');
 
@@ -46,7 +46,7 @@ VALUES('HK010', 'P1102, Tòa A, Chung cư An Lạc, Phường La Khê, Quận H�
 INSERT INTO ho_khau(ma_ho_khau, dia_chi, ngay_lap) 
 VALUES('HK011', 'Số 55, Đường Nhuệ Giang, Phường Yết Kiêu, Quận Hà Đông', '2016-02-18');
 
--- Hộ khẩu 12: Gia đình ông Nguyễn Quốc Tuấn (4 thành viên)
+-- Hộ khẩu 12: Gia đình ông Nguyễn Quốc Tuấn (4 thành viên) -> Sẽ có biến động tách khẩu
 INSERT INTO ho_khau(ma_ho_khau, dia_chi, ngay_lap) 
 VALUES('HK012', 'Số 12, Ngõ 2, Phố Bà Triệu, Phường Nguyễn Trãi, Quận Hà Đông', '2019-09-10');
 
@@ -167,3 +167,7 @@ INSERT INTO ho_khau(ma_ho_khau, dia_chi, ngay_lap) VALUES
 ('HK098', 'P1709, Tòa B, Chung cư Victoria Văn Phú, Phường Phú La, Quận Hà Đông', '2019-02-14'),
 ('HK099', 'Số 6, Ngõ 5, Đường Tố Hữu, Phường Vạn Phúc, Quận Hà Đông', '2023-06-26'),
 ('HK100', 'Số 602, Đường Ngô Thì Nhậm, Phường La Khê, Quận Hà Đông', '2021-03-03');
+
+-- Hộ khẩu 101: Hộ mới tách ra từ HK012
+INSERT INTO ho_khau(ma_ho_khau, dia_chi, ngay_lap) 
+VALUES('HK101', 'Số 12B, Ngõ 2, Phố Bà Triệu, Phường Nguyễn Trãi, Quận Hà Đông', '2025-12-01');

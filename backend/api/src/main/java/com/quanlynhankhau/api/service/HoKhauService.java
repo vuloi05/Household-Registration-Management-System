@@ -1,6 +1,14 @@
 // src/main/java/com/quanlynhankhau/api/service/HoKhauService.java
-
 package com.quanlynhankhau.api.service;
+
+import com.quanlynhankhau.api.dto.HoKhauLichSuDTO;
+import com.quanlynhankhau.api.entity.LichSuBienDongNhanKhau;
+import com.quanlynhankhau.api.entity.LichSuThayDoiHoKhau;
+import com.quanlynhankhau.api.repository.LichSuBienDongRepository;
+import com.quanlynhankhau.api.repository.LichSuThayDoiHoKhauRepository;
+
+import java.util.ArrayList;
+import java.util.stream.Stream;
 
 import com.quanlynhankhau.api.dto.HoKhauRequest;
 import com.quanlynhankhau.api.dto.HoKhauResponseDTO; 
@@ -24,6 +32,44 @@ public class HoKhauService {
 
     @Autowired
     private NhanKhauRepository nhanKhauRepository;
+
+    @Autowired
+    private LichSuThayDoiHoKhauRepository lichSuThayDoiHoKhauRepository;
+
+    @Autowired
+    private LichSuBienDongRepository lichSuBienDongRepository;
+
+    public List<HoKhauLichSuDTO> getLichSuTongHopByHoKhauId(Long hoKhauId) {
+        // Lấy lịch sử thay đổi của chính hộ khẩu (thay đổi chủ hộ, địa chỉ...)
+        List<LichSuThayDoiHoKhau> thayDoiHoKhauList = lichSuThayDoiHoKhauRepository.findByHoKhauIdOrderByNgayThayDoiDesc(hoKhauId);
+
+        // Lấy lịch sử biến động của các thành viên trong hộ (chuyển đi, chuyển đến, mất...)
+        List<LichSuBienDongNhanKhau> bienDongThanhVienList = lichSuBienDongRepository.findByHoKhauId(hoKhauId);
+
+        // Chuyển đổi danh sách 1 sang DTO chung
+        Stream<HoKhauLichSuDTO> stream1 = thayDoiHoKhauList.stream().map(ls -> {
+            String noiDung = ls.getNoiDungThayDoi();
+            return new HoKhauLichSuDTO(ls.getNgayThayDoi(), ls.getLoaiThayDoi(), noiDung, ls.getNguoiGhiNhan());
+        });
+
+        // Chuyển đổi danh sách 2 sang DTO chung
+        Stream<HoKhauLichSuDTO> stream2 = bienDongThanhVienList.stream()
+            // Chỉ lấy các biến động liên quan đến thành viên
+            .filter(ls -> List.of("THEM_MOI", "CHUYEN_DI", "KHAI_TU", "TACH_KHAU").contains(ls.getLoaiBienDong()))
+            .map(ls -> {
+                String tenNhanKhau = ls.getNhanKhau() != null ? ls.getNhanKhau().getHoTen() : "Không rõ";
+                String noiDung = String.format("Thành viên %s: %s", tenNhanKhau, ls.getGhiChu());
+                return new HoKhauLichSuDTO(ls.getNgayBienDong(), "THANH_VIEN: " + ls.getLoaiBienDong(), noiDung, ls.getNguoiGhiNhan());
+            });
+
+        // Gộp 2 stream lại và sắp xếp
+        List<HoKhauLichSuDTO> combinedList = Stream.concat(stream1, stream2)
+                .sorted(HoKhauLichSuDTO.getComparator())
+                .collect(Collectors.toList());
+
+        return combinedList;
+    }
+
 
     //Phương thức private để chuyển đổi Entity sang DTO
     /**

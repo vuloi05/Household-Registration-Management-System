@@ -82,3 +82,17 @@ export const separateHousehold = async (data: HoKhauFormValues, cmndCccd: string
   const response = await axiosClient.post(`/hokhau/separate?cmndCccd=${cmndCccd}`, payload);
   return response.data;
 };
+
+// Thêm kiểu dữ liệu cho Lịch sử thay đổi
+export interface HoKhauLichSu {
+  ngay: string; // Hoặc Date nếu bạn muốn chuyển đổi
+  loai: string;
+  noiDung: string;
+  nguoiGhiNhan: string;
+}
+
+// Hàm gọi API lấy lịch sử thay đổi của một hộ khẩu
+export const getLichSuThayDoi = async (hoKhauId: number): Promise<HoKhauLichSu[]> => {
+  const response = await axiosClient.get(`/hokhau/${hoKhauId}/lich-su-thay-doi`);
+  return response.data;
+};
