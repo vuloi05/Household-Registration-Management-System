@@ -42,7 +42,7 @@ import { useSnackbar } from 'notistack';
 import NhanKhauForm from '../components/forms/NhanKhauForm';
 import NhanKhauDetailModal from '../components/details/NhanKhauDetailModal';
 import ConfirmationDialog from '../components/shared/ConfirmationDialog';
-import QRScannerModal from '../components/shared/QRScannerModal';
+import QRPollingModal from '../components/shared/QRPollingModal';
 import BienDongNhanKhauForm from '../components/forms/BienDongNhanKhauForm';
 import type { NhanKhauFormValues } from '../types/nhanKhau';
 import type { BienDongNhanKhauFormValues } from '../types/bienDong';
@@ -61,8 +61,8 @@ export default function NhanKhauPage() {
   const location = useLocation();
   const { enqueueSnackbar } = useSnackbar();
 
-  // State mở/tắt QR scanner modal
-  const [qrScannerModalOpen, setQrScannerModalOpen] = useState(false);
+  // State mở/tắt modal chờ AppSheet
+  const [qrPollingModalOpen, setQrPollingModalOpen] = useState(false);
 
   // State cho dữ liệu nhân khẩu
   const [nhanKhauList, setNhanKhauList] = useState<NhanKhau[]>([]);
@@ -128,39 +128,10 @@ export default function NhanKhauPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, rowsPerPage, searchQuery, ageFilter, genderFilter, locationFilter]);
 
-  // Xử lý kết quả quét QR
-  const handleQRScanSuccess = (decodedText: string) => {
-    const parts = decodedText.split("|");
-    if (parts.length < 5) {
-      enqueueSnackbar("Dữ liệu QR không hợp lệ!", { variant: "error" });
-      return;
-    }
-
-    const [cccd, hoTen, ngaySinhStr, queQuan, ngayCapStr] = parts;
-
-    const parseDate = (str: string) => {
-      if (str.length !== 8) return null;
-      const day = parseInt(str.substring(0, 2));
-      const month = parseInt(str.substring(2, 4)) - 1;
-      const year = parseInt(str.substring(4, 8));
-      return new Date(year, month, day);
-    };
-
-    const ngaySinh = parseDate(ngaySinhStr);
-    const ngayCap = parseDate(ngayCapStr);
-
-    if (!ngaySinh || !ngayCap) {
-      enqueueSnackbar("Định dạng ngày không hợp lệ!", { variant: "error" });
-      return;
-    }
-
-    const matched = nhanKhauList.find(nk => nk.cmndCccd === cccd);
-    if (matched) {
-      handleViewDetail(matched);
-      enqueueSnackbar(`Đã tìm thấy nhân khẩu: ${hoTen}`, { variant: 'success' });
-    } else {
-      enqueueSnackbar(`Không tìm thấy nhân khẩu với CCCD: ${cccd}`, { variant: 'warning' });
-    }
+  // Nhận QR từ AppSheet -> tự nhập vào thanh tìm kiếm
+  const handleReceiveQRCode = (qr: string) => {
+    setSearchQuery(qr);
+    enqueueSnackbar('Đã nhận mã QR từ AppSheet', { variant: 'success' });
   };
 
   // Lắng nghe agent action sau khi điều hướng
@@ -501,10 +472,10 @@ export default function NhanKhauPage() {
                       <ClearIcon />
                     </IconButton>
                   )}
-                  <Tooltip title="Quét CCCD">
+                  <Tooltip title="Quét từ AppSheet">
                     <IconButton
                       size="small"
-                      onClick={() => setQrScannerModalOpen(true)}
+                      onClick={() => setQrPollingModalOpen(true)}
                     >
                       <QrCodeScannerIcon />
                     </IconButton>
@@ -804,11 +775,11 @@ export default function NhanKhauPage() {
         }}
       />
 
-      {/* QR Scanner Modal */}
-      <QRScannerModal
-        open={qrScannerModalOpen}
-        onClose={() => setQrScannerModalOpen(false)}
-        onScanSuccess={handleQRScanSuccess}
+      {/* QR Polling Modal (AppSheet + Google Sheets) */}
+      <QRPollingModal
+        open={qrPollingModalOpen}
+        onClose={() => setQrPollingModalOpen(false)}
+        onReceiveQRCode={handleReceiveQRCode}
       />
     </Box>
   );
