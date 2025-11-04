@@ -32,7 +32,7 @@ def call_gemini(message: str, context: str = "", history: list = None, retry_att
         
         # Add conversation history if provided
         if history:
-            for msg in history[-10:]:  # Chỉ lấy 10 messages gần nhất
+            for msg in history[-settings.MAX_HISTORY_MESSAGES:]:  # Lấy theo cấu hình
                 role = msg.get('role', 'user')
                 content = msg.get('content', '').strip()
                 if content:

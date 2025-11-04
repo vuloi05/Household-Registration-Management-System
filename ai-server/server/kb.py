@@ -3,6 +3,7 @@ import threading
 import time
 from datetime import datetime, timedelta
 from difflib import SequenceMatcher
+from .utils import normalize_text, tokenize_keywords
 
 from . import settings
 
@@ -12,6 +13,10 @@ kb_lock = threading.Lock()
 kb_last_reload_time: datetime = None  # Track lần cuối reload
 kb_reload_count: int = 0  # Đếm số lần reload
 auto_reload_thread: threading.Thread = None  # Background thread cho auto-reload
+
+# Metrics
+kb_queries: int = 0
+kb_hits: int = 0
 
 
 def load_qa_knowledge_base(force_reload: bool = False) -> dict:
@@ -64,33 +69,77 @@ def load_qa_knowledge_base(force_reload: bool = False) -> dict:
             except Exception as e:
                 print(f"[WARN][KB-load-DDB] {e}")
         
-        # Add from S3 - lấy nhiều ngày hơn để học từ lịch sử
+        # Add from S3 - load toàn bộ database để tự học từ tất cả lịch sử
         if settings.s3_client and settings.AWS_S3_BUCKET:
-            days_to_check = 3  # Tăng từ 2 lên 3 ngày
-            for offset in range(0, days_to_check):
-                date = datetime.now() - timedelta(days=offset)
-                key = f"{settings.LEARNING_S3_PREFIX}/{date.strftime('%Y/%m/%d')}.ndjson"
-                try:
-                    obj = settings.s3_client.get_object(Bucket=settings.AWS_S3_BUCKET, Key=key)
-                    body = obj['Body'].read().decode('utf-8')
-                    lines = [ln for ln in body.strip().split('\n') if ln.strip()]
-                    # Lấy nhiều dòng hơn từ mỗi file
-                    for ln in lines[-200:]:  # Tăng từ 100 lên 200
-                        try:
-                            ev = json.loads(ln)
-                        except Exception:
-                            continue
-                        msg = ev.get('message', '').strip()
-                        ans = ev.get('response', '').strip()
-                        source = ev.get('source', '').strip().lower()
-                        if msg and ans and len(msg) > 3 and len(ans) > 2:
-                            # Ưu tiên các response từ feedback
-                            if 'feedback' in source or 'corrected' in source:
-                                items.append({'q': msg, 'a': ans, 'priority': 2})
-                            else:
-                                items.append({'q': msg, 'a': ans, 'priority': 1})
-                except Exception:
-                    continue
+            try:
+                # List tất cả các files trong S3 với prefix LEARNING_S3_PREFIX
+                prefix = f"{settings.LEARNING_S3_PREFIX}/"
+                paginator = settings.s3_client.get_paginator('list_objects_v2')
+                pages = paginator.paginate(Bucket=settings.AWS_S3_BUCKET, Prefix=prefix)
+                
+                all_keys = []
+                for page in pages:
+                    if 'Contents' in page:
+                        for obj in page['Contents']:
+                            key = obj['Key']
+                            # Chỉ lấy các file .ndjson
+                            if key.endswith('.ndjson'):
+                                all_keys.append(key)
+                
+                print(f"[KB] Found {len(all_keys)} files in S3, loading all data...")
+                
+                # Load tất cả các files
+                for key in all_keys:
+                    try:
+                        obj = settings.s3_client.get_object(Bucket=settings.AWS_S3_BUCKET, Key=key)
+                        body = obj['Body'].read().decode('utf-8')
+                        lines = [ln for ln in body.strip().split('\n') if ln.strip()]
+                        # Load tất cả dòng từ mỗi file (không giới hạn)
+                        for ln in lines:
+                            try:
+                                ev = json.loads(ln)
+                            except Exception:
+                                continue
+                            msg = ev.get('message', '').strip()
+                            ans = ev.get('response', '').strip()
+                            source = ev.get('source', '').strip().lower()
+                            if msg and ans and len(msg) > 3 and len(ans) > 2:
+                                # Ưu tiên các response từ feedback
+                                if 'feedback' in source or 'corrected' in source or 'confirm' in source:
+                                    items.append({'q': msg, 'a': ans, 'priority': 2})
+                                else:
+                                    items.append({'q': msg, 'a': ans, 'priority': 1})
+                    except Exception as e:
+                        # Tiếp tục với file tiếp theo nếu có lỗi
+                        print(f"[WARN][KB-load-S3] Error loading {key}: {e}")
+                        continue
+                        
+            except Exception as e:
+                print(f"[WARN][KB-load-S3] Error listing S3 objects: {e}")
+                # Fallback: thử load 30 ngày gần nhất nếu không list được
+                days_to_check = 30
+                for offset in range(0, days_to_check):
+                    date = datetime.now() - timedelta(days=offset)
+                    key = f"{settings.LEARNING_S3_PREFIX}/{date.strftime('%Y/%m/%d')}.ndjson"
+                    try:
+                        obj = settings.s3_client.get_object(Bucket=settings.AWS_S3_BUCKET, Key=key)
+                        body = obj['Body'].read().decode('utf-8')
+                        lines = [ln for ln in body.strip().split('\n') if ln.strip()]
+                        for ln in lines:
+                            try:
+                                ev = json.loads(ln)
+                            except Exception:
+                                continue
+                            msg = ev.get('message', '').strip()
+                            ans = ev.get('response', '').strip()
+                            source = ev.get('source', '').strip().lower()
+                            if msg and ans and len(msg) > 3 and len(ans) > 2:
+                                if 'feedback' in source or 'corrected' in source or 'confirm' in source:
+                                    items.append({'q': msg, 'a': ans, 'priority': 2})
+                                else:
+                                    items.append({'q': msg, 'a': ans, 'priority': 1})
+                    except Exception:
+                        continue
         
         # Deduplicate (ưu tiên items có priority cao hơn và mới hơn)
         dedup: dict[str, dict] = {}
@@ -131,19 +180,45 @@ def load_qa_knowledge_base(force_reload: bool = False) -> dict:
         }
 
 
-def find_best_local_answer(q: str, threshold: float = 0.85):
-    q = q.strip().lower()
-    best_score = 0
+def _jaccard(a: set[str], b: set[str]) -> float:
+    if not a or not b:
+        return 0.0
+    inter = len(a & b)
+    union = len(a | b)
+    return inter / max(union, 1)
+
+
+def find_best_local_answer(q: str, threshold: float = None):
+    # Configurable thresholds
+    similarity_threshold = threshold if threshold is not None else settings.KB_SIMILARITY_THRESHOLD
+    jaccard_threshold = settings.KB_JACCARD_THRESHOLD
+
+    global kb_queries, kb_hits
+    kb_queries += 1
+
+    norm_q = normalize_text(q)
+    q_tokens = set(tokenize_keywords(q))
+    best_score = 0.0
     best_ans = None
+
     with kb_lock:
         for item in qa_knowledge_base:
-            qkb = item['q'].strip().lower()
-            if q == qkb:
-                return item['a']
-            score = SequenceMatcher(None, q, qkb).ratio()
-            if score > best_score and score >= threshold:
-                best_score = score
-                best_ans = item['a']
+            qkb_raw = item['q']
+            a_raw = item['a']
+            norm_kb_q = normalize_text(qkb_raw)
+            kb_tokens = set(tokenize_keywords(qkb_raw))
+            # Two signals
+            seq_score = SequenceMatcher(None, norm_q, norm_kb_q).ratio()
+            jacc = _jaccard(q_tokens, kb_tokens)
+            combined = max(seq_score, jacc)
+            # Accept if either signal clears its threshold
+            if (seq_score >= similarity_threshold) or (jacc >= jaccard_threshold):
+                if combined > best_score:
+                    best_score = combined
+                    best_ans = a_raw
+
+    if best_ans is not None:
+        kb_hits += 1
     return best_ans
 
 
@@ -194,7 +269,12 @@ def get_kb_status() -> dict:
             'reload_count': kb_reload_count,
             'auto_reload_enabled': settings.LEARNING_AUTO_RELOAD_ENABLED,
             'auto_reload_interval': settings.LEARNING_AUTO_RELOAD_INTERVAL,
-            'aws_configured': bool(settings.boto3 and (settings.s3_client or settings.ddb_client))
+            'aws_configured': bool(settings.boto3 and (settings.s3_client or settings.ddb_client)),
+            'metrics': {
+                'kb_queries': kb_queries,
+                'kb_hits': kb_hits,
+                'kb_hit_rate': (kb_hits / kb_queries) if kb_queries else 0.0
+            }
         }
 
 

@@ -8,6 +8,7 @@ import time
 from datetime import datetime, timedelta
 from typing import Optional, Dict
 from collections import OrderedDict
+from .utils import normalize_text
 
 # LRU Cache in-memory
 response_cache: OrderedDict[str, Dict] = OrderedDict()
@@ -20,7 +21,9 @@ CACHE_TTL_SECONDS = 3600  # Cache valid trong 1 giờ
 
 def _generate_cache_key(message: str, context: str = "") -> str:
     """Tạo cache key từ message và context."""
-    combined = f"{message.lower().strip()}|{context.lower().strip()}"
+    normalized_message = normalize_text(message)
+    normalized_context = normalize_text(context)
+    combined = f"{normalized_message}|{normalized_context}"
     return hashlib.md5(combined.encode('utf-8')).hexdigest()
 
 

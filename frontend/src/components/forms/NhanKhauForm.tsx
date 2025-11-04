@@ -3,15 +3,18 @@
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, TextField, Box, Divider, Typography,
-  FormControl, InputLabel, Select, MenuItem
+  FormControl, InputLabel, Select, MenuItem,
+  IconButton, InputAdornment, Tooltip
 } from '@mui/material';
+import { QrCodeScanner as QrCodeScannerIcon } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 // Import schema và type đã được cập nhật đầy đủ các trường
 import { nhanKhauSchema, nhanKhauWithMaHoKhauSchema } from '../../types/nhanKhau';
 import type { NhanKhauFormValues } from '../../types/nhanKhau';
+import QRPollingModal from '../shared/QRPollingModal';
 
 interface NhanKhauFormProps {
   open: boolean;
@@ -23,11 +26,13 @@ interface NhanKhauFormProps {
 
 export default function NhanKhauForm({ open, onClose, onSubmit, initialData, showMaHoKhauField = false }: NhanKhauFormProps) {
   const isEditMode = !!initialData;
+  const [qrPollingModalOpen, setQrPollingModalOpen] = useState(false);
 
   const {
     control,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<NhanKhauFormValues>({
     resolver: zodResolver(showMaHoKhauField ? nhanKhauWithMaHoKhauSchema : nhanKhauSchema),
@@ -65,11 +70,49 @@ export default function NhanKhauForm({ open, onClose, onSubmit, initialData, sho
     // Việc reset đã được xử lý trong useEffect khi mở lại
   };
 
+  const parseDateDDMMYYYYToISO = (raw: string): string => {
+    const s = (raw || '').replace(/[^0-9]/g, '');
+    if (s.length !== 8) return '';
+    const dd = s.slice(0, 2);
+    const mm = s.slice(2, 4);
+    const yyyy = s.slice(4, 8);
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const handleQRSuccess = (decodedText: string) => {
+    const parts = (decodedText || '').split('|').map(p => p.trim());
+    const cccd = parts[0] || '';
+    const _cmnd = parts[1] || '';
+    const hoTen = parts[2] || '';
+    const ngaySinhISO = parseDateDDMMYYYYToISO(parts[3] || '');
+    const gioiTinh = parts[4] === 'Nam' || parts[4] === 'Nữ' ? parts[4] : '';
+    const diaChi = parts[5] || '';
+    const ngayCapISO = parseDateDDMMYYYYToISO(parts[6] || '');
+
+    if (cccd) setValue('cmndCccd', cccd, { shouldValidate: true });
+    if (hoTen) setValue('hoTen', hoTen, { shouldValidate: true });
+    if (ngaySinhISO) setValue('ngaySinh', ngaySinhISO, { shouldValidate: true });
+    if (gioiTinh) setValue('gioiTinh', gioiTinh as any, { shouldValidate: true });
+    // Lấy tỉnh/thành (sau dấu phẩy cuối cùng) làm "Quê quán"
+    if (diaChi) {
+      const lastSegment = diaChi.split(',').pop()?.trim() || '';
+      setValue('queQuan', lastSegment);
+    }
+    if (ngayCapISO) setValue('ngayCap', ngayCapISO, { shouldValidate: true });
+  };
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <Box component="form" onSubmit={handleSubmit(handleFormSubmit)}>
-        <DialogTitle sx={{ fontWeight: 'bold' }}>
-          {isEditMode ? 'Cập nhật Nhân khẩu' : 'Thêm Nhân khẩu mới'}
+        <DialogTitle sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6" component="div">
+            {isEditMode ? 'Cập nhật Nhân khẩu' : 'Thêm Nhân khẩu mới'}
+          </Typography>
+          <Tooltip title="Quét từ AppSheet">
+            <Button size="small" variant="outlined" startIcon={<QrCodeScannerIcon fontSize="small" />} onClick={() => setQrPollingModalOpen(true)}>
+              Quét QR
+            </Button>
+          </Tooltip>
         </DialogTitle>
         <DialogContent>
           
@@ -109,7 +152,19 @@ export default function NhanKhauForm({ open, onClose, onSubmit, initialData, sho
           {/* === THÔNG TIN CĂN CƯỚC & NGHỀ NGHIỆP === */}
           <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>Thông tin Căn cước & Nghề nghiệp</Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 2, }}>
-            <Controller name="cmndCccd" control={control} render={({ field }) => ( <TextField {...field} required label="Số CMND/CCCD" error={!!errors.cmndCccd} helperText={errors.cmndCccd?.message} /> )} />
+            <Controller 
+              name="cmndCccd" 
+              control={control} 
+              render={({ field }) => ( 
+                <TextField 
+                  {...field} 
+                  required 
+                  label="Số CMND/CCCD" 
+                  error={!!errors.cmndCccd} 
+                  helperText={errors.cmndCccd?.message}
+                /> 
+              )} 
+            />
             <Controller name="ngayCap" control={control} render={({ field }) => ( <TextField {...field} required label="Ngày cấp" type="date" InputLabelProps={{ shrink: true }} error={!!errors.ngayCap} helperText={errors.ngayCap?.message} /> )} />
             <Controller name="noiCap" control={control} render={({ field }) => ( <TextField {...field} required label="Nơi cấp" error={!!errors.noiCap} helperText={errors.noiCap?.message} /> )} />
             <Controller name="ngheNghiep" control={control} render={({ field }) => ( <TextField {...field} label="Nghề nghiệp" /> )} />
@@ -146,6 +201,7 @@ export default function NhanKhauForm({ open, onClose, onSubmit, initialData, sho
           <Button onClick={onClose}>Hủy</Button>
           <Button type="submit" variant="contained">Lưu</Button>
         </DialogActions>
+        <QRPollingModal open={qrPollingModalOpen} onClose={() => setQrPollingModalOpen(false)} onReceiveQRCode={handleQRSuccess} />
       </Box>
     </Dialog>
   );

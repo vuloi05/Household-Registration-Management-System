@@ -13,6 +13,7 @@ from difflib import SequenceMatcher
 
 from . import settings
 from .kb import qa_knowledge_base, kb_lock, load_qa_knowledge_base
+from .utils import normalize_text
 
 
 # Tracking
@@ -138,13 +139,13 @@ def calculate_qa_score(question: str, answer: str, source: str = '') -> float:
 
 def is_duplicate(question: str, answer: str, threshold: float = 0.85) -> bool:
     """Kiểm tra xem Q&A có trùng với knowledge base hiện có không."""
-    q = question.strip().lower()
-    a = answer.strip().lower()
+    q = normalize_text(question)
+    a = normalize_text(answer)
     
     with kb_lock:
         for item in qa_knowledge_base:
-            q_existing = item['q'].strip().lower()
-            a_existing = item['a'].strip().lower()
+            q_existing = normalize_text(item['q'])
+            a_existing = normalize_text(item['a'])
             
             q_sim = SequenceMatcher(None, q, q_existing).ratio()
             a_sim = SequenceMatcher(None, a, a_existing).ratio()
@@ -224,40 +225,44 @@ def analyze_and_learn_from_conversations() -> Dict:
             except Exception as e:
                 print(f"[WARN][Auto-learning][DDB] {e}")
         
-        # Lấy conversations từ S3 (các file mới)
+        # Lấy conversations từ S3 (toàn bộ file để học đầy đủ)
         if settings.s3_client and settings.AWS_S3_BUCKET:
-            days_to_check = 1  # Chỉ check 1 ngày gần nhất
-            for offset in range(0, days_to_check):
-                date = datetime.now() - timedelta(days=offset)
-                key = f"{settings.LEARNING_S3_PREFIX}/{date.strftime('%Y/%m/%d')}.ndjson"
-                try:
-                    obj = settings.s3_client.get_object(Bucket=settings.AWS_S3_BUCKET, Key=key)
-                    body = obj['Body'].read().decode('utf-8')
-                    lines = [ln for ln in body.strip().split('\n') if ln.strip()]
-                    
-                    for ln in lines[-300:]:  # Lấy 300 dòng cuối
+            try:
+                prefix = f"{settings.LEARNING_S3_PREFIX}/"
+                paginator = settings.s3_client.get_paginator('list_objects_v2')
+                pages = paginator.paginate(Bucket=settings.AWS_S3_BUCKET, Prefix=prefix)
+                for page in pages:
+                    for obj in page.get('Contents', []):
+                        key = obj.get('Key', '')
+                        if not key.endswith('.ndjson'):
+                            continue
                         try:
-                            ev = json.loads(ln)
-                            msg = ev.get('message', '').strip()
-                            ans = ev.get('response', '').strip()
-                            source = ev.get('source', '').strip()
-                            
-                            if msg and ans:
-                                # Chỉ phân tích các conversations không phải từ feedback hoặc auto-learned
-                                source_lower = source.lower()
-                                if ('feedback' not in source_lower and 
-                                    'corrected' not in source_lower and
-                                    'auto-learned' not in source_lower):
-                                    conversations_to_analyze.append({
-                                        'message': msg,
-                                        'response': ans,
-                                        'source': source,
-                                        'timestamp': ev.get('timestamp', '')
-                                    })
+                            s3_obj = settings.s3_client.get_object(Bucket=settings.AWS_S3_BUCKET, Key=key)
+                            body = s3_obj['Body'].read().decode('utf-8')
+                            lines = [ln for ln in body.strip().split('\n') if ln.strip()]
+                            for ln in lines:
+                                try:
+                                    ev = json.loads(ln)
+                                    msg = ev.get('message', '').strip()
+                                    ans = ev.get('response', '').strip()
+                                    source = ev.get('source', '').strip()
+                                    if msg and ans:
+                                        source_lower = (source or '').lower()
+                                        if ('feedback' not in source_lower and 
+                                            'corrected' not in source_lower and
+                                            'auto-learned' not in source_lower):
+                                            conversations_to_analyze.append({
+                                                'message': msg,
+                                                'response': ans,
+                                                'source': source,
+                                                'timestamp': ev.get('timestamp', '')
+                                            })
+                                except Exception:
+                                    continue
                         except Exception:
                             continue
-                except Exception:
-                    continue
+            except Exception:
+                pass
         
         # Phân tích và scoring
         scored_items = []

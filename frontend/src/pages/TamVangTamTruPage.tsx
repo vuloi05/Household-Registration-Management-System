@@ -8,8 +8,16 @@ import {
   Tabs,
   Paper,
   Button,
-  Table, TableHead, TableRow, TableCell, TableBody, TableContainer
+  Table, TableHead, TableRow, TableCell, TableBody, TableContainer,
+  TextField,
+  InputAdornment,
+  TablePagination,
+  CircularProgress
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import SearchIcon from '@mui/icons-material/Search';
+import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
+import HomeWorkIcon from '@mui/icons-material/HomeWork';
 import { useSnackbar } from 'notistack';
 
 import { getAllTamVang, createTamVang } from '../api/tamVangApi';
@@ -50,24 +58,46 @@ export default function TamVangTamTruPage() {
   const [tamVangList, setTamVangList] = useState<TamVang[]>([]);
   const [tamTruList, setTamTruList] = useState<TamTru[]>([]);
 
+  // Loading states
+  const [loadingTamVang, setLoadingTamVang] = useState<boolean>(false);
+  const [loadingTamTru, setLoadingTamTru] = useState<boolean>(false);
+
   const [tamVangFormOpen, setTamVangFormOpen] = useState(false);
   const [tamTruFormOpen, setTamTruFormOpen] = useState(false);
 
+  // Search states
+  const [searchTamVang, setSearchTamVang] = useState('');
+  const [searchTamTru, setSearchTamTru] = useState('');
+
+  // Client-side pagination states (to align with HoKhau/NhanKhau pages)
+  const [pageTamVang, setPageTamVang] = useState(0);
+  const [rowsPerPageTamVang, setRowsPerPageTamVang] = useState(10);
+  const [pageTamTru, setPageTamTru] = useState(0);
+  const [rowsPerPageTamTru, setRowsPerPageTamTru] = useState(10);
+
   const fetchTamVang = async () => {
     try {
+      setLoadingTamVang(true);
       const response = await getAllTamVang();
       setTamVangList(response.data);
+      setPageTamVang(0);
     } catch (error) {
       enqueueSnackbar('Không thể tải danh sách tạm vắng', { variant: 'error' });
+    } finally {
+      setLoadingTamVang(false);
     }
   };
 
   const fetchTamTru = async () => {
     try {
+      setLoadingTamTru(true);
       const response = await getAllTamTru();
       setTamTruList(response.data);
+      setPageTamTru(0);
     } catch (error) {
       enqueueSnackbar('Không thể tải danh sách tạm trú', { variant: 'error' });
+    } finally {
+      setLoadingTamTru(false);
     }
   };
 
@@ -102,80 +132,272 @@ export default function TamVangTamTruPage() {
     }
   };
 
-  return (
-    <Box sx={{ width: '100%' }}>
-      <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>
-        Quản lý Tạm vắng / Tạm trú
-      </Typography>
+  // Filtered lists for search
+  const filteredTamVang = tamVangList.filter(item => {
+    if (!searchTamVang.trim()) return true;
+    const q = searchTamVang.toLowerCase();
+    return (
+      String(item.nhanKhauId ?? '').toLowerCase().includes(q) ||
+      (item.noiDen ?? '').toLowerCase().includes(q) ||
+      (item.lyDo ?? '').toLowerCase().includes(q)
+    );
+  });
 
-      <Paper sx={{ width: '100%' }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={handleTabChange} aria-label="tạm vắng tạm trú tabs">
-            <Tab label="Tạm vắng" />
-            <Tab label="Tạm trú" />
+  const filteredTamTru = tamTruList.filter(item => {
+    if (!searchTamTru.trim()) return true;
+    const q = searchTamTru.toLowerCase();
+    return (
+      (item.hoTen ?? '').toLowerCase().includes(q) ||
+      String(item.hoKhauTiepNhanId ?? '').toLowerCase().includes(q) ||
+      (item.lyDo ?? '').toLowerCase().includes(q)
+    );
+  });
+
+  return (
+    <Box sx={{ width: '100%', maxWidth: '100%' }}>
+      {/* Header with action button aligned to reference pages */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, width: '100%' }}>
+        <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+          Quản lý Tạm vắng / Tạm trú
+        </Typography>
+        {tabValue === 0 ? (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setTamVangFormOpen(true)}>
+            Thêm Tạm vắng
+          </Button>
+        ) : (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setTamTruFormOpen(true)}>
+            Thêm Tạm trú
+          </Button>
+        )}
+      </Box>
+
+      <Paper sx={{ borderRadius: 2, p: 2, width: '100%' }}>
+        <Box sx={{ mb: 2 }}>
+          <Tabs
+            value={tabValue}
+            onChange={handleTabChange}
+            aria-label="tạm vắng tạm trú tabs"
+            TabIndicatorProps={{ style: { display: 'none' } }}
+            sx={{
+              bgcolor: 'background.default',
+              p: 0.5,
+              borderRadius: 999,
+              width: 'fit-content'
+            }}
+          >
+            <Tab
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <FlightTakeoffIcon fontSize="small" />
+                  <span>Tạm vắng</span>
+                </Box>
+              }
+              disableRipple
+              sx={{
+                textTransform: 'none',
+                fontWeight: 700,
+                borderRadius: 999,
+                minHeight: 40,
+                px: 2.5,
+                color: 'text.secondary',
+                '&.Mui-selected': {
+                  bgcolor: 'primary.main',
+                  color: 'primary.contrastText',
+                }
+              }}
+            />
+            <Tab
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <HomeWorkIcon fontSize="small" />
+                  <span>Tạm trú</span>
+                </Box>
+              }
+              disableRipple
+              sx={{
+                textTransform: 'none',
+                fontWeight: 700,
+                borderRadius: 999,
+                minHeight: 40,
+                px: 2.5,
+                color: 'text.secondary',
+                '&.Mui-selected': {
+                  bgcolor: 'primary.main',
+                  color: 'primary.contrastText',
+                }
+              }}
+            />
           </Tabs>
         </Box>
-        <TabPanel value={tabValue} index={0}>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-            <Button variant="contained" onClick={() => setTamVangFormOpen(true)}>Thêm Tạm vắng</Button>
+
+        {/* Search bar per tab */}
+        {tabValue === 0 ? (
+          <Box sx={{ mb: 2, width: '100%' }}>
+            <TextField
+              fullWidth
+              placeholder="Tìm kiếm theo Nhân khẩu ID, nơi đến, lý do..."
+              value={searchTamVang}
+              onChange={(e) => { setSearchTamVang(e.target.value); setPageTamVang(0); }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                )
+              }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            />
           </Box>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Nhân khẩu ID</TableCell>
-                  <TableCell>Ngày bắt đầu</TableCell>
-                  <TableCell>Ngày kết thúc</TableCell>
-                  <TableCell>Nơi đến</TableCell>
-                  <TableCell>Lý do</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {tamVangList.map(item => (
-                  <TableRow key={item.id}>
-                    <TableCell>{item.nhanKhauId}</TableCell>
-                    <TableCell>{new Date(item.ngayBatDau).toLocaleDateString('vi-VN')}</TableCell>
-                    <TableCell>{new Date(item.ngayKetThuc).toLocaleDateString('vi-VN')}</TableCell>
-                    <TableCell>{item.noiDen}</TableCell>
-                    <TableCell>{item.lyDo}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+        ) : (
+          <Box sx={{ mb: 2, width: '100%' }}>
+            <TextField
+              fullWidth
+              placeholder="Tìm kiếm theo Họ tên, mã hộ khẩu tiếp nhận, lý do..."
+              value={searchTamTru}
+              onChange={(e) => { setSearchTamTru(e.target.value); setPageTamTru(0); }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                )
+              }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            />
+          </Box>
+        )}
+
+        {/* Tab content */}
+        <TabPanel value={tabValue} index={0}>
+          {loadingTamVang ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <>
+              <TableContainer sx={{ width: '100%' }}>
+                <Table sx={{ width: '100%', tableLayout: 'fixed', '& .MuiTableCell-root': { fontSize: '0.95rem' } }} size="medium">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 'bold', width: '6%' }}>STT</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '16%' }}>Nhân khẩu ID</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '16%' }}>Ngày bắt đầu</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '16%' }}>Ngày kết thúc</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '23%' }}>Nơi đến</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '23%' }}>Lý do</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredTamVang
+                      .slice(pageTamVang * rowsPerPageTamVang, pageTamVang * rowsPerPageTamVang + rowsPerPageTamVang)
+                      .map((item, index) => (
+                        <TableRow key={item.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                          <TableCell>{pageTamVang * rowsPerPageTamVang + index + 1}</TableCell>
+                          <TableCell>{item.nhanKhauId}</TableCell>
+                          <TableCell>{new Date(item.ngayBatDau).toLocaleDateString('vi-VN')}</TableCell>
+                          <TableCell>{new Date(item.ngayKetThuc).toLocaleDateString('vi-VN')}</TableCell>
+                          <TableCell>{item.noiDen}</TableCell>
+                          <TableCell>{item.lyDo}</TableCell>
+                        </TableRow>
+                      ))}
+                    {filteredTamVang.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Không tìm thấy bản ghi tạm vắng nào
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              {/* Pagination moved below the table (outside Paper) to match other pages */}
+            </>
+          )}
         </TabPanel>
         <TabPanel value={tabValue} index={1}>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-            <Button variant="contained" onClick={() => setTamTruFormOpen(true)}>Thêm Tạm trú</Button>
-          </Box>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Họ tên</TableCell>
-                  <TableCell>Ngày sinh</TableCell>
-                  <TableCell>Hộ khẩu tiếp nhận ID</TableCell>
-                  <TableCell>Ngày bắt đầu</TableCell>
-                  <TableCell>Ngày kết thúc</TableCell>
-                  <TableCell>Lý do</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {tamTruList.map(item => (
-                  <TableRow key={item.id}>
-                    <TableCell>{item.hoTen}</TableCell>
-                    <TableCell>{item.ngaySinh ? new Date(item.ngaySinh).toLocaleDateString('vi-VN') : ''}</TableCell>
-                    <TableCell>{item.hoKhauTiepNhanId}</TableCell>
-                    <TableCell>{new Date(item.ngayBatDau).toLocaleDateString('vi-VN')}</TableCell>
-                    <TableCell>{new Date(item.ngayKetThuc).toLocaleDateString('vi-VN')}</TableCell>
-                    <TableCell>{item.lyDo}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          {loadingTamTru ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <>
+              <TableContainer sx={{ width: '100%' }}>
+                <Table sx={{ width: '100%', tableLayout: 'fixed', '& .MuiTableCell-root': { fontSize: '0.95rem' } }} size="medium">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 'bold', width: '6%' }}>STT</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Họ tên</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '12%' }}>Ngày sinh</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Hộ khẩu tiếp nhận ID</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>Ngày bắt đầu</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>Ngày kết thúc</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>Lý do</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredTamTru
+                      .slice(pageTamTru * rowsPerPageTamTru, pageTamTru * rowsPerPageTamTru + rowsPerPageTamTru)
+                      .map((item, index) => (
+                        <TableRow key={item.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                          <TableCell>{pageTamTru * rowsPerPageTamTru + index + 1}</TableCell>
+                          <TableCell>
+                            <Typography variant="body2" fontWeight={600} noWrap>
+                              {item.hoTen}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>{item.ngaySinh ? new Date(item.ngaySinh).toLocaleDateString('vi-VN') : ''}</TableCell>
+                          <TableCell>{item.hoKhauTiepNhanId}</TableCell>
+                          <TableCell>{new Date(item.ngayBatDau).toLocaleDateString('vi-VN')}</TableCell>
+                          <TableCell>{new Date(item.ngayKetThuc).toLocaleDateString('vi-VN')}</TableCell>
+                          <TableCell>{item.lyDo}</TableCell>
+                        </TableRow>
+                      ))}
+                    {filteredTamTru.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Không tìm thấy bản ghi tạm trú nào
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              {/* Pagination moved below the table (outside Paper) to match other pages */}
+            </>
+          )}
         </TabPanel>
       </Paper>
+
+      {/* Pagination area below the table, consistent with HoKhau/NhanKhau pages */}
+      {tabValue === 0 ? (
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component="div"
+          count={filteredTamVang.length}
+          rowsPerPage={rowsPerPageTamVang}
+          page={pageTamVang}
+          onPageChange={(_, newPage) => setPageTamVang(newPage)}
+          onRowsPerPageChange={(event) => { setRowsPerPageTamVang(parseInt(event.target.value, 10)); setPageTamVang(0); }}
+          labelRowsPerPage="Số hàng mỗi trang:"
+          labelDisplayedRows={({ from, to, count }) => `${from}-${to} của ${count !== -1 ? count : to}`}
+        />
+      ) : (
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component="div"
+          count={filteredTamTru.length}
+          rowsPerPage={rowsPerPageTamTru}
+          page={pageTamTru}
+          onPageChange={(_, newPage) => setPageTamTru(newPage)}
+          onRowsPerPageChange={(event) => { setRowsPerPageTamTru(parseInt(event.target.value, 10)); setPageTamTru(0); }}
+          labelRowsPerPage="Số hàng mỗi trang:"
+          labelDisplayedRows={({ from, to, count }) => `${from}-${to} của ${count !== -1 ? count : to}`}
+        />
+      )}
 
       <TamVangForm open={tamVangFormOpen} onClose={() => setTamVangFormOpen(false)} onSubmit={handleCreateTamVang} />
       <TamTruForm open={tamTruFormOpen} onClose={() => setTamTruFormOpen(false)} onSubmit={handleCreateTamTru} />

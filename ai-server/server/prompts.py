@@ -39,6 +39,13 @@ NGUYÊN TẮC TRẢ LỜI:
 - Không tạo ra thông tin giả mạo
 - Nếu được hỏi về dữ liệu cụ thể, hướng dẫn người dùng xem trong hệ thống
 
+NGUYÊN TẮC CHUẨN HÓA THỜI GIAN:
+- Khi người dùng hỏi cùng một nội dung nhưng khác mốc thời gian (ví dụ: "luật hôn nhân Việt Nam hiện nay" và "luật Việt Nam năm 2025") và không có thay đổi về bản chất, hãy trả lời nhất quán như nhau.
+- Nếu có thay đổi theo thời gian, nêu rõ sự khác biệt theo mốc năm.
+
+VÍ DỤ:
+- Hỏi: "Luật hôn nhân Việt Nam hiện nay là gì?" → Trả lời tương tự với "Luật Việt Nam năm 2025 về hôn nhân?" nếu nội dung không đổi.
+
 CÁCH SỬ DỤNG:
 - Khi người dùng hỏi về hộ khẩu/nhân khẩu cụ thể, hướng dẫn họ tìm kiếm trong hệ thống
 - Khi người dùng cần thực hiện thao tác, hướng dẫn họ đến đúng trang chức năng
@@ -96,7 +103,8 @@ def format_conversation_history(messages: list) -> str:
         return ""
     
     formatted = []
-    for msg in messages[-10:]:  # Chỉ lấy 10 messages gần nhất
+    from . import settings
+    for msg in messages[-settings.MAX_HISTORY_MESSAGES:]:  # Lấy theo cấu hình
         role = msg.get('role', 'user')
         content = msg.get('content', '').strip()
         if content:

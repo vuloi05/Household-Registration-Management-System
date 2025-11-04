@@ -35,12 +35,14 @@ import {
   FilterList as FilterListIcon,
   Clear as ClearIcon,
   FileDownload as FileDownloadIcon,
+  QrCodeScanner as QrCodeScannerIcon,
   MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import NhanKhauForm from '../components/forms/NhanKhauForm';
 import NhanKhauDetailModal from '../components/details/NhanKhauDetailModal';
 import ConfirmationDialog from '../components/shared/ConfirmationDialog';
+import QRPollingModal from '../components/shared/QRPollingModal';
 import BienDongNhanKhauForm from '../components/forms/BienDongNhanKhauForm';
 import type { NhanKhauFormValues } from '../types/nhanKhau';
 import type { BienDongNhanKhauFormValues } from '../types/bienDong';
@@ -58,23 +60,26 @@ import { useLocation } from 'react-router-dom';
 export default function NhanKhauPage() {
   const location = useLocation();
   const { enqueueSnackbar } = useSnackbar();
-  
+
+  // State mở/tắt modal chờ AppSheet
+  const [qrPollingModalOpen, setQrPollingModalOpen] = useState(false);
+
   // State cho dữ liệu nhân khẩu
   const [nhanKhauList, setNhanKhauList] = useState<NhanKhau[]>([]);
   const [loading, setLoading] = useState(false);
   const [totalItems, setTotalItems] = useState(0);
-  
+
   // State cho tìm kiếm và lọc
   const [searchQuery, setSearchQuery] = useState('');
   const [ageFilter, setAgeFilter] = useState('all');
   const [genderFilter, setGenderFilter] = useState('all');
   const [locationFilter, setLocationFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // State cho phân trang
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  
+
   // State cho form và modal
   const [formOpen, setFormOpen] = useState(false);
   const [bienDongFormOpen, setBienDongFormOpen] = useState(false);
@@ -107,7 +112,7 @@ export default function NhanKhauPage() {
         genderFilter: genderFilter !== 'all' ? genderFilter : undefined,
         locationFilter: locationFilter !== 'all' ? locationFilter : undefined,
       });
-      
+
       setNhanKhauList(response.data);
       setTotalItems(response.totalItems);
     } catch (error) {
@@ -122,6 +127,14 @@ export default function NhanKhauPage() {
     loadNhanKhauData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, rowsPerPage, searchQuery, ageFilter, genderFilter, locationFilter]);
+
+  // Nhận QR từ AppSheet -> chỉ lấy số CCCD (trường đầu tiên trước ký tự '|') để tìm kiếm
+  const handleReceiveQRCode = (qr: string) => {
+    const parts = (qr || '').split('|').map(p => p.trim());
+    const cccd = parts[0] || qr;
+    setSearchQuery(cccd);
+    enqueueSnackbar('Đã điền CCCD từ QR vào ô tìm kiếm', { variant: 'success' });
+  };
 
   // Lắng nghe agent action sau khi điều hướng
   useEffect(() => {
@@ -238,12 +251,17 @@ export default function NhanKhauPage() {
       enqueueSnackbar('Thêm nhân khẩu thành công', { variant: 'success' });
       setFormOpen(false);
       loadNhanKhauData(); // Reload data
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating nhan khau:', error);
       
       // Xử lý lỗi từ backend
-      if (error.response?.data?.error) {
-        enqueueSnackbar(error.response.data.error, { variant: 'error' });
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { error?: string } } };
+        if (axiosError.response?.data?.error) {
+          enqueueSnackbar(axiosError.response.data.error, { variant: 'error' });
+        } else {
+          enqueueSnackbar('Không thể thêm nhân khẩu', { variant: 'error' });
+        }
       } else {
         enqueueSnackbar('Không thể thêm nhân khẩu', { variant: 'error' });
       }
@@ -254,7 +272,7 @@ export default function NhanKhauPage() {
   // Xử lý cập nhật nhân khẩu
   const handleUpdateNhanKhau = async (data: NhanKhauFormValues) => {
     if (!selectedNhanKhau) return;
-    
+
     try {
       await updateNhanKhauManagement(selectedNhanKhau.id, data);
       enqueueSnackbar('Cập nhật nhân khẩu thành công', { variant: 'success' });
@@ -271,7 +289,7 @@ export default function NhanKhauPage() {
   // Xử lý xóa nhân khẩu
   const handleDeleteNhanKhau = async () => {
     if (!selectedNhanKhau) return;
-    
+
     try {
       await deleteNhanKhauManagement(selectedNhanKhau.id);
       enqueueSnackbar('Xóa nhân khẩu thành công', { variant: 'success' });
@@ -448,11 +466,23 @@ export default function NhanKhauPage() {
                 <SearchIcon />
               </InputAdornment>
             ),
-            endAdornment: searchQuery && (
+            endAdornment: (
               <InputAdornment position="end">
-                <IconButton size="small" onClick={() => handleSearchChange('')}>
-                  <ClearIcon />
-                </IconButton>
+                <Stack direction="row" spacing={0.5}>
+                  {searchQuery && (
+                    <IconButton size="small" onClick={() => handleSearchChange('')}>
+                      <ClearIcon />
+                    </IconButton>
+                  )}
+                  <Tooltip title="Quét từ AppSheet">
+                    <IconButton
+                      size="small"
+                      onClick={() => setQrPollingModalOpen(true)}
+                    >
+                      <QrCodeScannerIcon />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
               </InputAdornment>
             ),
           }}
@@ -580,7 +610,7 @@ export default function NhanKhauPage() {
                 {nhanKhauList.map((nhanKhau, index) => (
                   <TableRow key={nhanKhau.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                     <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-                    <TableCell sx={{ 
+                    <TableCell sx={{
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap'
@@ -604,7 +634,7 @@ export default function NhanKhauPage() {
                       />
                     </TableCell>
                     <TableCell sx={{ fontSize: '0.85rem' }}>{nhanKhau.cmndCccd || 'N/A'}</TableCell>
-                    <TableCell sx={{ 
+                    <TableCell sx={{
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap'
@@ -745,6 +775,13 @@ export default function NhanKhauPage() {
           setDeleteDialogOpen(false);
           setSelectedNhanKhau(null);
         }}
+      />
+
+      {/* QR Polling Modal (AppSheet + Google Sheets) */}
+      <QRPollingModal
+        open={qrPollingModalOpen}
+        onClose={() => setQrPollingModalOpen(false)}
+        onReceiveQRCode={handleReceiveQRCode}
       />
     </Box>
   );

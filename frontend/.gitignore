@@ -1,3 +1,10 @@
+# Ignore local env and credentials
+.env
+.env.*
+*.credentials.json
+*.service-account.json
+*service-account*.json
+quan-ly-dan-cu-*.json
 # Logs
 logs
 *.log
