@@ -2,7 +2,7 @@
 
 import {
   Dialog, DialogTitle, DialogContent, Typography,
-  Divider, IconButton, Box
+  Divider, IconButton, Box, CircularProgress
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 
@@ -47,12 +47,10 @@ interface NhanKhauDetailModalProps {
   open: boolean;
   onClose: () => void;
   nhanKhau: NhanKhau | null; // Nhận vào một object nhân khẩu hoặc null
+  loading: boolean;
 }
 
-export default function NhanKhauDetailModal({ open, onClose, nhanKhau }: NhanKhauDetailModalProps) {
-  if (!nhanKhau) {
-    return null; // Không render gì nếu không có dữ liệu
-  }
+export default function NhanKhauDetailModal({ open, onClose, nhanKhau, loading }: NhanKhauDetailModalProps) {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -74,32 +72,42 @@ export default function NhanKhauDetailModal({ open, onClose, nhanKhau }: NhanKha
         </Box>
       </DialogTitle>
       <DialogContent dividers>
-        {/* === THÔNG TIN CÁ NHÂN === */}
-        <InfoRow label="Họ và tên" value={nhanKhau.hoTen} />
-        <InfoRow label="Bí danh" value={nhanKhau.biDanh} />
-        <InfoRow label="Ngày sinh" value={nhanKhau.ngaySinh} />
-        <InfoRow label="Giới tính" value={nhanKhau.gioiTinh} />
-        <InfoRow label="Nơi sinh" value={nhanKhau.noiSinh} />
-        <InfoRow label="Quê quán" value={nhanKhau.queQuan} />
-        <InfoRow label="Dân tộc" value={nhanKhau.danToc} />
-        
-        <Divider sx={{ my: 1.5 }} />
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
+            <CircularProgress />
+          </Box>
+        ) : nhanKhau ? (
+          <>
+            {/* === THÔNG TIN CÁ NHÂN === */}
+            <InfoRow label="Họ và tên" value={nhanKhau.hoTen} />
+            <InfoRow label="Bí danh" value={nhanKhau.biDanh} />
+            <InfoRow label="Ngày sinh" value={nhanKhau.ngaySinh} />
+            <InfoRow label="Giới tính" value={nhanKhau.gioiTinh} />
+            <InfoRow label="Nơi sinh" value={nhanKhau.noiSinh} />
+            <InfoRow label="Quê quán" value={nhanKhau.queQuan} />
+            <InfoRow label="Dân tộc" value={nhanKhau.danToc} />
+            
+            <Divider sx={{ my: 1.5 }} />
 
-        {/* === THÔNG TIN CĂN CƯỚC & NGHỀ NGHIỆP === */}
-        <InfoRow label="Số CCCD" value={nhanKhau.cmndCccd} />
-        <InfoRow label="Ngày cấp" value={nhanKhau.ngayCap} />
-        <InfoRow label="Nơi cấp" value={nhanKhau.noiCap} />
-        <InfoRow label="Nghề nghiệp" value={nhanKhau.ngheNghiep} />
-        <InfoRow label="Nơi làm việc" value={nhanKhau.noiLamViec} />
+            {/* === THÔNG TIN CĂN CƯỚC & NGHỀ NGHIỆP === */}
+            <InfoRow label="Số CCCD" value={nhanKhau.cmndCccd} />
+            <InfoRow label="Ngày cấp" value={nhanKhau.ngayCap} />
+            <InfoRow label="Nơi cấp" value={nhanKhau.noiCap} />
+            <InfoRow label="Nghề nghiệp" value={nhanKhau.ngheNghiep} />
+            <InfoRow label="Nơi làm việc" value={nhanKhau.noiLamViec} />
 
-        <Divider sx={{ my: 1.5 }} />
+            <Divider sx={{ my: 1.5 }} />
 
-        {/* === THÔNG TIN CƯ TRÚ === */}
-        <InfoRow label="Quan hệ với chủ hộ" value={nhanKhau.quanHeVoiChuHo} />
-        <InfoRow label="Ngày ĐK thường trú" value={nhanKhau.ngayDangKyThuongTru} />
-        <InfoRow label="Địa chỉ trước đây" value={nhanKhau.diaChiTruocKhiChuyenDen} />
-        <InfoRow label="Mã hộ khẩu" value={nhanKhau.maHoKhau} />
-        <InfoRow label="Địa chỉ hộ khẩu" value={nhanKhau.diaChiHoKhau} />
+            {/* === THÔNG TIN CƯ TRÚ === */}
+            <InfoRow label="Quan hệ với chủ hộ" value={nhanKhau.quanHeVoiChuHo} />
+            <InfoRow label="Ngày ĐK thường trú" value={nhanKhau.ngayDangKyThuongTru} />
+            <InfoRow label="Địa chỉ trước đây" value={nhanKhau.diaChiTruocKhiChuyenDen} />
+            <InfoRow label="Mã hộ khẩu" value={nhanKhau.maHoKhau} />
+            <InfoRow label="Địa chỉ hộ khẩu" value={nhanKhau.diaChiHoKhau} />
+          </>
+        ) : (
+          <Typography>Không có thông tin để hiển thị.</Typography>
+        )}
       </DialogContent>
     </Dialog>
   );

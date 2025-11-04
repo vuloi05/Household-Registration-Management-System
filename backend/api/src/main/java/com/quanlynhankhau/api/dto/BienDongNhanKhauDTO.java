@@ -14,28 +14,16 @@ import lombok.Setter;
 @Getter
 @Setter
 public class BienDongNhanKhauDTO {
+    private Long id;
     private Long nhanKhauId;
+    private String hoTenNhanKhau;
+    private String cmndCccd;
+    private String maHoKhau;
     private String loaiBienDong;
     private LocalDate ngayBienDong;
     private String noiChuyenDen;
     private String lyDo;
     private String ghiChu;
-
-    public void setId(Long id) {
-    }
-
-    public void setNguoiGhiNhan(String nguoiGhiNhan) {
-    }
-
-    public void setNgayGhiNhan(LocalDateTime ngayGhiNhan) {
-    }
-
-    public void setHoTenNhanKhau(String hoTen) {
-    }
-
-    public void setCmndCccd(String cmndCccd) {
-    }
-
-    public void setMaHoKhau(String maHoKhau) {
-    }
+    private String nguoiGhiNhan;
+    private LocalDateTime ngayGhiNhan;
 }

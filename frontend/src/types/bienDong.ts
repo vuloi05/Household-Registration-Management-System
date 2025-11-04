@@ -17,10 +17,12 @@ export interface BienDongNhanKhauDTO {
   id: number;
   nhanKhauId: number;
   hoTenNhanKhau: string;
+  cmndCccd: string;
   maHoKhau: string;
   loaiBienDong: string;
   ngayBienDong: string;
   noiChuyenDen?: string;
   lyDo?: string;
   ghiChu?: string;
+  nguoiGhiNhan?: string;
 }
