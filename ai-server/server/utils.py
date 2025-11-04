@@ -1,6 +1,8 @@
 import json
 from datetime import datetime
 from . import settings
+import re
+import unicodedata
 
 
 def get_timestamp():
@@ -49,3 +51,29 @@ def persist_chat_event(event: dict) -> None:
         pass
 
 
+
+_NON_WORD_RE = re.compile(r"[^\w\s]", re.UNICODE)
+_MULTISPACE_RE = re.compile(r"\s+")
+
+
+def strip_accents(text: str) -> str:
+    if not text:
+        return ""
+    normalized = unicodedata.normalize("NFD", text)
+    without = "".join(ch for ch in normalized if unicodedata.category(ch) != "Mn")
+    return without
+
+
+def normalize_text(text: str) -> str:
+    if not text:
+        return ""
+    t = strip_accents(text).lower()
+    t = _NON_WORD_RE.sub(" ", t)
+    t = _MULTISPACE_RE.sub(" ", t).strip()
+    return t
+
+
+def tokenize_keywords(text: str) -> list[str]:
+    norm = normalize_text(text)
+    tokens = [w for w in norm.split(" ") if len(w) >= 2]
+    return tokens

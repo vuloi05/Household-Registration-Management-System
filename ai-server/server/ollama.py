@@ -30,7 +30,7 @@ def call_ollama(message: str, context: str = "", history: list = None, retry_att
         
         # Add conversation history
         if history:
-            for msg in history[-10:]:  # Chỉ lấy 10 messages gần nhất
+            for msg in history[-settings.MAX_HISTORY_MESSAGES:]:  # Lấy theo cấu hình
                 role = msg.get('role', 'user')
                 content = msg.get('content', '').strip()
                 if content:
@@ -51,7 +51,7 @@ def call_ollama(message: str, context: str = "", history: list = None, retry_att
                 if context:
                     messages.append({"role": "system", "content": context})
                 
-                for msg in history[-10:]:
+                for msg in history[-settings.MAX_HISTORY_MESSAGES:]:
                     role = msg.get('role', 'user')
                     content = msg.get('content', '').strip()
                     if content:

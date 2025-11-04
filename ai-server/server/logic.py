@@ -7,6 +7,19 @@ from .cache import get_cached_response, cache_response
 from .validation import validate_response, sanitize_response
 from . import settings
 
+# Simple metrics
+_metrics = {
+    'cache_hits': 0,
+    'kb_hits': 0,
+    'ollama_calls': 0,
+    'gemini_calls': 0,
+    'fallbacks': 0,
+}
+
+
+def get_logic_metrics() -> dict:
+    return dict(_metrics)
+
 
 def process_message(
     message: str, 
@@ -34,6 +47,7 @@ def process_message(
     if settings.ENABLE_RESPONSE_CACHE and not bypass_kb:
         cached = get_cached_response(message, context)
         if cached:
+            _metrics['cache_hits'] += 1
             return {
                 'response': cached,
                 'from_cache': True,
@@ -45,6 +59,7 @@ def process_message(
     if not bypass_kb:
         kb_ans = find_best_local_answer(message)
         if kb_ans:
+            _metrics['kb_hits'] += 1
             # Cache KB answer
             if settings.ENABLE_RESPONSE_CACHE:
                 cache_response(message, context, kb_ans)
@@ -92,12 +107,14 @@ def process_message(
     if settings.OLLAMA_HOST and settings.OLLAMA_MODEL:
         response_text = call_ollama(message, enriched_context, history)
         if response_text:
+            _metrics['ollama_calls'] += 1
             source = "ollama"
     
     # Fallback to Gemini
     if not response_text and settings.GOOGLE_GEMINI_API_KEY:
         response_text = call_gemini(message, enriched_context, history)
         if response_text:
+            _metrics['gemini_calls'] += 1
             source = "gemini"
 
     # 6. Sanitize và validate response
@@ -112,9 +129,11 @@ def process_message(
             # Nếu response không hợp lệ, trả về fallback message
             response_text = "Xin lỗi, tôi gặp khó khăn trong việc trả lời câu hỏi này. Vui lòng thử lại hoặc hỏi câu hỏi khác."
             source = "fallback"
+            _metrics['fallbacks'] += 1
     elif not response_text:
         response_text = "Cảm ơn bạn đã liên hệ! Tôi là trợ lý AI của hệ thống Quản lý Nhân khẩu. Bạn có thể hỏi tôi về bất kỳ tính năng nào của hệ thống."
         source = "fallback"
+        _metrics['fallbacks'] += 1
 
     # 7. Cache response nếu hợp lệ
     if settings.ENABLE_RESPONSE_CACHE and validation.get('valid', False) and source in ['ollama', 'gemini']:

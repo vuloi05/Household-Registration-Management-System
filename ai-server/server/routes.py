@@ -4,7 +4,7 @@ from flask import jsonify, request, Response, stream_with_context
 from .app import app
 from . import settings
 from .kb import find_best_local_answer, trigger_reload, get_kb_status
-from .logic import process_message
+from .logic import process_message, get_logic_metrics
 from .actions import infer_actions
 from .utils import get_timestamp, persist_chat_event
 from .memory import get_or_create_session, add_message, get_conversation_history, clear_session
@@ -254,6 +254,8 @@ def kb_status():
         if AUTO_LEARNING_AVAILABLE:
             auto_learning_status = get_auto_learning_status()
             status['auto_learning'] = auto_learning_status
+        # Thêm logic metrics
+        status['logic_metrics'] = get_logic_metrics()
         return jsonify({
             "success": True,
             "status": status

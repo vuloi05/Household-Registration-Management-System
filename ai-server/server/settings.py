@@ -38,6 +38,13 @@ LEARNING_AUTO_LEARN_INTERVAL = int(os.getenv('LEARNING_AUTO_LEARN_INTERVAL', '60
 LEARNING_MIN_SCORE_THRESHOLD = float(os.getenv('LEARNING_MIN_SCORE_THRESHOLD', '0.5'))  # Điểm tối thiểu để học (0.0-1.0)
 LEARNING_MAX_AUTO_LEARN_ITEMS = int(os.getenv('LEARNING_MAX_AUTO_LEARN_ITEMS', '10'))  # Số Q&A tối đa học mỗi lần chạy
 
+# KB Matching thresholds
+KB_SIMILARITY_THRESHOLD = float(os.getenv('KB_SIMILARITY_THRESHOLD', '0.8'))
+KB_JACCARD_THRESHOLD = float(os.getenv('KB_JACCARD_THRESHOLD', '0.3'))
+
+# Conversation history length used when calling models
+MAX_HISTORY_MESSAGES = int(os.getenv('MAX_HISTORY_MESSAGES', '20'))
+
 # Google Gemini Config (optional)
 GOOGLE_GEMINI_API_KEY = os.getenv('GOOGLE_GEMINI_API_KEY')
 # Google recommended model endpoint

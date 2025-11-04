@@ -2,7 +2,8 @@
 
 import {
   Button, Typography, Box, Paper, TableContainer, Table, TableHead,
-  TableRow, TableCell, TableBody, IconButton, CircularProgress, TextField, InputAdornment
+  TableRow, TableCell, TableBody, IconButton, CircularProgress, TextField, InputAdornment,
+  TablePagination
 } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -19,7 +20,7 @@ import type { HoKhau } from '../api/hoKhauApi';
 import { useSnackbar } from 'notistack';
 
 
-export default function NhanKhauPage() {
+export default function HoKhauPage() {
   const location = useLocation();
   const { enqueueSnackbar } = useSnackbar();
   const [openForm, setOpenForm] = useState(false);
@@ -30,6 +31,9 @@ export default function NhanKhauPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedHoKhauId, setSelectedHoKhauId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  // Phân trang client-side để đồng bộ UI với trang Nhân khẩu
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,6 +42,7 @@ export default function NhanKhauPage() {
         const data = await getDanhSachHoKhau();
         setHoKhauList(data);
         setFilteredHoKhauList(data);
+        setPage(0); // reset page khi tải dữ liệu lần đầu
       } catch (error) {
         console.error('Failed to fetch ho khau list:', error);
       } finally {
@@ -59,6 +64,8 @@ export default function NhanKhauPage() {
       );
       setFilteredHoKhauList(filtered);
     }
+    // reset về trang đầu khi filter thay đổi để tránh vượt quá tổng số trang
+    setPage(0);
   }, [searchTerm, hoKhauList]);
 
   // Lắng nghe agent action từ router state
@@ -166,18 +173,22 @@ export default function NhanKhauPage() {
             </Box>
           ) : (
             <TableContainer sx={{ width: '100%' }}>
-              <Table sx={{ width: '100%', tableLayout: 'fixed' }}>
+              <Table sx={{ width: '100%', tableLayout: 'fixed' }} size="small">
                 <TableHead>
                     <TableRow>
-                      <TableCell sx={{ fontWeight: 'bold', width: '15%' }}>Mã Hộ khẩu</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '25%' }}>Tên Chủ hộ</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '45%' }}>Địa chỉ</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '6%' }}>STT</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '16%' }}>Mã Hộ khẩu</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '28%' }}>Tên Chủ hộ</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '35%' }}>Địa chỉ</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Hành động</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredHoKhauList.map((row) => (
+                  {filteredHoKhauList
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((row, index) => (
                     <TableRow key={row.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                      <TableCell>{page * rowsPerPage + index + 1}</TableCell>
                       <TableCell>{row.maHoKhau}</TableCell>
                       <TableCell>{row.chuHo?.hoTen}</TableCell>
                       <TableCell>{row.diaChi}</TableCell>
@@ -194,11 +205,35 @@ export default function NhanKhauPage() {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {filteredHoKhauList.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                        <Typography variant="body2" color="text.secondary">
+                          Không tìm thấy hộ khẩu nào
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
           )}
         </Paper>
+        {/* Phân trang */}
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component="div"
+          count={filteredHoKhauList.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          labelRowsPerPage="Số hàng mỗi trang:"
+          labelDisplayedRows={({ from, to, count }) => `${from}-${to} của ${count !== -1 ? count : to}`}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onRowsPerPageChange={(event) => {
+            setRowsPerPage(parseInt(event.target.value, 10));
+            setPage(0);
+          }}
+        />
       </Box>
 
       <HoKhauForm

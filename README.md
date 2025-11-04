@@ -134,6 +134,55 @@ Bạn cần mở 3 cửa sổ terminal riêng biệt để chạy song song back
         ```
     *   Frontend sẽ khởi động và chạy tại `http://localhost:5173`.
 
+### Tích hợp quét QR qua AppSheet + Google Sheets (Polling)
+
+Chức năng này cho phép bạn quét QR bằng AppSheet. AppSheet ghi dữ liệu vào Google Sheet, còn website (localhost) sẽ tự động "polling" Google Sheets để lấy `qr_code`, tự nhập vào thanh tìm kiếm của trang Quản lý Nhân khẩu, rồi xóa dòng đó khỏi Sheet.
+
+1.  Tạo Service Account và chia sẻ Google Sheet:
+    - Tạo Service Account trên GCP, tải về file khóa JSON.
+    - Chia sẻ Google Sheet (Share) cho `client_email` trong file khóa JSON với quyền Editor.
+
+2.  Lấy `spreadsheetId` của Google Sheet:
+    - `spreadsheetId` là phần nằm giữa URL: `https://docs.google.com/spreadsheets/d/{spreadsheetId}/edit`.
+
+3.  Cấu hình biến môi trường trong `frontend/.env`:
+    ```bash
+    # Băt buộc cho frontend (Vite)
+    VITE_SHEETS_SPREADSHEET_ID=YOUR_SPREADSHEET_ID
+    VITE_SHEETS_SHEET_NAME=Sheet1
+
+    # Cho proxy server cục bộ (Node Express)
+    SHEETS_PROXY_PORT=5175
+
+    # CHỌN 1 TRONG 2 CÁCH CUNG CẤP CREDENTIALS CHO PROXY (KHÔNG LỘ RA TRÌNH DUYỆT)
+    # Cách A: Trỏ tới file JSON trên máy (không commit file này lên git)
+    GOOGLE_APPLICATION_CREDENTIALS=D:\path\to\service-account.json
+
+    # Cách B: Dán nội dung JSON ở dạng base64 (không cần lưu file)
+    # GOOGLE_CREDENTIALS_BASE64=BASE64_OF_YOUR_JSON
+    ```
+
+    Ghi chú bảo mật:
+    - Không commit file khóa bí mật vào repository.
+    - `frontend/.gitignore` đã được cấu hình để bỏ qua các file khóa thông dụng. Nếu lỡ commit, hãy xóa khỏi lịch sử git.
+
+4.  Cài dependencies và chạy proxy + frontend:
+    ```bash
+    # Trong thư mục frontend (lần đầu nếu chưa cài)
+    npm install
+
+    # Chạy proxy Google Sheets (đọc .env tự động)
+    npm run sheets-proxy
+
+    # Mở một terminal khác trong frontend và chạy ứng dụng
+    npm run dev
+    ```
+
+5.  Sử dụng:
+    - Vào trang Quản lý Nhân khẩu.
+    - Nhấn biểu tượng QR trong ô tìm kiếm (tooltip: "Quét từ AppSheet").
+    - Mở AppSheet để quét QR. Trong vài giây, `qr_code` sẽ tự nhập vào ô tìm kiếm và dòng tương ứng trong Google Sheet sẽ bị xóa để dọn hộp thư.
+
 3.  **Chạy AI Agent Server (local):**
     *   Mở terminal 3, di chuyển vào thư mục `ai-server`:
         ```bash
