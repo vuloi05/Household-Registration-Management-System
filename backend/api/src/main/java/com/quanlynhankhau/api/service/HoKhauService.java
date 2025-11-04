@@ -98,6 +98,17 @@ public class HoKhauService {
             dto.setChuHo(chuHoDTO);
         }
 
+        // Lấy và chuyển đổi danh sách tất cả thành viên trong hộ
+        List<NhanKhau> thanhVienEntities = nhanKhauRepository.findByHoKhauId(hoKhau.getId());
+        List<NhanKhauBasicDTO> thanhVienDTOs = thanhVienEntities.stream().map(nk -> {
+            NhanKhauBasicDTO nkDto = new NhanKhauBasicDTO();
+            nkDto.setId(nk.getId());
+            nkDto.setHoTen(nk.getHoTen());
+            nkDto.setQuanHeVoiChuHo(nk.getQuanHeVoiChuHo());
+            return nkDto;
+        }).collect(Collectors.toList());
+        dto.setThanhVien(thanhVienDTOs);
+
         return dto;
     }
 

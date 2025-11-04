@@ -86,7 +86,7 @@ public class LichSuBienDongNhanKhau {
      * Quan hệ Many-to-One với NhanKhau
      * Một nhân khẩu có thể có nhiều lịch sử biến động
      */
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "nhan_khau_id", nullable = false)
     @JsonBackReference("nhankhau-lichsubiendo")
     private NhanKhau nhanKhau;

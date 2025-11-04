@@ -9,4 +9,5 @@ import lombok.Setter;
 public class NhanKhauBasicDTO {
     private Long id;
     private String hoTen;
+    private String quanHeVoiChuHo;
 }

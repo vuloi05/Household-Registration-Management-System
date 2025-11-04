@@ -13,6 +13,7 @@ export interface HoKhau {
   diaChi: string;
   ngayLap: string;
   chuHo: NhanKhau; // Chủ hộ giờ là một object NhanKhau đầy đủ
+  thanhVien: NhanKhau[]; // Thêm danh sách thành viên
 }
 
 // Hàm gọi API lấy danh sách hộ khẩu (giữ nguyên)

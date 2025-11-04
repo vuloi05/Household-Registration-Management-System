@@ -137,6 +137,7 @@ export default function TamVangTamTruPage() {
     if (!searchTamVang.trim()) return true;
     const q = searchTamVang.toLowerCase();
     return (
+      (item.nhanKhauHoTen ?? '').toLowerCase().includes(q) ||
       String(item.nhanKhauId ?? '').toLowerCase().includes(q) ||
       (item.noiDen ?? '').toLowerCase().includes(q) ||
       (item.lyDo ?? '').toLowerCase().includes(q)
@@ -235,7 +236,7 @@ export default function TamVangTamTruPage() {
           <Box sx={{ mb: 2, width: '100%' }}>
             <TextField
               fullWidth
-              placeholder="Tìm kiếm theo Nhân khẩu ID, nơi đến, lý do..."
+              placeholder="Tìm kiếm theo Họ tên, Nhân khẩu ID, nơi đến, lý do..."
               value={searchTamVang}
               onChange={(e) => { setSearchTamVang(e.target.value); setPageTamVang(0); }}
               InputProps={{
@@ -280,7 +281,7 @@ export default function TamVangTamTruPage() {
                   <TableHead>
                     <TableRow>
                       <TableCell sx={{ fontWeight: 'bold', width: '6%' }}>STT</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '16%' }}>Nhân khẩu ID</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '16%' }}>Họ và Tên</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', width: '16%' }}>Ngày bắt đầu</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', width: '16%' }}>Ngày kết thúc</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', width: '23%' }}>Nơi đến</TableCell>
@@ -293,7 +294,14 @@ export default function TamVangTamTruPage() {
                       .map((item, index) => (
                         <TableRow key={item.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                           <TableCell>{pageTamVang * rowsPerPageTamVang + index + 1}</TableCell>
-                          <TableCell>{item.nhanKhauId}</TableCell>
+                          <TableCell>
+                            <Typography variant="body2" fontWeight={600} noWrap>
+                              {item.nhanKhauHoTen || 'N/A'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              ID: {item.nhanKhauId}
+                            </Typography>
+                          </TableCell>
                           <TableCell>{new Date(item.ngayBatDau).toLocaleDateString('vi-VN')}</TableCell>
                           <TableCell>{new Date(item.ngayKetThuc).toLocaleDateString('vi-VN')}</TableCell>
                           <TableCell>{item.noiDen}</TableCell>

@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 export const tamVangSchema = z.object({
   nhanKhauId: z.number(),
+  nhanKhauHoTen: z.string().optional(),
   ngayBatDau: z.string().nonempty(),
   ngayKetThuc: z.string().nonempty(),
   noiDen: z.string().optional(),

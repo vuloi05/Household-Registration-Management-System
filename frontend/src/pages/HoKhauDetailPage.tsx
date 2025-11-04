@@ -15,7 +15,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 // Import API
 import { getDanhSachHoKhau, getLichSuThayDoi } from '../api/hoKhauApi';
 import type { HoKhau, HoKhauLichSu } from '../api/hoKhauApi';
-import { getDanhSachNhanKhau, createNhanKhau, updateNhanKhau, deleteNhanKhau } from '../api/nhanKhauApi';
+import { getDanhSachNhanKhau, createNhanKhau, updateNhanKhau, deleteNhanKhau, getNhanKhauById } from '../api/nhanKhauApi';
 import type { NhanKhau } from '../api/nhanKhauApi';
 
 // Import Component & Type
@@ -104,6 +104,7 @@ export default function HoKhauDetailPage() {
   const [deletingNhanKhauId, setDeletingNhanKhauId] = useState<number | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedNhanKhau, setSelectedNhanKhau] = useState<NhanKhau | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   
   useEffect(() => {
     if (maHoKhau) {
@@ -115,11 +116,11 @@ export default function HoKhauDetailPage() {
           
           if (hoKhauData) {
             setHoKhau(hoKhauData);
-            const [nhanKhauData, lichSuData] = await Promise.all([
-              getDanhSachNhanKhau(hoKhauData.id),
-              getLichSuThayDoi(hoKhauData.id)
-            ]);
-            setNhanKhauList(nhanKhauData);
+            // Lấy danh sách thành viên trực tiếp từ object hộ khẩu
+            setNhanKhauList(hoKhauData.thanhVien || []); 
+
+            // Lấy lịch sử thay đổi
+            const lichSuData = await getLichSuThayDoi(hoKhauData.id);
             setLichSuList(lichSuData);
           } else {
             setHoKhau(null);
@@ -168,8 +169,23 @@ export default function HoKhauDetailPage() {
       } catch (error) { console.error("Failed to delete NhanKhau:", error); }
   };
 
-  const handleOpenDetailModal = (nhanKhau: NhanKhau) => { setSelectedNhanKhau(nhanKhau); setDetailModalOpen(true); };
-  const handleCloseDetailModal = () => { setDetailModalOpen(false); };
+  const handleOpenDetailModal = async (nhanKhau: NhanKhau) => {
+    try {
+      setDetailLoading(true);
+      setDetailModalOpen(true);
+      const fullDetail = await getNhanKhauById(nhanKhau.id);
+      setSelectedNhanKhau(fullDetail);
+    } catch (error) {
+      console.error("Failed to fetch NhanKhau details:", error);
+      // Có thể thêm thông báo lỗi cho người dùng ở đây
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+  const handleCloseDetailModal = () => {
+    setDetailModalOpen(false);
+    setSelectedNhanKhau(null); // Reset state khi đóng modal
+  };
 
   if (loading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>;
@@ -250,6 +266,7 @@ export default function HoKhauDetailPage() {
         open={detailModalOpen}
         onClose={handleCloseDetailModal}
         nhanKhau={selectedNhanKhau}
+        loading={detailLoading}
       />
     </>
   );
