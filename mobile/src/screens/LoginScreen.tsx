@@ -267,13 +267,7 @@ export default function LoginScreen() {
               entering={FadeInUp.delay(400).duration(600).springify()}
               style={styles.title}
             >
-              Đăng nhập hệ thống
-            </AnimatedText>
-            <AnimatedText
-              entering={FadeInUp.delay(500).duration(600).springify()}
-              style={styles.subtitle}
-            >
-              Quản lý hộ khẩu và nhân khẩu
+              Đăng nhập
             </AnimatedText>
           </AnimatedView>
 
