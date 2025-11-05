@@ -455,8 +455,9 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
     ...theme.shadows.large,
     elevation: 15,
-    borderWidth: 4,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    // Remove inner border and clip children so the icon covers fully
+    borderWidth: 0,
+    overflow: 'hidden',
   },
   logoGlow: {
     position: 'absolute',
@@ -468,9 +469,10 @@ const styles = StyleSheet.create({
     ...theme.shadows.large,
   },
   logoImage: {
-    width: 80,
-    height: 80,
+    width: '100%',
+    height: '100%',
     zIndex: 1,
+    borderRadius: 65,
   },
   title: {
     ...theme.typography.h2,
