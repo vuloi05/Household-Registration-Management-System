@@ -277,15 +277,15 @@ export default function TamVangTamTruPage() {
           ) : (
             <>
               <TableContainer sx={{ width: '100%' }}>
-                <Table sx={{ width: '100%', tableLayout: 'fixed', '& .MuiTableCell-root': { fontSize: '0.95rem' } }} size="medium">
+                <Table sx={{ width: '100%', tableLayout: 'fixed', '& .MuiTableCell-root': { fontSize: '0.85rem', py: 1 } }} size="small">
                   <TableHead>
                     <TableRow>
                       <TableCell sx={{ fontWeight: 'bold', width: '6%' }}>STT</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '16%' }}>Họ và Tên</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '16%' }}>Ngày bắt đầu</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '16%' }}>Ngày kết thúc</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '23%' }}>Nơi đến</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '23%' }}>Lý do</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '18%' }}>Họ và Tên</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>Ngày bắt đầu</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>Ngày kết thúc</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Nơi đến</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '28%' }}>Lý do</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -295,17 +295,17 @@ export default function TamVangTamTruPage() {
                         <TableRow key={item.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                           <TableCell>{pageTamVang * rowsPerPageTamVang + index + 1}</TableCell>
                           <TableCell>
-                            <Typography variant="body2" fontWeight={600} noWrap>
+                            <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.85rem' }} noWrap>
                               {item.nhanKhauHoTen || 'N/A'}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
                               ID: {item.nhanKhauId}
                             </Typography>
                           </TableCell>
-                          <TableCell>{new Date(item.ngayBatDau).toLocaleDateString('vi-VN')}</TableCell>
-                          <TableCell>{new Date(item.ngayKetThuc).toLocaleDateString('vi-VN')}</TableCell>
-                          <TableCell>{item.noiDen}</TableCell>
-                          <TableCell>{item.lyDo}</TableCell>
+                          <TableCell sx={{ fontSize: '0.85rem' }}>{new Date(item.ngayBatDau).toLocaleDateString('vi-VN')}</TableCell>
+                          <TableCell sx={{ fontSize: '0.85rem' }}>{new Date(item.ngayKetThuc).toLocaleDateString('vi-VN')}</TableCell>
+                          <TableCell sx={{ fontSize: '0.85rem' }}>{item.noiDen}</TableCell>
+                          <TableCell sx={{ fontSize: '0.85rem' }}>{item.lyDo}</TableCell>
                         </TableRow>
                       ))}
                     {filteredTamVang.length === 0 && (
@@ -332,16 +332,16 @@ export default function TamVangTamTruPage() {
           ) : (
             <>
               <TableContainer sx={{ width: '100%' }}>
-                <Table sx={{ width: '100%', tableLayout: 'fixed', '& .MuiTableCell-root': { fontSize: '0.95rem' } }} size="medium">
+                <Table sx={{ width: '100%', tableLayout: 'fixed', '& .MuiTableCell-root': { fontSize: '0.85rem', py: 1 } }} size="small">
                   <TableHead>
                     <TableRow>
                       <TableCell sx={{ fontWeight: 'bold', width: '6%' }}>STT</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Họ tên</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '18%' }}>Họ tên</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', width: '12%' }}>Ngày sinh</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Hộ khẩu tiếp nhận ID</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '16%' }}>Hộ khẩu tiếp nhận ID</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>Ngày bắt đầu</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>Ngày kết thúc</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>Lý do</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Lý do</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -351,15 +351,15 @@ export default function TamVangTamTruPage() {
                         <TableRow key={item.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                           <TableCell>{pageTamTru * rowsPerPageTamTru + index + 1}</TableCell>
                           <TableCell>
-                            <Typography variant="body2" fontWeight={600} noWrap>
+                            <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.85rem' }} noWrap>
                               {item.hoTen}
                             </Typography>
                           </TableCell>
-                          <TableCell>{item.ngaySinh ? new Date(item.ngaySinh).toLocaleDateString('vi-VN') : ''}</TableCell>
-                          <TableCell>{item.hoKhauTiepNhanId}</TableCell>
-                          <TableCell>{new Date(item.ngayBatDau).toLocaleDateString('vi-VN')}</TableCell>
-                          <TableCell>{new Date(item.ngayKetThuc).toLocaleDateString('vi-VN')}</TableCell>
-                          <TableCell>{item.lyDo}</TableCell>
+                          <TableCell sx={{ fontSize: '0.85rem' }}>{item.ngaySinh ? new Date(item.ngaySinh).toLocaleDateString('vi-VN') : ''}</TableCell>
+                          <TableCell sx={{ fontSize: '0.85rem' }}>{item.hoKhauTiepNhanId}</TableCell>
+                          <TableCell sx={{ fontSize: '0.85rem' }}>{new Date(item.ngayBatDau).toLocaleDateString('vi-VN')}</TableCell>
+                          <TableCell sx={{ fontSize: '0.85rem' }}>{new Date(item.ngayKetThuc).toLocaleDateString('vi-VN')}</TableCell>
+                          <TableCell sx={{ fontSize: '0.85rem' }}>{item.lyDo}</TableCell>
                         </TableRow>
                       ))}
                     {filteredTamTru.length === 0 && (

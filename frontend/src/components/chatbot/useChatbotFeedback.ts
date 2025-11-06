@@ -43,21 +43,12 @@ export function useChatbotFeedback({
       });
       const data = await resp.json().catch(() => ({}));
       if (resp.ok) {
-        enqueueSnackbar('Gửi phản hồi thành công!', { variant: 'success' });
-        if (type === 'wrong' && data?.new_answer) {
-          // cập nhật lại tin nhắn bot hiện tại bằng đáp án mới
-          setMessages((prev) => {
-            const arr = [...prev];
-            if (arr[idx] && arr[idx].sender === 'bot') {
-              arr[idx] = {
-                ...arr[idx],
-                text: String(data.new_answer),
-                timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-              };
-            }
-            return arr;
-          });
-        }
+        const successMsg =
+          type === 'wrong'
+            ? 'Đã ghi nhận. Hệ thống sẽ học ngầm để cải thiện các trả lời sau.'
+            : 'Gửi phản hồi thành công!';
+        enqueueSnackbar(successMsg, { variant: 'success' });
+        // Không cập nhật câu trả lời hiện tại khi người dùng đánh giá sai.
       } else {
         enqueueSnackbar('Gửi phản hồi thất bại.', { variant: 'error' });
       }

@@ -14,13 +14,22 @@ import {
   TableRow,
   Chip,
   TextField,
-  Grid,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   TableSortLabel,
+  InputAdornment,
+  IconButton,
+  Stack,
+  Button,
+  TablePagination,
 } from '@mui/material';
+import {
+  Search as SearchIcon,
+  Clear as ClearIcon,
+  FilterList as FilterListIcon,
+} from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 
 import { getAllBienDong } from '../api/bienDongApi';
@@ -41,6 +50,19 @@ const getChipColor = (loaiBienDong: string) => {
   }
 };
 
+const getLoaiBienDongLabel = (loaiBienDong: string) => {
+  switch (loaiBienDong) {
+    case 'CHUYEN_DI':
+      return 'Chuyển đi';
+    case 'QUA_DOI':
+      return 'Qua đời';
+    case 'TAM_VANG':
+      return 'Tạm vắng';
+    default:
+      return loaiBienDong.replace('_', ' ');
+  }
+};
+
 export default function LichSuBienDongPage() {
   const { enqueueSnackbar } = useSnackbar();
 
@@ -48,12 +70,17 @@ export default function LichSuBienDongPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [loaiBienDongFilter, setLoaiBienDongFilter] = useState('ALL');
+  const [showFilters, setShowFilters] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: keyof BienDongNhanKhauDTO; direction: Order }>(
     {
       key: 'ngayBienDong',
       direction: 'desc',
     }
   );
+  
+  // Phân trang
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
     setLoading(true);
@@ -72,7 +99,9 @@ export default function LichSuBienDongPage() {
 
   const sortedAndFilteredList = useMemo(() => {
     let filtered = lichSuList.filter(item =>
-      (item.hoTenNhanKhau || '').toLowerCase().includes(searchTerm.toLowerCase())
+      (item.hoTenNhanKhau || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.cmndCccd || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.maHoKhau || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     if (loaiBienDongFilter !== 'ALL') {
@@ -103,30 +132,98 @@ export default function LichSuBienDongPage() {
     setSortConfig({ key, direction: isAsc ? 'desc' : 'asc' });
   };
 
-  return (
-    <Box>
-      <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>
-        Lịch sử Biến động Nhân khẩu
-      </Typography>
+  // Phân trang cho danh sách đã lọc
+  const paginatedList = useMemo(() => {
+    return sortedAndFilteredList.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  }, [sortedAndFilteredList, page, rowsPerPage]);
 
-      <Paper sx={{ p: 2 }}>
-        <Grid container spacing={2} sx={{ mb: 2 }}>
-          <Grid item xs={12} sm={8}>
-            <TextField
-              fullWidth
-              variant="outlined"
-              label="Tìm kiếm theo họ tên"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <FormControl fullWidth>
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setLoaiBienDongFilter('ALL');
+    setPage(0);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setPage(0);
+  };
+
+  const handleFilterChange = (value: string) => {
+    setLoaiBienDongFilter(value);
+    setPage(0);
+  };
+
+  return (
+    <Box sx={{ width: '100%', maxWidth: '100%' }}>
+      {/* Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, width: '100%' }}>
+        <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+          Lịch sử Biến động Nhân khẩu
+        </Typography>
+      </Box>
+
+      {/* Thanh tìm kiếm */}
+      <Box sx={{ mb: 3, width: '100%' }}>
+        <TextField
+          fullWidth
+          placeholder="Tìm kiếm theo họ tên, CCCD, mã hộ khẩu..."
+          value={searchTerm}
+          onChange={(e) => handleSearchChange(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+            endAdornment: (
+              <InputAdornment position="end">
+                {searchTerm && (
+                  <IconButton size="small" onClick={() => handleSearchChange('')}>
+                    <ClearIcon />
+                  </IconButton>
+                )}
+              </InputAdornment>
+            ),
+          }}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+            }
+          }}
+        />
+      </Box>
+
+      {/* Nút hiển thị/ẩn bộ lọc */}
+      <Box sx={{ mb: 2 }}>
+        <Button
+          startIcon={<FilterListIcon />}
+          onClick={() => setShowFilters(!showFilters)}
+          variant="outlined"
+          size="small"
+        >
+          {showFilters ? 'Ẩn bộ lọc' : 'Hiển thị bộ lọc'}
+        </Button>
+      </Box>
+
+      {/* Bộ lọc */}
+      {showFilters && (
+        <Paper sx={{ p: 2, mb: 3, bgcolor: 'background.default' }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <FormControl fullWidth size="small">
               <InputLabel>Loại biến động</InputLabel>
               <Select
                 value={loaiBienDongFilter}
                 label="Loại biến động"
-                onChange={(e) => setLoaiBienDongFilter(e.target.value)}
+                onChange={(e) => handleFilterChange(e.target.value)}
               >
                 <MenuItem value="ALL">Tất cả</MenuItem>
                 <MenuItem value="CHUYEN_DI">Chuyển đi</MenuItem>
@@ -134,18 +231,38 @@ export default function LichSuBienDongPage() {
                 <MenuItem value="TAM_VANG">Tạm vắng</MenuItem>
               </Select>
             </FormControl>
-          </Grid>
-        </Grid>
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<ClearIcon />}
+              onClick={handleClearFilters}
+              sx={{ minWidth: { sm: '150px' } }}
+            >
+              Xóa bộ lọc
+            </Button>
+          </Stack>
+        </Paper>
+      )}
+
+      {/* Kết quả tìm kiếm */}
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="body2" color="text.secondary">
+          Tìm thấy <strong>{sortedAndFilteredList.length}</strong> biến động
+        </Typography>
+      </Box>
+
+      {/* Bảng dữ liệu */}
+      <Paper sx={{ borderRadius: 2, p: 2, width: '100%' }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
             <CircularProgress />
           </Box>
         ) : (
-          <TableContainer>
-            <Table size="small">
+          <TableContainer sx={{ width: '100%' }}>
+            <Table sx={{ width: '100%', tableLayout: 'fixed' }} size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell sortDirection={sortConfig.key === 'ngayBienDong' ? sortConfig.direction : false}>
+                  <TableCell sx={{ fontWeight: 'bold', width: '12%' }}>
                     <TableSortLabel
                       active={sortConfig.key === 'ngayBienDong'}
                       direction={sortConfig.key === 'ngayBienDong' ? sortConfig.direction : 'asc'}
@@ -154,7 +271,7 @@ export default function LichSuBienDongPage() {
                       Ngày biến động
                     </TableSortLabel>
                   </TableCell>
-                  <TableCell sortDirection={sortConfig.key === 'hoTenNhanKhau' ? sortConfig.direction : false}>
+                  <TableCell sx={{ fontWeight: 'bold', width: '18%' }}>
                     <TableSortLabel
                       active={sortConfig.key === 'hoTenNhanKhau'}
                       direction={sortConfig.key === 'hoTenNhanKhau' ? sortConfig.direction : 'asc'}
@@ -163,33 +280,51 @@ export default function LichSuBienDongPage() {
                       Họ tên
                     </TableSortLabel>
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Căn cước</TableCell>
-                  <TableCell>Loại biến động</TableCell>
-                  <TableCell>Ghi chú</TableCell>
-                  <TableCell>Người ghi nhận</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '12%' }}>CCCD</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '12%' }}>Mã Hộ khẩu</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>Loại biến động</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Ghi chú</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '12%' }}>Người ghi nhận</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {sortedAndFilteredList.map(item => (
-                  <TableRow key={item.id}>
-                    <TableCell>{new Date(item.ngayBienDong).toLocaleDateString('vi-VN')}</TableCell>
-                    <TableCell>{item.hoTenNhanKhau}</TableCell>
-                    <TableCell>{item.cmndCccd || '-'}</TableCell>
+                {paginatedList.map((item, index) => (
+                  <TableRow key={item.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                    <TableCell sx={{ fontSize: '0.85rem' }}>
+                      {new Date(item.ngayBienDong).toLocaleDateString('vi-VN')}
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight={600}>
+                        {item.hoTenNhanKhau}
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ fontSize: '0.85rem' }}>{item.cmndCccd || '-'}</TableCell>
+                    <TableCell sx={{ fontSize: '0.85rem' }}>{item.maHoKhau || '-'}</TableCell>
                     <TableCell>
                       <Chip
-                        label={item.loaiBienDong.replace('_', ' ')}
+                        label={getLoaiBienDongLabel(item.loaiBienDong)}
                         size="small"
                         color={getChipColor(item.loaiBienDong)}
+                        sx={{ fontSize: '0.75rem', height: 24 }}
                       />
                     </TableCell>
-                    <TableCell>{item.ghiChu || '-'}</TableCell>
-                    <TableCell>{item.nguoiGhiNhan || '-'}</TableCell>
+                    <TableCell
+                      sx={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        fontSize: '0.85rem'
+                      }}
+                    >
+                      {item.ghiChu || '-'}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: '0.85rem' }}>{item.nguoiGhiNhan || '-'}</TableCell>
                   </TableRow>
                 ))}
-                {sortedAndFilteredList.length === 0 && (
+                {paginatedList.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
-                      <Typography>
+                    <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                      <Typography variant="body2" color="text.secondary">
                         {lichSuList.length > 0 ? 'Không tìm thấy kết quả phù hợp.' : 'Chưa có lịch sử biến động nào.'}
                       </Typography>
                     </TableCell>
@@ -200,6 +335,21 @@ export default function LichSuBienDongPage() {
           </TableContainer>
         )}
       </Paper>
+
+      {/* Phân trang */}
+      <TablePagination
+        rowsPerPageOptions={[5, 10, 25, 50]}
+        component="div"
+        count={sortedAndFilteredList.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        labelRowsPerPage="Số hàng mỗi trang:"
+        labelDisplayedRows={({ from, to, count }) =>
+          `${from}-${to} của ${count}`
+        }
+      />
     </Box>
   );
 }
