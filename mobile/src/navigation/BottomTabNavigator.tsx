@@ -17,6 +17,7 @@ import HomeScreen from '../screens/HomeScreen';
 import WalletScreen from '../screens/WalletScreen';
 import NotificationScreen from '../screens/NotificationScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import FeeScreen from '../screens/FeeScreen';
 
 const Tab = createBottomTabNavigator();
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -99,6 +100,10 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
               iconName = 'wallet-outline';
               label = 'Ví giấy tờ';
               break;
+            case 'Fee':
+              iconName = 'cash-multiple';
+              label = 'Thu phí';
+              break;
             case 'Notification':
               iconName = 'bell-outline';
               label = 'Thông báo';
@@ -173,6 +178,7 @@ export default function BottomTabNavigator() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Wallet" component={WalletScreen} />
+      <Tab.Screen name="Fee" component={FeeScreen} />
       <Tab.Screen name="Notification" component={NotificationScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
