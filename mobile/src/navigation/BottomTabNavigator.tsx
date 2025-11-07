@@ -98,7 +98,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
               break;
             case 'Wallet':
               iconName = 'wallet-outline';
-              label = 'Ví giấy tờ';
+              label = 'Giấy tờ';
               break;
             case 'Fee':
               iconName = 'cash-multiple';
