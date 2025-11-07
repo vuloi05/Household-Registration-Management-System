@@ -55,6 +55,25 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
     }
   }, [isOpen]);
 
+  // Lắng nghe thông điệp từ các trang (ví dụ HoKhauPage) để hiển thị phản hồi bot
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ce = e as CustomEvent<string>;
+      const text = typeof ce.detail === 'string' ? ce.detail : '';
+      if (!text) return;
+      setMessages((prev) => [
+        ...prev,
+        {
+          text,
+          sender: 'bot',
+          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    };
+    window.addEventListener('agent-bot-message', handler as EventListener);
+    return () => window.removeEventListener('agent-bot-message', handler as EventListener);
+  }, []);
+
   const handleSendMessage = () => {
     if (!input.trim() || isLoading) return;
     sendMessage(input);

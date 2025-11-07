@@ -8,13 +8,10 @@ import {
   Platform,
   ScrollView,
   Dimensions,
-  TouchableOpacity,
-  ActivityIndicator,
   Image,
   ImageBackground,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { TextInput } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
@@ -29,47 +26,14 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { appTheme as theme } from '../theme';
+import FloatingParticle from '../components/FloatingParticle';
+import LoginForm from '../components/LoginForm';
+import { styles } from './LoginScreen.styles';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const AnimatedView = Animated.createAnimatedComponent(View);
 const AnimatedText = Animated.createAnimatedComponent(Text);
-const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 const AnimatedImageBackground = Animated.createAnimatedComponent(ImageBackground);
-
-// Component cho floating particle
-function FloatingParticle({ index, left, top }: { index: number; left: number; top: number }) {
-  const translateY = useSharedValue(0);
-  
-  useEffect(() => {
-    translateY.value = withRepeat(
-      withSequence(
-        withTiming(-20, { duration: 2000 + index * 200 }),
-        withTiming(0, { duration: 2000 + index * 200 })
-      ),
-      -1,
-      true
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
-
-  return (
-    <AnimatedView
-      style={[
-        styles.particle,
-        {
-          left,
-          top,
-          opacity: 0.3,
-        },
-        animatedStyle,
-      ]}
-    />
-  );
-}
 
 export default function LoginScreen() {
   const [cccd, setCccd] = useState('');
@@ -251,7 +215,7 @@ export default function LoginScreen() {
           key={i}
           index={i}
           left={(20 + i * 15) * (width / 100)}
-          top={(30 + i * 10) * (height / 100)}
+          top={(30 + i * 10) * (Dimensions.get('window').height / 100)}
         />
       ))}
 
@@ -323,327 +287,38 @@ export default function LoginScreen() {
             </TouchableWithoutFeedback>
 
             {/* Form Card với glassmorphism effect */}
-            <AnimatedView
-              entering={FadeInDown.delay(300).duration(800).springify()}
-              style={styles.formContainer}
-            >
-              <AnimatedView style={cardAnimatedStyle}>
-                <View style={styles.card}>
-                {/* Glassmorphism overlay */}
-                <View style={styles.cardOverlay} />
-
-                {/* Error Message với animation */}
-                {loginError && (
-                  <AnimatedView
-                    entering={FadeInDown.duration(300)}
-                    exiting={FadeInDown.duration(200)}
-                    style={styles.errorContainer}
-                  >
-                    <View style={styles.errorIcon}>
-                      <Text style={styles.errorIconText}>⚠️</Text>
-                    </View>
-                    <Text style={styles.errorText}>{loginError}</Text>
-                  </AnimatedView>
-                )}
-
-                {/* CCCD Input với focus animation */}
-                <AnimatedView style={cccdInputStyle}>
-                  <TextInput
-                    label="Số CCCD"
-                    value={cccd}
-                    onChangeText={(text) => {
-                      setCccd(text);
-                      setLoginError(null);
-                    }}
-                    onFocus={() => setCccdFocused(true)}
-                    onBlur={() => setCccdFocused(false)}
-                    mode="outlined"
-                    style={styles.input}
-                    contentStyle={styles.inputContent}
-                    outlineColor={cccdFocused ? theme.colors.primary : theme.colors.border}
-                    activeOutlineColor={theme.colors.primary}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    keyboardType="numeric"
-                    disabled={isSubmitting}
-                    left={
-                      <TextInput.Icon 
-                        icon="card-account-details" 
-                        color={cccdFocused ? theme.colors.primary : theme.colors.text.secondary}
-                      />
-                    }
-                    theme={{
-                      colors: {
-                        primary: theme.colors.primary,
-                        onSurface: theme.colors.text.primary,
-                      },
-                    }}
-                  />
-                </AnimatedView>
-
-                {/* Password Input với focus animation */}
-                <AnimatedView style={passwordInputStyle}>
-                  <TextInput
-                    label="Mật khẩu"
-                    value={password}
-                    onChangeText={(text) => {
-                      setPassword(text);
-                      setLoginError(null);
-                    }}
-                    onFocus={() => setPasswordFocused(true)}
-                    onBlur={() => setPasswordFocused(false)}
-                    mode="outlined"
-                    style={styles.input}
-                    contentStyle={styles.inputContent}
-                    outlineColor={passwordFocused ? theme.colors.primary : theme.colors.border}
-                    activeOutlineColor={theme.colors.primary}
-                    secureTextEntry={!showPassword}
-                    disabled={isSubmitting}
-                    left={
-                      <TextInput.Icon 
-                        icon="lock" 
-                        color={passwordFocused ? theme.colors.primary : theme.colors.text.secondary}
-                      />
-                    }
-                    right={
-                      <TextInput.Icon
-                        icon={showPassword ? 'eye-off' : 'eye'}
-                        color={passwordFocused ? theme.colors.primary : theme.colors.text.secondary}
-                        onPress={() => setShowPassword(!showPassword)}
-                      />
-                    }
-                    theme={{
-                      colors: {
-                        primary: theme.colors.primary,
-                        onSurface: theme.colors.text.primary,
-                      },
-                    }}
-                  />
-                </AnimatedView>
-
-                {/* Login Button với gradient và shimmer effect */}
-                <Animated.View style={buttonAnimatedStyle}>
-                  <TouchableOpacity
-                    onPress={handleLogin}
-                    disabled={isSubmitting}
-                    activeOpacity={0.8}
-                    style={styles.buttonContainer}
-                  >
-                    {/* Gradient Background */}
-                    <LinearGradient
-                      colors={[theme.colors.primary, theme.colors.primaryDark]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.loginButtonGradient}
-                    >
-                      {/* Shimmer overlay */}
-                      <Animated.View
-                        style={[
-                          styles.shimmer,
-                          shimmerStyle,
-                        ]}
-                      />
-                      
-                      {/* Button Content */}
-                      <View style={styles.loginButtonContent}>
-                        {isSubmitting ? (
-                          <View style={styles.buttonLoadingContent}>
-                            <ActivityIndicator size="small" color="#ffffff" />
-                            <Text style={[styles.loginButtonLabel, { marginLeft: theme.spacing.sm }]}>Đang đăng nhập...</Text>
-                          </View>
-                        ) : (
-                          <Text style={styles.loginButtonLabel}>Đăng nhập</Text>
-                        )}
-                      </View>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                </Animated.View>
-              </View>
-              </AnimatedView>
-            </AnimatedView>
+            <LoginForm
+              cccd={cccd}
+              password={password}
+              showPassword={showPassword}
+              loginError={loginError}
+              isSubmitting={isSubmitting}
+              cccdFocused={cccdFocused}
+              passwordFocused={passwordFocused}
+              cccdInputStyle={cccdInputStyle}
+              passwordInputStyle={passwordInputStyle}
+              buttonAnimatedStyle={buttonAnimatedStyle}
+              shimmerStyle={shimmerStyle}
+              cardAnimatedStyle={cardAnimatedStyle}
+              onCccdChange={(text) => {
+                setCccd(text);
+                setLoginError(null);
+              }}
+              onPasswordChange={(text) => {
+                setPassword(text);
+                setLoginError(null);
+              }}
+              onCccdFocus={() => setCccdFocused(true)}
+              onCccdBlur={() => setCccdFocused(false)}
+              onPasswordFocus={() => setPasswordFocused(true)}
+              onPasswordBlur={() => setPasswordFocused(false)}
+              onTogglePassword={() => setShowPassword(!showPassword)}
+              onLogin={handleLogin}
+            />
           </ScrollView>
         </KeyboardAvoidingView>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.xl,
-    minHeight: height,
-  },
-  splashCenter: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  particle: {
-    position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: theme.spacing.xxl,
-    zIndex: 10,
-  },
-  logoCircle: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: theme.spacing.md,
-    ...theme.shadows.large,
-    elevation: 15,
-    borderWidth: 4,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  logoGlow: {
-    position: 'absolute',
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    backgroundColor: theme.colors.primary,
-    opacity: 0.5,
-    ...theme.shadows.large,
-  },
-  logoText: {
-    fontSize: 70,
-    zIndex: 1,
-  },
-  logoImage: {
-    position: 'absolute',
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    zIndex: 1,
-  },
-  title: {
-    ...theme.typography.h2,
-    color: '#ffffff',
-    marginBottom: theme.spacing.sm,
-    textAlign: 'center',
-    fontWeight: '700',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
-  subtitle: {
-    ...theme.typography.body2,
-    color: 'rgba(255, 255, 255, 0.9)',
-    textAlign: 'center',
-    fontSize: 15,
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  formContainer: {
-    width: '100%',
-    zIndex: 10,
-  },
-  card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: theme.borderRadius.large,
-    padding: theme.spacing.lg,
-    ...theme.shadows.large,
-    elevation: 20,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-  },
-  cardOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: theme.borderRadius.large,
-  },
-  errorContainer: {
-    backgroundColor: '#FFEBEE',
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.small,
-    marginBottom: theme.spacing.md,
-    borderLeftWidth: 4,
-    borderLeftColor: theme.colors.error,
-    flexDirection: 'row',
-    alignItems: 'center',
-    ...theme.shadows.small,
-  },
-  errorIcon: {
-    marginRight: theme.spacing.sm,
-  },
-  errorIconText: {
-    fontSize: 20,
-  },
-  errorText: {
-    color: theme.colors.error,
-    fontSize: 14,
-    fontWeight: '600',
-    flex: 1,
-  },
-  input: {
-    marginBottom: theme.spacing.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-  },
-  inputContent: {
-    fontSize: 16,
-  },
-  buttonContainer: {
-    marginTop: theme.spacing.md,
-    borderRadius: theme.borderRadius.medium,
-    overflow: 'hidden',
-    ...theme.shadows.large,
-    elevation: 8,
-  },
-  loginButtonGradient: {
-    borderRadius: theme.borderRadius.medium,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  loginButtonContent: {
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-    minHeight: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonLoadingContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loginButtonLabel: {
-    ...theme.typography.button,
-    color: theme.colors.paper,
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  shimmer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: '40%',
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    zIndex: 1,
-    borderRadius: theme.borderRadius.medium,
-  },
-});
 

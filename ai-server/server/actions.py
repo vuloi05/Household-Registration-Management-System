@@ -13,6 +13,7 @@ def infer_actions(message: str) -> list[dict]:
     household_id = extract_household_id(text)
     person_id = extract_person_id(text)
     name_query = extract_name_query(text)
+    owner_name = extract_owner_name(text)
 
     # Điều hướng hộ khẩu
     if any(k in lower for k in ["hộ khẩu", "ho khau", "household"]):
@@ -27,8 +28,21 @@ def infer_actions(message: str) -> list[dict]:
                 })
             else:
                 actions.append({"type": "navigate", "target": "household_list"})
+                # Nếu người dùng đề cập tên chủ hộ, thực hiện tìm kiếm theo tên
+                if owner_name or name_query:
+                    actions.append({
+                        "type": "search",
+                        "target": "household_list",
+                        "params": {"q": owner_name or name_query}
+                    })
         else:
             actions.append({"type": "navigate", "target": "household_list"})
+            if owner_name or name_query:
+                actions.append({
+                    "type": "search",
+                    "target": "household_list",
+                    "params": {"q": owner_name or name_query}
+                })
 
     # Điều hướng nhân khẩu
     if any(k in lower for k in ["nhân khẩu", "nhan khau", "person", "thành viên", "thanh vien"]):
@@ -129,6 +143,21 @@ def extract_name_query(text: str) -> Optional[str]:
     m3 = re.search(r"(?:tìm|tim|search)\s+(.+)$", text, flags=re.IGNORECASE)
     if m3:
         return m3.group(1).strip()
+    return None
+
+
+def extract_owner_name(text: str) -> Optional[str]:
+    """Trích xuất tên sau cụm 'chủ hộ' hoặc 'chu ho'.
+    Ví dụ: 'xem hộ khẩu của chủ hộ Bùi Tiến Dũng' -> 'Bùi Tiến Dũng'
+    """
+    m = re.search(r"ch[uư]\s*h[ôo]\s*(?:[:#]?\s*)?(?:tên\s*)?(?:là\s*)?([A-ZÀÁÂÃÄÅĀĂĄÆÇÈÉÊËĒĔĖĘĚÌÍÎÏĪĮİÑÒÓÔÕÖØŌŎŐÙÚÛÜŪŬŮŰŲỲÝỶỸỴĐ][^\d\n,.;!?]+)$",
+                  text, flags=re.IGNORECASE)
+    if m:
+        return m.group(1).strip()
+    # Bắt cụm 'của chủ hộ <tên>' phổ biến
+    m2 = re.search(r"của\s+ch[uư]\s*h[ôo]\s+([^\d\n,.;!?]+)$", text, flags=re.IGNORECASE)
+    if m2:
+        return m2.group(1).strip()
     return None
 
 

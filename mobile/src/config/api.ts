@@ -16,14 +16,14 @@ import { Platform } from 'react-native';
 // 3. Tìm "IPv4 Address" (thường là 192.168.x.x hoặc 10.0.x.x)
 // 4. Copy IP đó và paste vào biến LOCAL_IP bên dưới
 // ============================================
-const LOCAL_IP = '172.21.64.1'; // ✅ IP đã được tự động detect - Nếu không kết nối được, thử IP khác: 172.21.64.1
+const LOCAL_IP = '172.21.130.88'; // ✅ IP đã được tự động detect - Nếu không kết nối được, thử IP khác: 172.21.64.1
 
 const getBaseURL = () => {
   if (__DEV__) {
     // Development mode
     if (Platform.OS === 'android') {
       // Android emulator sử dụng 10.0.2.2 để truy cập localhost của máy host
-      return 'http://10.0.2.2:8080/api';
+      return `http://${LOCAL_IP}:8080/api`;
     } else {
       // iOS simulator hoặc thiết bị thật: sử dụng IP thực tế
       // Nếu bạn đang dùng iOS simulator trên Mac và backend chạy trên Mac,

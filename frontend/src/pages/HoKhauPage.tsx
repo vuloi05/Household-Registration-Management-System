@@ -5,7 +5,7 @@ import {
   TableRow, TableCell, TableBody, IconButton, CircularProgress, TextField, InputAdornment,
   TablePagination
 } from '@mui/material';
-import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ConfirmationDialog from '../components/shared/ConfirmationDialog';
 import AddIcon from '@mui/icons-material/Add';
@@ -22,6 +22,7 @@ import { useSnackbar } from 'notistack';
 
 export default function HoKhauPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const [openForm, setOpenForm] = useState(false);
   const [hoKhauList, setHoKhauList] = useState<HoKhau[]>([]);
@@ -76,6 +77,27 @@ export default function HoKhauPage() {
       if (act.type === 'search' && act.target === 'household_list' && act.params?.q) {
         setSearchTerm(act.params.q);
         enqueueSnackbar('Agent: Đang tìm kiếm hộ khẩu: ' + act.params.q, { variant: 'info' });
+        // Thực hiện auto mở chi tiết nếu chỉ có 1 kết quả; nếu nhiều -> yêu cầu bổ sung thông tin
+        const q: string = String(act.params.q).toLowerCase();
+        const matches = hoKhauList.filter((hk) =>
+          hk.maHoKhau.toLowerCase().includes(q) ||
+          (hk.chuHo?.hoTen || '').toLowerCase().includes(q) ||
+          hk.diaChi.toLowerCase().includes(q)
+        );
+        if (matches.length === 1) {
+          const only = matches[0];
+          // Thông báo tới chatbot và điều hướng ngay
+          window.dispatchEvent(new CustomEvent('agent-bot-message', { detail: `✅ Tìm thấy duy nhất hộ khẩu mã ${only.maHoKhau}. Đang mở chi tiết...` }));
+          navigate(`/ho-khau/${only.maHoKhau}`);
+        } else if (matches.length > 1) {
+          const countSameName = matches.filter(m => (m.chuHo?.hoTen || '').toLowerCase().includes(q)).length;
+          const msg = countSameName > 1
+            ? `Tôi phát hiện có ${countSameName} chủ hộ trùng tên. Vui lòng cung cấp thêm Mã hộ khẩu hoặc Địa chỉ để xác định chính xác.`
+            : `Có ${matches.length} kết quả phù hợp. Vui lòng cung cấp thêm Mã hộ khẩu hoặc Địa chỉ để tôi mở đúng hồ sơ.`;
+          window.dispatchEvent(new CustomEvent('agent-bot-message', { detail: msg }));
+        } else {
+          window.dispatchEvent(new CustomEvent('agent-bot-message', { detail: 'Không tìm thấy hộ khẩu phù hợp. Vui lòng cung cấp Mã hộ khẩu hoặc Địa chỉ.' }));
+        }
       }
     }
     // eslint-disable-next-line
