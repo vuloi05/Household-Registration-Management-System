@@ -8,14 +8,18 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Dimensions,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   interpolate,
   Extrapolate,
+  withTiming,
 } from 'react-native-reanimated';
 import { getDanhSachKhoanThu, getDanhSachKhoanThuPublic, type KhoanThu } from '../api/khoanThuApi';
 import { appTheme } from '../theme';
@@ -120,32 +124,32 @@ const FeeCard: React.FC<{
           end={{ x: 1, y: 1 }}
           style={styles.cardGradient}
         >
-          {/* Badge loại khoản thu */}
-          <View style={styles.badgeContainer}>
-            <View
-              style={[
-                styles.badge,
-                {
-                  backgroundColor: isBatBuoc
-                    ? 'rgba(255, 255, 255, 0.25)'
-                    : 'rgba(255, 255, 255, 0.2)',
-                },
-              ]}
-            >
-              <Text style={styles.badgeText}>
-                {isBatBuoc ? 'BẮT BUỘC' : 'ĐÓNG GÓP'}
-              </Text>
-            </View>
-          </View>
-
-          {/* Nội dung card */}
-          <View style={styles.cardContent}>
+          {/* Header section - phần màu nhạt hơn */}
+          <View style={styles.cardHeaderSection}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle} numberOfLines={2}>
                 {khoanThu.tenKhoanThu}
               </Text>
+              {/* Badge loại khoản thu */}
+              <View
+                style={[
+                  styles.badge,
+                  {
+                    backgroundColor: isBatBuoc
+                      ? 'rgba(255, 255, 255, 0.25)'
+                      : 'rgba(255, 255, 255, 0.2)',
+                  },
+                ]}
+              >
+                <Text style={styles.badgeText}>
+                  {isBatBuoc ? 'BẮT BUỘC' : 'ĐÓNG GÓP'}
+                </Text>
+              </View>
             </View>
+          </View>
 
+          {/* Details section */}
+          <View style={styles.cardDetailsSection}>
             <View style={styles.cardDetails}>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Đơn giá/Nhân khẩu:</Text>
@@ -169,11 +173,150 @@ const FeeCard: React.FC<{
   );
 };
 
+// Component Popup Modal với hiệu ứng 3D
+const FeePopupModal: React.FC<{
+  visible: boolean;
+  khoanThu: KhoanThu | null;
+  onClose: () => void;
+}> = ({ visible, khoanThu, onClose }) => {
+  const scale = useSharedValue(0);
+  const opacity = useSharedValue(0);
+  const backdropOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (visible) {
+      backdropOpacity.value = withTiming(1, { duration: 300 });
+      scale.value = withSpring(1, {
+        damping: 15,
+        stiffness: 150,
+      });
+      opacity.value = withTiming(1, { duration: 300 });
+    } else {
+      backdropOpacity.value = withTiming(0, { duration: 200 });
+      scale.value = withSpring(0, {
+        damping: 15,
+        stiffness: 150,
+      });
+      opacity.value = withTiming(0, { duration: 200 });
+    }
+  }, [visible]);
+
+  const animatedModalStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }],
+      opacity: opacity.value,
+    };
+  });
+
+  const animatedBackdropStyle = useAnimatedStyle(() => {
+    return {
+      opacity: backdropOpacity.value,
+    };
+  });
+
+  if (!khoanThu) return null;
+
+  const isBatBuoc = khoanThu.loaiKhoanThu === 'BAT_BUOC';
+  const gradientColors = isBatBuoc
+    ? (['#D32F2F', '#B71C1C'] as const)
+    : (['#1976D2', '#0D47A1'] as const);
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      onRequestClose={onClose}
+    >
+      <Pressable style={styles.modalContainer} onPress={onClose}>
+        <Animated.View style={[styles.backdrop, animatedBackdropStyle]}>
+          <BlurView intensity={20} style={StyleSheet.absoluteFill} />
+        </Animated.View>
+        
+        <Pressable onPress={(e) => e.stopPropagation()}>
+          <Animated.View style={[styles.modalContent, animatedModalStyle]}>
+            <View style={styles.modalGradient}>
+              {/* Header section */}
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalHeaderTitle}>Chi tiết thu phí</Text>
+                <TouchableOpacity
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    onClose();
+                  }}
+                  style={styles.closeButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.closeButtonText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Content section - Tên loại thu phí */}
+              <View style={styles.modalBody}>
+                <Text style={styles.modalFeeName}>{khoanThu.tenKhoanThu}</Text>
+                <View
+                  style={[
+                    styles.modalBadge,
+                    {
+                      backgroundColor: isBatBuoc
+                        ? 'rgba(211, 47, 47, 0.1)'
+                        : 'rgba(25, 118, 210, 0.1)',
+                      borderColor: isBatBuoc
+                        ? 'rgba(211, 47, 47, 0.3)'
+                        : 'rgba(25, 118, 210, 0.3)',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.modalBadgeText,
+                      {
+                        color: isBatBuoc ? '#D32F2F' : '#1976D2',
+                      },
+                    ]}
+                  >
+                    {isBatBuoc ? 'BẮT BUỘC' : 'ĐÓNG GÓP'}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Footer section - Nút Thanh toán */}
+              <View style={styles.modalFooter}>
+                <TouchableOpacity
+                  style={styles.paymentButton}
+                  onPress={() => {
+                    // TODO: Handle payment
+                    console.log('Payment pressed for:', khoanThu);
+                    onClose();
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <LinearGradient
+                    colors={gradientColors}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.paymentButtonGradient}
+                  >
+                    <Text style={styles.paymentButtonText}>Thanh toán</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Animated.View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+};
+
 export default function FeeScreen() {
   const { isAuthenticated, user } = useAuth();
   const [khoanThuList, setKhoanThuList] = useState<KhoanThu[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedKhoanThu, setSelectedKhoanThu] = useState<KhoanThu | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -235,8 +378,15 @@ export default function FeeScreen() {
   }, [isAuthenticated, user]);
 
   const handleCardPress = (khoanThu: KhoanThu) => {
-    // TODO: Navigate to detail screen or show modal
-    console.log('Pressed:', khoanThu);
+    setSelectedKhoanThu(khoanThu);
+    setIsModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalVisible(false);
+    setTimeout(() => {
+      setSelectedKhoanThu(null);
+    }, 300);
   };
 
   return (
@@ -315,6 +465,12 @@ export default function FeeScreen() {
           </ScrollView>
         )}
       </View>
+      
+      <FeePopupModal
+        visible={isModalVisible}
+        khoanThu={selectedKhoanThu}
+        onClose={handleCloseModal}
+      />
     </View>
   );
 }
@@ -338,7 +494,7 @@ const styles = StyleSheet.create({
     marginTop: 0,
     width: '100%',
     flex: 1,
-    paddingTop: 120, // Điều chỉnh để content bắt đầu ngay sau header image
+    paddingTop: 150, // Điều chỉnh để content bắt đầu ngay sau header image
     zIndex: 1, // Đảm bảo content hiển thị trên header image
   },
   scrollView: {
@@ -372,14 +528,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 16,
-    padding: 16,
     position: 'relative',
-  },
-  badgeContainer: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    zIndex: 1,
   },
   badge: {
     paddingHorizontal: 10,
@@ -387,6 +536,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
+    marginLeft: 8,
+    alignSelf: 'flex-start',
   },
   badgeText: {
     color: '#FFFFFF',
@@ -394,13 +545,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.5,
   },
-  cardContent: {
-    flex: 1,
-    justifyContent: 'space-between',
+  cardHeaderSection: {
+    height: '40%',
+    padding: 16,
+    paddingBottom: 8,
+    justifyContent: 'flex-start',
+    position: 'relative',
+    zIndex: 1,
   },
   cardHeader: {
-    marginTop: 8,
-    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    height: '100%',
   },
   cardTitle: {
     fontSize: 18,
@@ -410,6 +567,13 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.2)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+    flex: 1,
+  },
+  cardDetailsSection: {
+    height: '60%',
+    padding: 16,
+    paddingTop: 8,
+    justifyContent: 'center',
   },
   cardDetails: {
     gap: 8,
@@ -487,6 +651,123 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: 24,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: SCREEN_WIDTH - 40,
+    borderRadius: 24,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 20,
+    },
+    shadowOpacity: 0.4,
+    shadowRadius: 25,
+    elevation: 25,
+  },
+  modalGradient: {
+    width: '100%',
+    minHeight: 280,
+    borderRadius: 24,
+    position: 'relative',
+    backgroundColor: '#FFFFFF',
+  },
+  modalHeader: {
+    padding: 20,
+    paddingBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  modalHeaderTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#212121',
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    fontSize: 20,
+    color: '#424242',
+    fontWeight: '600',
+    lineHeight: 20,
+  },
+  modalBody: {
+    padding: 20,
+    paddingVertical: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 120,
+  },
+  modalFeeName: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#212121',
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 30,
+  },
+  modalBadge: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  modalBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  modalFooter: {
+    padding: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  paymentButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  paymentButtonGradient: {
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  paymentButtonText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+    letterSpacing: 0.5,
   },
 });
 
