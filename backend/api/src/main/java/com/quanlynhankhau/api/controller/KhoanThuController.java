@@ -44,6 +44,16 @@ public class KhoanThuController {
         return ResponseEntity.ok(khoanThuService.getAllKhoanThu());
     }
 
+    /**
+     * Endpoint cho RESIDENT xem danh sách khoản thu (chỉ xem, không chỉnh sửa).
+     * RESIDENT có thể xem các khoản thu để biết các khoản phí cần nộp.
+     */
+    @GetMapping("/public")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT', 'RESIDENT')")
+    public ResponseEntity<List<KhoanThuResponseDTO>> getPublicKhoanThu() {
+        return ResponseEntity.ok(khoanThuService.getAllKhoanThu());
+    }
+
     // Thêm endpoint GET theo ID
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")

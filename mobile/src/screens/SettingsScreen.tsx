@@ -38,12 +38,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'flex-start',
   },
   headerImage: {
     width: '100%',
-    maxWidth: 380,
     marginTop: -198,
   },
   content: {

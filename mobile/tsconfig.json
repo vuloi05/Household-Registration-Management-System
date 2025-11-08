@@ -4,6 +4,7 @@
     "strict": true,
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "jsx": "react-native"
   }
 }
