@@ -1,6 +1,7 @@
 // src/components/layout/Sidebar.tsx
 
-import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar } from '@mui/material';
+import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Box, Typography, IconButton, Button } from '@mui/material';
+import LogoutIcon from '@mui/icons-material/Logout';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
 import PersonIcon from '@mui/icons-material/Person';
@@ -31,7 +32,7 @@ const drawerWidth = 240;
 
 export default function Sidebar() {
   const location = useLocation(); // Hook để lấy URL hiện tại, giúp highlight mục menu đang active.
-  const { user } = useAuth(); // Lấy thông tin user (bao gồm cả role) từ AuthContext.
+  const { user, logout } = useAuth(); // Lấy thông tin user và logout
 
   /**
    * Lọc danh sách menuItems ban đầu để chỉ giữ lại những mục mà
@@ -55,7 +56,12 @@ export default function Sidebar() {
       variant="permanent"
       anchor="left"
     >
-      <Toolbar />
+      {/* Greeting at top */}
+      <Toolbar>
+        <Typography variant="subtitle1" noWrap sx={{ fontWeight: 700 }}>
+          Chào, {user?.sub}
+        </Typography>
+      </Toolbar>
       <List>
         {/* 
           Sử dụng `accessibleMenuItems` (danh sách đã được lọc) thay vì `menuItems` (danh sách gốc) 
@@ -76,6 +82,19 @@ export default function Sidebar() {
           </ListItem>
         ))}
       </List>
+      {/* Spacer to push logout to bottom */}
+      <Box sx={{ flexGrow: 1 }} />
+      {/* Logout button at bottom */}
+      <Box sx={{ px: 1.5, py: 1.5 }}>
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={<LogoutIcon />}
+          onClick={logout}
+        >
+          Đăng xuất
+        </Button>
+      </Box>
     </Drawer>
   );
 }

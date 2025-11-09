@@ -161,30 +161,35 @@ def qa_feedback():
         new_answer = None
 
         if feedback_type == 'wrong':
-            with kb_lock:
-                qa_knowledge_base[:] = [it for it in qa_knowledge_base if it['q'].strip().lower() != question.strip().lower()]
-            # Prefer Ollama first, fallback to Gemini
-            from .ollama import call_ollama
-            from .gemini import call_gemini
-            generated = call_ollama(question, context) or call_gemini(question, context)
-            if generated:
-                new_answer = generated
+            # Thực hiện quá trình học và cập nhật KB ở background để không chặn phản hồi hiện tại
+            import threading
+            def background_learn_wrong(q: str, ctx: str):
+                from .kb import qa_knowledge_base, kb_lock  # re-import inside thread context
+                from .ollama import call_ollama
+                from .gemini import call_gemini
+                # Loại bỏ câu trả lời cũ nếu có
                 with kb_lock:
-                    qa_knowledge_base.append({'q': question, 'a': new_answer})
-                persist_chat_event({
-                    'timestamp': get_timestamp(),
-                    'message': question,
-                    'response': new_answer,
-                    'context': context,
-                    'source': 'auto-corrected',
-                })
-                # Tự động trigger reload sau khi có feedback để cập nhật từ AWS
-                import threading
+                    qa_knowledge_base[:] = [it for it in qa_knowledge_base if it['q'].strip().lower() != q.strip().lower()]
+                # Sinh câu trả lời mới từ mô hình
+                generated = call_ollama(q, ctx) or call_gemini(q, ctx)
+                if generated:
+                    with kb_lock:
+                        qa_knowledge_base.append({'q': q, 'a': generated})
+                    persist_chat_event({
+                        'timestamp': get_timestamp(),
+                        'message': q,
+                        'response': generated,
+                        'context': ctx,
+                        'source': 'auto-corrected',
+                    })
+                # Trigger reload sau một khoảng ngắn để đồng bộ kho tri thức
                 def delayed_reload_wrong():
                     import time
-                    time.sleep(2)  # Đợi 2 giây để AWS có thời gian lưu dữ liệu
+                    time.sleep(2)
                     trigger_reload()
                 threading.Thread(target=delayed_reload_wrong, daemon=True).start()
+
+            threading.Thread(target=background_learn_wrong, args=(question, context), daemon=True).start()
         elif feedback_type in ('confirm', 'correct'):
             if not answer:
                 return jsonify({"error": "answer is required for confirm/correct"}), 400

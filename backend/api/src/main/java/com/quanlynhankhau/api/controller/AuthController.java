@@ -10,12 +10,13 @@ import java.util.Map;
 
 import com.quanlynhankhau.api.dto.AuthRequest;
 import com.quanlynhankhau.api.dto.AuthResponse;
+import com.quanlynhankhau.api.dto.MobileAuthRequest;
 import com.quanlynhankhau.api.dto.RefreshTokenRequest;
 import com.quanlynhankhau.api.service.AuthService;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "*"})  // Cho phép CORS từ mobile app
 public class AuthController {
 
     @Autowired
@@ -41,6 +42,21 @@ public class AuthController {
         try {
             String newAccessToken = authService.refreshToken(refreshTokenRequest.getRefreshToken());
             return ResponseEntity.ok(new AuthResponse(newAccessToken));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    /**
+     * Endpoint đăng nhập cho mobile app
+     * Chỉ cho phép nhân khẩu đăng nhập bằng số CCCD
+     * Admin và kế toán không thể đăng nhập qua mobile app
+     */
+    @PostMapping("/mobile/login")
+    public ResponseEntity<?> mobileLogin(@RequestBody MobileAuthRequest mobileAuthRequest) {
+        try {
+            Map<String, String> tokens = authService.authenticateMobile(mobileAuthRequest);
+            return ResponseEntity.ok(tokens);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

@@ -27,7 +27,6 @@ import com.quanlynhankhau.api.service.LichSuNopTienService;
 
 @RestController
 @RequestMapping("/api/khoanthu")
-@CrossOrigin(origins = "http://localhost:5173")
 public class KhoanThuController {
 
     @Autowired
@@ -41,6 +40,16 @@ public class KhoanThuController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
     public ResponseEntity<List<KhoanThuResponseDTO>> getAllKhoanThu() {
+        return ResponseEntity.ok(khoanThuService.getAllKhoanThu());
+    }
+
+    /**
+     * Endpoint cho RESIDENT xem danh sách khoản thu (chỉ xem, không chỉnh sửa).
+     * RESIDENT có thể xem các khoản thu để biết các khoản phí cần nộp.
+     */
+    @GetMapping("/public")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT', 'RESIDENT')")
+    public ResponseEntity<List<KhoanThuResponseDTO>> getPublicKhoanThu() {
         return ResponseEntity.ok(khoanThuService.getAllKhoanThu());
     }
 
