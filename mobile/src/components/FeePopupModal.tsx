@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -17,6 +17,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { type KhoanThu } from '../api/khoanThuApi';
+import PaymentModal from './PaymentModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -24,13 +25,16 @@ interface FeePopupModalProps {
   visible: boolean;
   khoanThu: KhoanThu | null;
   onClose: () => void;
+  onPaymentSuccess?: () => void;
 }
 
 const FeePopupModal: React.FC<FeePopupModalProps> = ({
   visible,
   khoanThu,
   onClose,
+  onPaymentSuccess,
 }) => {
+  const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const scale = useSharedValue(0);
   const opacity = useSharedValue(0);
   const backdropOpacity = useSharedValue(0);
@@ -138,9 +142,7 @@ const FeePopupModal: React.FC<FeePopupModalProps> = ({
                 <TouchableOpacity
                   style={styles.paymentButton}
                   onPress={() => {
-                    // TODO: Handle payment
-                    console.log('Payment pressed for:', khoanThu);
-                    onClose();
+                    setPaymentModalVisible(true);
                   }}
                   activeOpacity={0.8}
                 >
@@ -158,6 +160,20 @@ const FeePopupModal: React.FC<FeePopupModalProps> = ({
           </Animated.View>
         </Pressable>
       </Pressable>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        visible={paymentModalVisible}
+        khoanThu={khoanThu}
+        onClose={() => {
+          setPaymentModalVisible(false);
+        }}
+        onPaymentSuccess={() => {
+          setPaymentModalVisible(false);
+          onClose();
+          onPaymentSuccess?.();
+        }}
+      />
     </Modal>
   );
 };

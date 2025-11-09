@@ -43,12 +43,9 @@ export default function FeeScreen() {
           });
         }
         
-        // Sử dụng endpoint phù hợp dựa trên role của user
-        // RESIDENT sử dụng /public endpoint, ADMIN/ACCOUNTANT sử dụng endpoint thông thường
-        const isResident = user?.role === 'ROLE_RESIDENT';
-        const data = isResident 
-          ? await getDanhSachKhoanThuPublic()
-          : await getDanhSachKhoanThu();
+        // Sử dụng endpoint /public cho tất cả user vì endpoint này cho phép ADMIN, ACCOUNTANT và RESIDENT
+        // Endpoint /public đã được cấu hình để cho phép tất cả các role, nên không cần phân biệt
+        const data = await getDanhSachKhoanThuPublic();
         setKhoanThuList(data);
         
         if (__DEV__) {
@@ -115,11 +112,8 @@ export default function FeeScreen() {
                 try {
                   setError(null);
                   setLoading(true);
-                  // Sử dụng endpoint phù hợp dựa trên role của user
-                  const isResident = user?.role === 'ROLE_RESIDENT';
-                  const data = isResident 
-                    ? await getDanhSachKhoanThuPublic()
-                    : await getDanhSachKhoanThu();
+                  // Sử dụng endpoint /public cho tất cả user
+                  const data = await getDanhSachKhoanThuPublic();
                   setKhoanThuList(data);
                   setLoading(false);
                 } catch (err: any) {

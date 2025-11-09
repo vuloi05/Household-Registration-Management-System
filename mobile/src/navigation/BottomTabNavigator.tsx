@@ -16,7 +16,7 @@ import { appTheme as theme } from '../theme';
 import HomeScreen from '../screens/HomeScreen';
 import WalletScreen from '../screens/WalletScreen';
 import NotificationScreen from '../screens/NotificationScreen';
-import SettingsScreen from '../screens/SettingsScreen';
+import SettingsStackNavigator from './SettingsStackNavigator';
 import FeeScreen from '../screens/FeeScreen';
 
 const Tab = createBottomTabNavigator();
@@ -180,7 +180,7 @@ export default function BottomTabNavigator() {
       <Tab.Screen name="Wallet" component={WalletScreen} />
       <Tab.Screen name="Fee" component={FeeScreen} />
       <Tab.Screen name="Notification" component={NotificationScreen} />
-      <Tab.Screen name="Settings" component={SettingsScreen} />
+      <Tab.Screen name="Settings" component={SettingsStackNavigator} />
     </Tab.Navigator>
   );
 }

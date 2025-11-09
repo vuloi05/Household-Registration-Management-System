@@ -1,5 +1,6 @@
 // src/components/layout/Header.tsx
 import { AppBar, Toolbar, Typography } from '@mui/material';
+import NotificationButton from '../notifications/NotificationButton';
 
 const drawerWidth = 240;
 
@@ -19,6 +20,7 @@ export default function Header() {
         <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
           Hệ thống Quản lý Dân Cư
         </Typography>
+        <NotificationButton />
       </Toolbar>
     </AppBar>
   );

@@ -51,16 +51,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // Nếu đã có username và chưa có phiên xác thực nào trong context
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+            try {
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
-            // Nếu token hợp lệ, tạo phiên xác thực và đặt vào context
-            if (jwtUtil.validateToken(jwt, userDetails)) {
-                UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                usernamePasswordAuthenticationToken
-                        .setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+                // Nếu token hợp lệ, tạo phiên xác thực và đặt vào context
+                if (jwtUtil.validateToken(jwt, userDetails)) {
+                    // Log để debug
+                    logger.info("Authentication successful for user: " + username);
+                    logger.info("User authorities: " + userDetails.getAuthorities());
+                    
+                    UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+                    usernamePasswordAuthenticationToken
+                            .setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+                } else {
+                    logger.warn("Token validation failed for user: " + username);
+                }
+            } catch (Exception e) {
+                // User không tồn tại trong database, log và tiếp tục (sẽ bị reject ở authorization layer)
+                logger.error("Error during authentication for user: " + username + " - " + e.getMessage(), e);
+                // Không set authentication, request sẽ bị reject với 403
             }
+        } else if (username == null) {
+            logger.warn("No username extracted from token for request: " + request.getRequestURI());
         }
         
         // Tiếp tục chuỗi filter

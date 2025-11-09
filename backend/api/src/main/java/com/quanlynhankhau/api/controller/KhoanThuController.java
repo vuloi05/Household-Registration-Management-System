@@ -27,7 +27,6 @@ import com.quanlynhankhau.api.service.LichSuNopTienService;
 
 @RestController
 @RequestMapping("/api/khoanthu")
-@CrossOrigin(origins = "http://localhost:5173")
 public class KhoanThuController {
 
     @Autowired

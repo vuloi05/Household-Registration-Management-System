@@ -112,6 +112,12 @@ public class AuthService {
             if ("ROLE_ADMIN".equals(user.getRole()) || "ROLE_ACCOUNTANT".equals(user.getRole())) {
                 throw new RuntimeException("Tài khoản admin và kế toán không thể đăng nhập qua ứng dụng mobile");
             }
+            
+            // 4. Nếu user có role ROLE_USER (từ data cũ), update thành ROLE_RESIDENT
+            if ("ROLE_USER".equals(user.getRole())) {
+                user.setRole("ROLE_RESIDENT");
+                user = userRepository.save(user);
+            }
         } else {
             // Tạo User record mới cho nhân khẩu
             user = new User();
@@ -123,7 +129,7 @@ public class AuthService {
             user = userRepository.save(user);
         }
         
-        // 4. Xác thực mật khẩu
+        // 5. Xác thực mật khẩu
         // Mật khẩu mặc định cho tất cả nhân khẩu: quanlydancu@123
         if (!passwordEncoder.matches(password, user.getPassword())) {
             // Nếu mật khẩu không khớp, kiểm tra xem có phải là mật khẩu mặc định không
@@ -135,7 +141,7 @@ public class AuthService {
             userRepository.save(user);
         }
         
-        // 5. Tạo cặp token và trả về
+        // 6. Tạo cặp token và trả về (với role đã được cập nhật)
         return jwtUtil.generateTokenPair(user);
     }
 }

@@ -6,13 +6,16 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.quanlynhankhau.api.dto.NhanKhauDTO;
 import com.quanlynhankhau.api.entity.HoKhau;
 import com.quanlynhankhau.api.entity.NhanKhau;
+import com.quanlynhankhau.api.entity.User;
 import com.quanlynhankhau.api.repository.HoKhauRepository;
 import com.quanlynhankhau.api.repository.NhanKhauRepository;
+import com.quanlynhankhau.api.repository.UserRepository;
 
 @Service
 public class NhanKhauService {
@@ -22,6 +25,12 @@ public class NhanKhauService {
 
     @Autowired
     private HoKhauRepository hoKhauRepository; // Cần repo này để tìm hộ khẩu
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     // Lấy tất cả nhân khẩu của một hộ khẩu cụ thể
     public List<NhanKhauDTO> getAllNhanKhauByHoKhauId(Long hoKhauId) {
@@ -41,7 +50,45 @@ public class NhanKhauService {
         nhanKhau.setHoKhau(hoKhau);
 
         // 3. Lưu nhân khẩu mới vào CSDL
-        return nhanKhauRepository.save(nhanKhau);
+        NhanKhau savedNhanKhau = nhanKhauRepository.save(nhanKhau);
+
+        // 4. Tự động tạo tài khoản user nếu nhân khẩu có CCCD
+        createUserForNhanKhau(savedNhanKhau);
+
+        return savedNhanKhau;
+    }
+
+    /**
+     * Tự động tạo tài khoản user cho nhân khẩu nếu có CCCD và chưa có user
+     * @param nhanKhau Nhân khẩu cần tạo user
+     */
+    private void createUserForNhanKhau(NhanKhau nhanKhau) {
+        // Chỉ tạo user nếu nhân khẩu có CCCD
+        if (nhanKhau.getCmndCccd() != null && !nhanKhau.getCmndCccd().trim().isEmpty()) {
+            String cccd = nhanKhau.getCmndCccd().trim();
+            
+            // Kiểm tra xem đã có user với username = CCCD chưa
+            Optional<User> existingUser = userRepository.findByUsername(cccd);
+            
+            if (!existingUser.isPresent()) {
+                // Tạo user mới
+                User newUser = new User();
+                newUser.setUsername(cccd);
+                newUser.setFullName(nhanKhau.getHoTen());
+                newUser.setRole("ROLE_RESIDENT");
+                // Hash password: quanlydancu@123
+                newUser.setPassword(passwordEncoder.encode("quanlydancu@123"));
+                
+                userRepository.save(newUser);
+            } else {
+                // Nếu user đã tồn tại, cập nhật fullName nếu cần
+                User user = existingUser.get();
+                if (nhanKhau.getHoTen() != null && !nhanKhau.getHoTen().equals(user.getFullName())) {
+                    user.setFullName(nhanKhau.getHoTen());
+                    userRepository.save(user);
+                }
+            }
+        }
     }
 
     
@@ -55,6 +102,9 @@ public class NhanKhauService {
         // 1. Tìm nhân khẩu trong CSDL
         NhanKhau existingNhanKhau = nhanKhauRepository.findById(nhanKhauId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu với id: " + nhanKhauId));
+
+        // Lưu CCCD cũ để kiểm tra thay đổi
+        String oldCccd = existingNhanKhau.getCmndCccd();
 
         // 2. Cập nhật các trường thông tin
         existingNhanKhau.setHoTen(nhanKhauDetails.getHoTen());
@@ -79,8 +129,27 @@ public class NhanKhauService {
             existingNhanKhau.setHoKhau(newHoKhau);
         }
 
-        // 4. Lưu lại và trả về kết quả
-        return nhanKhauRepository.save(existingNhanKhau);
+        // 4. Lưu lại
+        NhanKhau updatedNhanKhau = nhanKhauRepository.save(existingNhanKhau);
+
+        // 5. Xử lý user account:
+        // - Nếu CCCD thay đổi: tạo user mới với CCCD mới (nếu có)
+        // - Nếu CCCD không đổi hoặc được thêm mới: cập nhật hoặc tạo user
+        if (updatedNhanKhau.getCmndCccd() != null && !updatedNhanKhau.getCmndCccd().trim().isEmpty()) {
+            String newCccd = updatedNhanKhau.getCmndCccd().trim();
+            
+            // Nếu CCCD thay đổi và có user cũ, không xóa user cũ (có thể đang được sử dụng)
+            // Chỉ tạo user mới với CCCD mới nếu chưa có
+            if (!newCccd.equals(oldCccd) && oldCccd != null && !oldCccd.trim().isEmpty()) {
+                // CCCD đã thay đổi, tạo user mới với CCCD mới
+                createUserForNhanKhau(updatedNhanKhau);
+            } else {
+                // CCCD không đổi hoặc được thêm mới, cập nhật hoặc tạo user
+                createUserForNhanKhau(updatedNhanKhau);
+            }
+        }
+
+        return updatedNhanKhau;
     }
 
     /**

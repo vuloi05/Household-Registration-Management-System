@@ -46,7 +46,18 @@ axiosClient.interceptors.request.use(
       config.headers['Authorization'] = `Bearer ${token}`;
       // Log để debug (chỉ trong dev mode)
       if (__DEV__) {
-        console.log(`🔐 Request to ${config.url}: Token ${token.substring(0, 20)}...`);
+        try {
+          // Decode token để xem thông tin
+          const jwtDecode = require('jwt-decode');
+          const decoded = jwtDecode(token);
+          console.log(`🔐 Request to ${config.url}:`, {
+            username: decoded.sub,
+            role: decoded.role,
+            exp: new Date(decoded.exp * 1000).toISOString(),
+          });
+        } catch (e) {
+          console.log(`🔐 Request to ${config.url}: Token ${token.substring(0, 20)}...`);
+        }
       }
     } else {
       // Log cảnh báo nếu không có token
@@ -149,8 +160,10 @@ axiosClient.interceptors.response.use(
       }
     }
     
-    // Xử lý lỗi 403 (Forbidden) - Không có quyền truy cập hoặc token không hợp lệ
-    if (error.response?.status === 403 && !originalRequest._retry) {
+    // Xử lý lỗi 403 (Forbidden) - Không có quyền truy cập
+    // Lưu ý: 403 là lỗi về quyền truy cập, không phải token hết hạn
+    // Không nên thử refresh token khi gặp lỗi 403
+    if (error.response?.status === 403) {
       console.warn('🚫 403 Forbidden:', {
         url: originalRequest.url,
         method: originalRequest.method,
@@ -158,68 +171,15 @@ axiosClient.interceptors.response.use(
         responseData: error.response?.data,
       });
       
-      // Thử refresh token trước khi báo lỗi
-      const refreshToken = await AsyncStorage.getItem('refresh_token');
-      const currentToken = await AsyncStorage.getItem('jwt_token');
-      
-      console.log('🔄 Token status:', {
-        hasRefreshToken: !!refreshToken,
-        hasCurrentToken: !!currentToken,
-        isRefreshing,
-      });
-      
-      if (refreshToken && !isRefreshing) {
-        originalRequest._retry = true;
-        isRefreshing = true;
-        
-        try {
-          console.log('🔄 Attempting token refresh for 403 error...');
-          // Gọi API refresh token
-          const response = await axios.post(`${BASE_URL}/auth/refresh-token`, { 
-            refreshToken 
-          });
-          const newToken = response.data.jwt;
-          
-          console.log('✅ Token refreshed successfully');
-          
-          // Lưu token mới
-          await AsyncStorage.setItem('jwt_token', newToken);
-          
-          // Retry request ban đầu với token mới
-          originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
-          return axiosClient(originalRequest);
-          
-        } catch (refreshError: any) {
-          // Refresh token thất bại, có thể là vấn đề về quyền hoặc token đã hết hạn hoàn toàn
-          console.error('❌ Token refresh failed for 403 error:', {
-            status: refreshError?.response?.status,
-            message: refreshError?.message,
-            data: refreshError?.response?.data,
-          });
-          isRefreshing = false;
-          
-          // Tạo error message rõ ràng hơn
-          const forbiddenError = new Error(
-            'Bạn không có quyền truy cập tính năng này. Vui lòng đăng nhập lại hoặc liên hệ quản trị viên.'
-          );
-          forbiddenError.name = 'ForbiddenError';
-          return Promise.reject(forbiddenError);
-        } finally {
-          isRefreshing = false;
-        }
-      } else {
-        // Không có refresh token hoặc đang refresh, báo lỗi quyền truy cập
-        console.warn('⚠️ Cannot refresh token for 403 error:', {
-          hasRefreshToken: !!refreshToken,
-          isRefreshing,
-        });
-        
-        const forbiddenError = new Error(
-          'Bạn không có quyền truy cập tính năng này. Vui lòng đăng nhập lại hoặc liên hệ quản trị viên.'
-        );
-        forbiddenError.name = 'ForbiddenError';
-        return Promise.reject(forbiddenError);
-      }
+      // Tạo error object với flag để component biết đây là lỗi đã được xử lý
+      const forbiddenError: any = new Error('FORBIDDEN_ERROR_HANDLED');
+      forbiddenError.name = 'ForbiddenError';
+      forbiddenError.status = 403;
+      forbiddenError.isHandled = true;
+      forbiddenError.userMessage = 'Bạn không có quyền truy cập tính năng này. Vui lòng đăng nhập lại hoặc liên hệ quản trị viên.';
+      // Giữ nguyên response gốc để component có thể xử lý
+      forbiddenError.response = error.response;
+      return Promise.reject(forbiddenError);
     }
     
     return Promise.reject(error);

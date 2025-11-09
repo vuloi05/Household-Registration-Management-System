@@ -15,7 +15,7 @@ import com.quanlynhankhau.api.service.NhanKhauService;
 
 @RestController
 @RequestMapping("/api/nhankhau")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "*")
 public class NhanKhauSearchController {
 
     @Autowired
@@ -25,13 +25,46 @@ public class NhanKhauSearchController {
      * API tìm kiếm nhân khẩu theo số CCCD.
      * - Method: GET
      * - URL: http://localhost:8080/api/nhankhau/search?cmndCccd={cmndCccd}
+     * - Cho phép ADMIN và RESIDENT (chỉ được tìm chính mình)
      */
     @GetMapping("/search")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<NhanKhau> searchNhanKhauByCmndCccd(@RequestParam String cmndCccd) {
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_RESIDENT')")
+    public ResponseEntity<NhanKhau> searchNhanKhauByCmndCccd(
+            @RequestParam String cmndCccd,
+            org.springframework.security.core.Authentication authentication) {
+        // RESIDENT chỉ được tìm thông tin của chính mình
+        if (authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_RESIDENT"))) {
+            String username = authentication.getName();
+            if (!username.equals(cmndCccd)) {
+                return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            }
+        }
+        
         Optional<NhanKhau> nhanKhau = nhanKhauService.findByCmndCccd(cmndCccd);
         if (nhanKhau.isPresent()) {
             return new ResponseEntity<>(nhanKhau.get(), HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    /**
+     * API lấy thông tin nhân khẩu của chính mình (cho mobile app)
+     * - Method: GET
+     * - URL: http://localhost:8080/api/nhankhau/my-info
+     */
+    @GetMapping("/my-info")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_RESIDENT', 'ROLE_ACCOUNTANT')")
+    public ResponseEntity<?> getMyInfo(org.springframework.security.core.Authentication authentication) {
+        String username = authentication.getName();
+        Optional<NhanKhau> nhanKhau = nhanKhauService.findByCmndCccd(username);
+        if (nhanKhau.isPresent()) {
+            // Chỉ trả về thông tin cần thiết
+            var response = new java.util.HashMap<String, Object>();
+            response.put("hoTen", nhanKhau.get().getHoTen());
+            response.put("cmndCccd", nhanKhau.get().getCmndCccd());
+            return new ResponseEntity<>(response, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
