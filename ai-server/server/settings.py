@@ -21,6 +21,8 @@ DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
 # AWS Config (optional)
 AWS_REGION = os.getenv('AWS_REGION')
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')  # AWS Access Key
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')  # AWS Secret Access Key
 AWS_S3_BUCKET = os.getenv('AWS_S3_BUCKET')  # where raw chat logs are stored
 AWS_DDB_TABLE = os.getenv('AWS_DDB_TABLE')  # DynamoDB table for structured conversations
 
@@ -75,12 +77,20 @@ API_RETRY_DELAY_SECONDS = float(os.getenv('API_RETRY_DELAY_SECONDS', '1.0'))
 s3_client = None
 ddb_client = None
 if boto3 and AWS_REGION and (AWS_S3_BUCKET or AWS_DDB_TABLE):
+    # Build credentials dict if provided
+    aws_credentials = {}
+    if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
+        aws_credentials = {
+            'aws_access_key_id': AWS_ACCESS_KEY_ID,
+            'aws_secret_access_key': AWS_SECRET_ACCESS_KEY
+        }
+    
     try:
-        s3_client = boto3.client('s3', region_name=AWS_REGION)
+        s3_client = boto3.client('s3', region_name=AWS_REGION, **aws_credentials)
     except Exception:
         s3_client = None
     try:
-        ddb_client = boto3.client('dynamodb', region_name=AWS_REGION)
+        ddb_client = boto3.client('dynamodb', region_name=AWS_REGION, **aws_credentials)
     except Exception:
         ddb_client = None
 

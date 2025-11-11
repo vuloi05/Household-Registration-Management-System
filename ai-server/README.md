@@ -42,6 +42,8 @@ DEBUG=True
 
 # Ghi dữ liệu chat lên AWS (tùy chọn, để trống nếu không dùng)
 AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your_aws_access_key_id
+AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
 AWS_S3_BUCKET=ai-training-data-bucket-kirito
 AWS_DDB_TABLE=ai_agent_conversations
 
@@ -315,7 +317,7 @@ Knowledge base sẽ tự động học từ:
 }
 ```
 
-> Gợi ý: cấu hình AWS CLI bằng `aws configure` để lưu credentials ở `~/.aws/credentials`.
+> **Lưu ý:** Bạn có thể cấu hình AWS credentials trực tiếp trong file `.env` bằng cách thêm `AWS_ACCESS_KEY_ID` và `AWS_SECRET_ACCESS_KEY`. Không cần dùng `aws configure` nữa.
 
 ## Tích hợp với AI Models
 

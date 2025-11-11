@@ -186,6 +186,55 @@ CREATE TABLE IF NOT EXISTS tam_tru (
     nguoi_cap VARCHAR(255)
 );
 
+-- =================================================================
+-- THANH TOÁN (payments)
+-- =================================================================
+CREATE TABLE IF NOT EXISTS payments (
+    id               BIGSERIAL PRIMARY KEY,
+    payment_id       VARCHAR(255) UNIQUE NOT NULL,
+    khoan_thu_id     BIGINT,
+    ho_khau_id       BIGINT,
+    amount           DECIMAL(15, 2),
+    status           VARCHAR(50),
+    qr_code_string   TEXT,
+    created_at       TIMESTAMP,
+    paid_at          TIMESTAMP,
+    transaction_id   VARCHAR(255),
+    payer_name       VARCHAR(255),
+    payer_account     VARCHAR(255),
+    CONSTRAINT fk_payments_khoanthu FOREIGN KEY (khoan_thu_id) REFERENCES khoan_thu(id),
+    CONSTRAINT fk_payments_hokhau FOREIGN KEY (ho_khau_id) REFERENCES ho_khau(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_payments_payment_id ON payments(payment_id);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
+CREATE INDEX IF NOT EXISTS idx_payments_created_at ON payments(created_at);
+CREATE INDEX IF NOT EXISTS idx_payments_paid_at ON payments(paid_at);
+
+-- =================================================================
+-- THÔNG BÁO THANH TOÁN (payment_notifications)
+-- =================================================================
+CREATE TABLE IF NOT EXISTS payment_notifications (
+    id                 BIGSERIAL PRIMARY KEY,
+    notification_id    VARCHAR(255) UNIQUE NOT NULL,
+    payment_id         VARCHAR(255),
+    khoan_thu_id       BIGINT,
+    khoan_thu_ten      VARCHAR(255),
+    ho_khau_id         BIGINT,
+    ho_khau_ten        VARCHAR(255),
+    nguoi_thanh_toan   VARCHAR(255),
+    so_tien            DECIMAL(15, 2),
+    ngay_thanh_toan    TIMESTAMP,
+    da_xem             BOOLEAN DEFAULT FALSE,
+    created_at         TIMESTAMP,
+    CONSTRAINT fk_payment_notifications_khoanthu FOREIGN KEY (khoan_thu_id) REFERENCES khoan_thu(id),
+    CONSTRAINT fk_payment_notifications_hokhau FOREIGN KEY (ho_khau_id) REFERENCES ho_khau(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_payment_notifications_notif_id ON payment_notifications(notification_id);
+CREATE INDEX IF NOT EXISTS idx_payment_notifications_created_at ON payment_notifications(created_at);
+CREATE INDEX IF NOT EXISTS idx_payment_notifications_da_xem ON payment_notifications(da_xem);
+
 -- 5. Dữ liệu mẫu cho lịch sử biến động (optional)
 -- Ghi nhận việc thêm mới các nhân khẩu hiện có
 INSERT INTO lich_su_bien_dong_nhan_khau (nhan_khau_id, loai_bien_dong, ngay_bien_dong, ghi_chu, nguoi_ghi_nhan)

@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, Image } from 'react-native';
+import { View, StyleSheet, Image, ScrollView } from 'react-native';
+import NhanDanNews from '../components/NhanDanNews';
 
 export default function HomeScreen() {
   return (
@@ -10,6 +11,14 @@ export default function HomeScreen() {
         resizeMode="contain"
       />
       <View style={styles.content}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <NhanDanNews />
+          <View style={{ height: 24 }} />
+        </ScrollView>
       </View>
     </View>
   );
@@ -19,16 +28,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-    alignItems: 'flex-start',
-    justifyContent: 'flex-start',
   },
   headerImage: {
     width: '100%',
     marginTop: -235,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    zIndex: 0,
   },
   content: {
-    marginTop: 32,
+    marginTop: 0,
     width: '100%',
-    alignItems: 'center',
+    flex: 1,
+    paddingTop: 150,
+    zIndex: 1,
+  },
+  scrollView: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+    alignItems: 'flex-start',
   },
 });

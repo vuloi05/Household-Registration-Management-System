@@ -121,7 +121,8 @@ def chat():
             yield f"data: [END] \n\n"
             if actions:
                 yield f"agent_actions: {json.dumps(actions, ensure_ascii=False)}\n\n"
-                yield f"data: {json.dumps({"actions": actions, "session_id": session_id, "source": source}, ensure_ascii=False)}\n\n"
+                actions_data = {"actions": actions, "session_id": session_id, "source": source}
+                yield f"data: {json.dumps(actions_data, ensure_ascii=False)}\n\n"
 
         return Response(stream_with_context(generate_streamed_response(response_text)), mimetype='text/event-stream')
 

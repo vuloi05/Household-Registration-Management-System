@@ -2,6 +2,8 @@
 -- Chạy script này khi gặp lỗi duplicate key
 
 -- Xóa tất cả dữ liệu (theo thứ tự ngược lại của sự phụ thuộc)
+DELETE FROM payment_notifications;
+DELETE FROM payments;
 DELETE FROM lich_su_nop_tien;
 DELETE FROM tam_tru;
 DELETE FROM tam_vang;
@@ -22,6 +24,8 @@ ALTER SEQUENCE lich_su_bien_dong_nhan_khau_id_seq RESTART WITH 1;
 ALTER SEQUENCE lich_su_thay_doi_ho_khau_id_seq RESTART WITH 1;
 ALTER SEQUENCE tam_vang_id_seq RESTART WITH 1;
 ALTER SEQUENCE tam_tru_id_seq RESTART WITH 1;
+ALTER SEQUENCE payments_id_seq RESTART WITH 1;
+ALTER SEQUENCE payment_notifications_id_seq RESTART WITH 1;
 
 -- Đảm bảo sequence được đồng bộ với dữ liệu hiện tại (nếu có)
 SELECT setval('ho_khau_id_seq', COALESCE((SELECT MAX(id) FROM ho_khau), 0) + 1);
@@ -33,6 +37,8 @@ SELECT setval('lich_su_bien_dong_nhan_khau_id_seq', COALESCE((SELECT MAX(id) FRO
 SELECT setval('lich_su_thay_doi_ho_khau_id_seq', COALESCE((SELECT MAX(id) FROM lich_su_thay_doi_ho_khau), 0) + 1);
 SELECT setval('tam_vang_id_seq', COALESCE((SELECT MAX(id) FROM tam_vang), 0) + 1);
 SELECT setval('tam_tru_id_seq', COALESCE((SELECT MAX(id) FROM tam_tru), 0) + 1);
+SELECT setval('payments_id_seq', COALESCE((SELECT MAX(id) FROM payments), 0) + 1);
+SELECT setval('payment_notifications_id_seq', COALESCE((SELECT MAX(id) FROM payment_notifications), 0) + 1);
 
 -- Hiển thị trạng thái sequence hiện tại
 SELECT 'ho_khau_id_seq' as sequence_name, last_value FROM ho_khau_id_seq
@@ -51,4 +57,8 @@ SELECT 'lich_su_thay_doi_ho_khau_id_seq' as sequence_name, last_value FROM lich_
 UNION ALL
 SELECT 'tam_vang_id_seq' as sequence_name, last_value FROM tam_vang_id_seq
 UNION ALL
-SELECT 'tam_tru_id_seq' as sequence_name, last_value FROM tam_tru_id_seq;
+SELECT 'tam_tru_id_seq' as sequence_name, last_value FROM tam_tru_id_seq
+UNION ALL
+SELECT 'payments_id_seq' as sequence_name, last_value FROM payments_id_seq
+UNION ALL
+SELECT 'payment_notifications_id_seq' as sequence_name, last_value FROM payment_notifications_id_seq;

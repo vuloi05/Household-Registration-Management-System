@@ -68,7 +68,10 @@ public class PayOSService {
 
             // Tạo request body cho PayOS
             int amount = request.getAmount().intValue();
-            String description = request.getDescription() != null ? request.getDescription() : khoanThu.getTenKhoanThu();
+            // Yêu cầu: Nội dung chuyển khoản chỉ hiển thị mã (ví dụ: CSEV8709487).
+            // PayOS tự động ghép "mã giao dịch + description" để tạo nội dung chuyển khoản.
+            // Để nội dung chỉ có mã, ta đặt description rỗng.
+            String description = "";
             
             // PayOS chỉ cho phép description tối đa 25 ký tự
             // Cắt ngắn description nếu quá dài
