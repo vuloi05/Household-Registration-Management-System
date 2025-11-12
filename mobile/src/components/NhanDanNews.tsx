@@ -120,29 +120,31 @@ export default function NhanDanNews() {
         <Image source={require('../../assets/icon_co.png')} style={styles.bannerIcon} />
         <Text style={styles.bannerText} numberOfLines={1} ellipsizeMode="tail">ĐẠI HỘI ĐẢNG TOÀN QUỐC LẦN THỨ XIV</Text>
       </View>
-      <FlatList
-        horizontal
-        data={articles}
-        keyExtractor={(i) => i.id}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>{loading ? 'Đang tải...' : 'Không có dữ liệu'}</Text>
-        }
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} onPress={() => Linking.openURL(item.link)}>
-            {item.image ? (
-              <Image source={{ uri: item.image }} style={styles.cardImage} />
-            ) : (
-              <View style={styles.cardImagePlaceholder} />
-            )}
-            <Text numberOfLines={2} style={styles.cardTitle}>
-              {item.title}
-            </Text>
-            {item.pubDate ? <Text style={styles.cardMeta}>{formatPubDate(item.pubDate)}</Text> : null}
-          </TouchableOpacity>
-        )}
-      />
+      <View style={styles.panel}>
+        <FlatList
+          horizontal
+          data={articles}
+          keyExtractor={(i) => i.id}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>{loading ? 'Đang tải...' : 'Không có dữ liệu'}</Text>
+          }
+          renderItem={({ item }) => (
+            <TouchableOpacity style={styles.card} onPress={() => Linking.openURL(item.link)}>
+              {item.image ? (
+                <Image source={{ uri: item.image }} style={styles.cardImage} />
+              ) : (
+                <View style={styles.cardImagePlaceholder} />
+              )}
+              <Text numberOfLines={2} style={styles.cardTitle}>
+                {item.title}
+              </Text>
+              {item.pubDate ? <Text style={styles.cardMeta}>{formatPubDate(item.pubDate)}</Text> : null}
+            </TouchableOpacity>
+          )}
+        />
+      </View>
     </View>
   );
 }
@@ -163,6 +165,16 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 0,
     marginTop: 8,
+  },
+  panel: {
+    backgroundColor: '#FCEFD4',
+    borderRadius: 10,
+    paddingTop: 12,
+    paddingRight: 12,
+    paddingBottom: 12,
+    paddingLeft: 12,
+    marginTop: 1,
+    width: '100%',
   },
   headerRow: {
     width: '100%',
@@ -190,7 +202,7 @@ const styles = StyleSheet.create({
     paddingLeft: 15,
     alignItems: 'center',
     position: 'relative',
-    marginBottom: 12,
+    marginBottom: 0,
   },
   bannerIcon: {
     width: 26,
