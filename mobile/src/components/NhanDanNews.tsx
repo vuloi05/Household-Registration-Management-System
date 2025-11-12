@@ -1,5 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Linking } from 'react-native';
+import { useNavigation, type NavigationProp } from '@react-navigation/native';
+import type { RootStackParamList } from '../navigation/types';
 
 type NewsItem = {
   id: string;
@@ -43,7 +45,7 @@ function extractTag(src: string, tag: string): string {
   const re = new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`, 'i');
   const m = re.exec(src);
   if (!m) return '';
-  return m[1].trim();
+  return stripCdata(m[1].trim());
 }
 
 function extractEnclosure(src: string): string | undefined {
@@ -65,9 +67,17 @@ function decodeHtml(text: string): string {
     .replace(/&#39;/g, "'");
 }
 
+function stripCdata(text: string): string {
+  if (!text) return '';
+  const cdataPattern = /^<!\[CDATA\[([\s\S]*?)\]\]>$/i;
+  const match = cdataPattern.exec(text);
+  return match ? match[1] : text.replace(/<!\[CDATA\[/gi, '').replace(/\]\]>/g, '');
+}
+
 export default function NhanDanNews() {
   const [articles, setArticles] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   useEffect(() => {
     let mounted = true;
@@ -113,6 +123,16 @@ export default function NhanDanNews() {
     );
   }, []);
 
+  const openArticle = useCallback(
+    (item: NewsItem) => {
+      navigation.navigate('NewsArticle', {
+        url: item.link,
+        title: item.title,
+      });
+    },
+    [navigation],
+  );
+
   return (
     <View style={styles.container}>
       {header}
@@ -120,44 +140,113 @@ export default function NhanDanNews() {
         <Image source={require('../../assets/icon_co.png')} style={styles.bannerIcon} />
         <Text style={styles.bannerText} numberOfLines={1} ellipsizeMode="tail">ĐẠI HỘI ĐẢNG TOÀN QUỐC LẦN THỨ XIV</Text>
       </View>
-      <View style={styles.panel}>
-        <FlatList
-          horizontal
-          data={articles}
-          keyExtractor={(i) => i.id}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>{loading ? 'Đang tải...' : 'Không có dữ liệu'}</Text>
-          }
-          renderItem={({ item }) => (
-            <TouchableOpacity style={styles.card} onPress={() => Linking.openURL(item.link)}>
-              {item.image ? (
-                <Image source={{ uri: item.image }} style={styles.cardImage} />
-              ) : (
-                <View style={styles.cardImagePlaceholder} />
-              )}
-              <Text numberOfLines={2} style={styles.cardTitle}>
-                {item.title}
-              </Text>
-              {item.pubDate ? <Text style={styles.cardMeta}>{formatPubDate(item.pubDate)}</Text> : null}
-            </TouchableOpacity>
-          )}
-        />
+      <View style={styles.panelWrapper}>
+        <Image source={require('../../assets/icon_nhan_dan.png')} style={styles.panelLogo} />
+        <View style={styles.panel}>
+          <FlatList
+            horizontal
+            data={articles}
+            keyExtractor={(i) => i.id}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>{loading ? 'Đang tải...' : 'Không có dữ liệu'}</Text>
+            }
+            renderItem={({ item }) => (
+            <TouchableOpacity style={styles.card} onPress={() => openArticle(item)}>
+                {item.image ? (
+                  <Image source={{ uri: item.image }} style={styles.cardImage} />
+                ) : (
+                  <View style={styles.cardImagePlaceholder} />
+                )}
+                <Text numberOfLines={2} style={styles.cardTitle}>
+                  {item.title}
+                </Text>
+                {item.pubDate ? <Text style={styles.cardMeta}>{formatPubDate(item.pubDate)}</Text> : null}
+              </TouchableOpacity>
+            )}
+          />
+        </View>
       </View>
     </View>
   );
 }
 
 function formatPubDate(input: string): string {
-  const date = new Date(input);
-  if (isNaN(date.getTime())) return input;
-  const hh = date.getHours().toString().padStart(2, '0');
-  const mm = date.getMinutes().toString().padStart(2, '0');
-  const dd = date.getDate().toString().padStart(2, '0');
-  const mo = (date.getMonth() + 1).toString().padStart(2, '0');
-  const yyyy = date.getFullYear();
+  const cleaned = stripCdata(input).trim();
+  if (!cleaned) return '';
+
+  const parsed = parseRssDate(cleaned);
+  if (!parsed) {
+    return cleaned;
+  }
+
+  try {
+    const formatter = getVietnamDateFormatter();
+    const parts = formatter.formatToParts(parsed);
+    const partMap: Record<string, string> = {};
+    parts.forEach((part) => {
+      if (part.type !== 'literal') {
+        partMap[part.type] = part.value;
+      }
+    });
+
+    const hh = (partMap.hour || '').padStart(2, '0');
+    const mm = (partMap.minute || '').padStart(2, '0');
+    const dd = (partMap.day || '').padStart(2, '0');
+    const mo = (partMap.month || '').padStart(2, '0');
+    const yyyy = partMap.year || '';
+
+    if (hh && mm && dd && mo && yyyy) {
+      return `${hh}:${mm} ${dd}-${mo}-${yyyy}`;
+    }
+  } catch (_) {
+    // fall through to manual formatter
+  }
+
+  const target = new Date(parsed.getTime() + 7 * 60 * 60 * 1000);
+  const hh = target.getUTCHours().toString().padStart(2, '0');
+  const mm = target.getUTCMinutes().toString().padStart(2, '0');
+  const dd = target.getUTCDate().toString().padStart(2, '0');
+  const mo = (target.getUTCMonth() + 1).toString().padStart(2, '0');
+  const yyyy = target.getUTCFullYear();
   return `${hh}:${mm} ${dd}-${mo}-${yyyy}`;
+}
+
+function parseRssDate(value: string): Date | undefined {
+  const normalized = normalizeTimezoneFormat(value);
+  let candidate = new Date(normalized);
+  if (!isNaN(candidate.getTime())) {
+    return candidate;
+  }
+
+  const timestamp = Date.parse(normalized);
+  if (!Number.isNaN(timestamp)) {
+    return new Date(timestamp);
+  }
+
+  return undefined;
+}
+
+function normalizeTimezoneFormat(value: string): string {
+  return value.replace(/([+-]\d{2}):(\d{2})$/, (_, h: string, m: string) => `${h}${m}`);
+}
+
+let vietnamFormatter: Intl.DateTimeFormat | undefined;
+
+function getVietnamDateFormatter(): Intl.DateTimeFormat {
+  if (!vietnamFormatter) {
+    vietnamFormatter = new Intl.DateTimeFormat('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      hour: '2-digit',
+      minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour12: false,
+    });
+  }
+  return vietnamFormatter;
 }
 
 const styles = StyleSheet.create({
@@ -166,14 +255,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     marginTop: 8,
   },
+  panelWrapper: {
+    width: '100%',
+    position: 'relative',
+    marginTop: 4,
+  },
   panel: {
     backgroundColor: '#FCEFD4',
     borderRadius: 10,
-    paddingTop: 12,
+    paddingTop: 52,
     paddingRight: 12,
     paddingBottom: 12,
     paddingLeft: 12,
-    marginTop: 1,
     width: '100%',
   },
   headerRow: {
@@ -192,6 +285,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#e11b22',
     fontWeight: '600',
+  },
+  panelLogo: {
+    position: 'absolute',
+    top: -16,
+    left: 15,
+    width: 60,
+    height: 75,
+    resizeMode: 'contain',
+    zIndex: 2,
   },
   banner: {
     width: '100%',

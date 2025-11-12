@@ -119,7 +119,7 @@ const FeeCard: React.FC<FeeCardProps> = ({ khoanThu, index, onPress }) => {
           {/* Header section - phần màu nhạt hơn */}
           <View style={styles.cardHeaderSection}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle} numberOfLines={2}>
+              <Text style={styles.cardTitle} numberOfLines={1} ellipsizeMode="tail">
                 {khoanThu.tenKhoanThu}
               </Text>
               {/* Badge loại khoản thu */}
