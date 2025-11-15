@@ -1,5 +1,10 @@
-import { Box, Paper, Typography, IconButton } from '@mui/material';
-import { ThumbUp as ThumbUpIcon, ThumbDown as ThumbDownIcon } from '@mui/icons-material';
+import { Box, Paper, Typography, IconButton, CircularProgress } from '@mui/material';
+import {
+  ThumbUp as ThumbUpIcon,
+  ThumbDown as ThumbDownIcon,
+  CheckCircle as CheckCircleIcon,
+  ErrorOutline as ErrorOutlineIcon,
+} from '@mui/icons-material';
 import { alpha } from '@mui/material/styles';
 import type { Message } from './types';
 import { renderMarkdown } from './chatbotUtils';
@@ -19,6 +24,21 @@ export function ChatbotMessage({
   feedbackSending,
   onFeedback,
 }: ChatbotMessageProps) {
+  const isStatusMessage = msg.variant === 'status';
+
+  const renderStatusIcon = () => {
+    if (msg.status === 'pending') {
+      return <CircularProgress size={14} thickness={6} sx={{ color: 'text.secondary' }} />;
+    }
+    if (msg.status === 'success') {
+      return <CheckCircleIcon fontSize="small" sx={{ color: 'success.main' }} />;
+    }
+    if (msg.status === 'error') {
+      return <ErrorOutlineIcon fontSize="small" sx={{ color: 'error.main' }} />;
+    }
+    return null;
+  };
+
   return (
     <Box
       sx={{
@@ -30,30 +50,59 @@ export function ChatbotMessage({
       <Paper
         elevation={1}
         sx={{
-          p: 1.25,
+          p: isStatusMessage ? 1 : 1.25,
           maxWidth: { xs: '66%', sm: '72%', md: '78%' },
-          bgcolor: msg.sender === 'user' ? 'transparent' : 'white',
-          color: msg.sender === 'user' ? 'white' : 'text.primary',
-          borderRadius: 2.5,
-          backgroundImage: (theme) =>
-            msg.sender === 'user'
-              ? `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.95)}, ${alpha('#b31217', 0.92)})`
-              : 'none',
-          border: (_theme) =>
-            msg.sender === 'user'
+          bgcolor: isStatusMessage
+            ? alpha('#000', 0.02)
+            : msg.sender === 'user'
+              ? 'transparent'
+              : 'white',
+          color: isStatusMessage
+            ? 'text.secondary'
+            : msg.sender === 'user'
+              ? 'white'
+              : 'text.primary',
+          borderRadius: isStatusMessage ? 2 : 2.5,
+          border: (theme) => {
+            if (isStatusMessage) return `1px dashed ${alpha(theme.palette.primary.main, 0.25)}`;
+            return msg.sender === 'user'
               ? `1px solid rgba(255, 255, 255, 0.15)`
-              : `1px solid rgba(0, 0, 0, 0.06)`,
-          boxShadow: msg.sender === 'user'
-            ? `0 6px 14px rgba(179, 18, 23, 0.28)`
-            : `0 2px 10px rgba(0, 0, 0, 0.06)`,
+              : `1px solid rgba(0, 0, 0, 0.06)`;
+          },
+          backgroundImage: (theme) => {
+            if (isStatusMessage) return 'none';
+            return msg.sender === 'user'
+              ? `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.95)}, ${alpha('#b31217', 0.92)})`
+              : 'none';
+          },
+          boxShadow: isStatusMessage
+            ? 'none'
+            : msg.sender === 'user'
+              ? `0 6px 14px rgba(179, 18, 23, 0.28)`
+              : `0 2px 10px rgba(0, 0, 0, 0.06)`,
         }}
       >
-        <Typography
-          variant="body2"
-          component="div"
-          sx={{ whiteSpace: 'normal' }}
-          dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.text) }}
-        />
+        {isStatusMessage ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {renderStatusIcon()}
+            <Typography
+              variant="body2"
+              sx={{
+                whiteSpace: 'normal',
+                fontSize: '0.8rem',
+                color: msg.status === 'error' ? 'error.main' : 'text.secondary',
+              }}
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.text) }}
+            />
+          </Box>
+        ) : (
+          <Typography
+            variant="body2"
+            component="div"
+            sx={{ whiteSpace: 'normal' }}
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.text) }}
+          />
+        )}
         {msg.timestamp && (
           <Typography
             variant="caption"
@@ -68,7 +117,16 @@ export function ChatbotMessage({
           </Typography>
         )}
         {/* PHẦN BUTTON FEEDBACK CHỈ CHO BOT MESSAGE */}
-        {msg.sender === 'bot' && !!messages[index - 1] && messages[index - 1].sender === 'user' && (
+        {msg.sender === 'bot' &&
+          !isStatusMessage &&
+          (() => {
+            // Tìm tin nhắn user gần nhất trước tin nhắn bot này (bỏ qua status messages)
+            for (let i = index - 1; i >= 0; i--) {
+              if (messages[i].sender === 'user') return true;
+              if (messages[i].sender === 'bot' && messages[i].variant !== 'status') break;
+            }
+            return false;
+          })() && (
           <Box sx={{ mt: 1, display: 'flex', gap: 0.5 }}>
             <IconButton
               disabled={feedbackSending}

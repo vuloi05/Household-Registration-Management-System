@@ -93,6 +93,10 @@ ENABLE_RESPONSE_VALIDATION = os.getenv('ENABLE_RESPONSE_VALIDATION', 'true').low
 API_RETRY_MAX_ATTEMPTS = int(os.getenv('API_RETRY_MAX_ATTEMPTS', '3'))
 API_RETRY_DELAY_SECONDS = float(os.getenv('API_RETRY_DELAY_SECONDS', '1.0'))
 
+# Backend API config
+BACKEND_API_URL = os.getenv('BACKEND_API_URL', 'http://localhost:8080/api')
+BACKEND_API_TOKEN = os.getenv('BACKEND_API_TOKEN', '')  # Optional: JWT token if needed
+
 
 # Initialize AWS clients if configured
 s3_client = None
