@@ -1,5 +1,6 @@
 import os
 import json
+from pathlib import Path
 from dotenv import load_dotenv
 
 # Optional AWS SDK
@@ -13,7 +14,27 @@ except Exception:  # boto3 optional for local-only mode
 
 
 # Load environment variables
-load_dotenv()
+# Try to find .env file in multiple locations
+env_loaded = False
+env_paths = [
+    Path(__file__).parent.parent / '.env',  # ai-server/.env
+    Path.cwd() / '.env',  # Current working directory
+    Path.home() / '.env',  # Home directory (fallback)
+]
+
+for env_path in env_paths:
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path, override=True)
+        env_loaded = True
+        if os.getenv('DEBUG', 'False').lower() == 'true':
+            print(f"[Settings] Loaded .env from: {env_path}")
+        break
+
+if not env_loaded:
+    # Try default load_dotenv() as fallback
+    load_dotenv()
+    if os.getenv('DEBUG', 'False').lower() == 'true':
+        print("[Settings] Attempted to load .env using default method")
 
 # Basic server config
 PORT = int(os.getenv('PORT', 5000))
@@ -21,6 +42,8 @@ DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
 # AWS Config (optional)
 AWS_REGION = os.getenv('AWS_REGION')
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')  # AWS Access Key
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')  # AWS Secret Access Key
 AWS_S3_BUCKET = os.getenv('AWS_S3_BUCKET')  # where raw chat logs are stored
 AWS_DDB_TABLE = os.getenv('AWS_DDB_TABLE')  # DynamoDB table for structured conversations
 
@@ -70,19 +93,53 @@ ENABLE_RESPONSE_VALIDATION = os.getenv('ENABLE_RESPONSE_VALIDATION', 'true').low
 API_RETRY_MAX_ATTEMPTS = int(os.getenv('API_RETRY_MAX_ATTEMPTS', '3'))
 API_RETRY_DELAY_SECONDS = float(os.getenv('API_RETRY_DELAY_SECONDS', '1.0'))
 
+# Backend API config
+BACKEND_API_URL = os.getenv('BACKEND_API_URL', 'http://localhost:8080/api')
+BACKEND_API_TOKEN = os.getenv('BACKEND_API_TOKEN', '')  # Optional: JWT token if needed
+
 
 # Initialize AWS clients if configured
 s3_client = None
 ddb_client = None
 if boto3 and AWS_REGION and (AWS_S3_BUCKET or AWS_DDB_TABLE):
+    # Build credentials dict if provided
+    aws_credentials = {}
+    if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
+        aws_credentials = {
+            'aws_access_key_id': AWS_ACCESS_KEY_ID,
+            'aws_secret_access_key': AWS_SECRET_ACCESS_KEY
+        }
+    elif DEBUG:
+        print("[Settings] Warning: AWS_REGION and bucket/table configured but AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY missing")
+    
     try:
-        s3_client = boto3.client('s3', region_name=AWS_REGION)
-    except Exception:
+        s3_client = boto3.client('s3', region_name=AWS_REGION, **aws_credentials)
+        if DEBUG:
+            print(f"[Settings] S3 client initialized successfully (region: {AWS_REGION})")
+    except Exception as e:
         s3_client = None
+        if DEBUG:
+            print(f"[Settings] Failed to initialize S3 client: {e}")
     try:
-        ddb_client = boto3.client('dynamodb', region_name=AWS_REGION)
-    except Exception:
+        ddb_client = boto3.client('dynamodb', region_name=AWS_REGION, **aws_credentials)
+        if DEBUG:
+            print(f"[Settings] DynamoDB client initialized successfully (region: {AWS_REGION})")
+    except Exception as e:
         ddb_client = None
+        if DEBUG:
+            print(f"[Settings] Failed to initialize DynamoDB client: {e}")
+elif DEBUG and boto3:
+    # Debug: Show why AWS is not configured
+    missing = []
+    if not AWS_REGION:
+        missing.append("AWS_REGION")
+    if not AWS_S3_BUCKET and not AWS_DDB_TABLE:
+        missing.append("AWS_S3_BUCKET or AWS_DDB_TABLE")
+    if missing:
+        print(f"[Settings] AWS not configured - missing: {', '.join(missing)}")
+    if AWS_REGION and (AWS_S3_BUCKET or AWS_DDB_TABLE):
+        if not AWS_ACCESS_KEY_ID or not AWS_SECRET_ACCESS_KEY:
+            print("[Settings] AWS_REGION and bucket/table found but credentials missing from .env")
 
 
 def aws_summary() -> str:

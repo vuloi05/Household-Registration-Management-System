@@ -26,6 +26,12 @@ copy .env.example .env
 cp .env.example .env
 ```
 
+**QUAN TRỌNG:** Sau khi copy, bạn **PHẢI** chỉnh sửa file `.env` và thay thế các giá trị:
+- `AWS_ACCESS_KEY_ID`: Thay bằng Access Key ID thực tế của bạn
+- `AWS_SECRET_ACCESS_KEY`: Thay bằng Secret Access Key thực tế của bạn
+- `GOOGLE_GEMINI_API_KEY`: Thay bằng API key thực tế của bạn
+- Các giá trị AWS khác (region, bucket, table) nếu cần
+
 5. Chạy server:
 ```bash
 python main.py
@@ -42,6 +48,8 @@ DEBUG=True
 
 # Ghi dữ liệu chat lên AWS (tùy chọn, để trống nếu không dùng)
 AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your_aws_access_key_id
+AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
 AWS_S3_BUCKET=ai-training-data-bucket-kirito
 AWS_DDB_TABLE=ai_agent_conversations
 
@@ -78,6 +86,25 @@ API_RETRY_DELAY_SECONDS=1.0  # Delay giữa các lần retry (giây), mặc đ�
 - KHÔNG upload file `.env` chứa key thực lên repository/public.
 - Nếu chỉ muốn chat AI (không lưu log, không cần tự học), chỉ khai báo PORT, DEBUG, GOOGLE_GEMINI_API_KEY.
 - Key lấy tại Google AI Studio hoặc Google Cloud Console.
+
+### Kiểm tra cấu hình .env
+
+Nếu AWS không hoạt động, chạy script kiểm tra:
+```bash
+python check-env.py
+```
+
+Script này sẽ:
+- Kiểm tra xem file `.env` có tồn tại không
+- Kiểm tra xem các biến AWS có được load đúng không
+- Hiển thị các biến còn thiếu (nếu có)
+
+**Lưu ý khi copy file .env sang máy khác:**
+1. Đảm bảo file `.env` nằm trong thư mục `ai-server/` (cùng cấp với `main.py`)
+2. Kiểm tra encoding của file (phải là UTF-8, không có BOM)
+3. Đảm bảo không có khoảng trắng thừa hoặc ký tự đặc biệt
+4. Mỗi dòng phải có format: `KEY=value` (không có khoảng trắng quanh dấu `=`)
+5. Không cần đăng nhập AWS trên web, chỉ cần Access Key và Secret Key là đủ
 
 ### Hướng dẫn tạo file .env nhanh:
 ```bash
@@ -315,7 +342,7 @@ Knowledge base sẽ tự động học từ:
 }
 ```
 
-> Gợi ý: cấu hình AWS CLI bằng `aws configure` để lưu credentials ở `~/.aws/credentials`.
+> **Lưu ý:** Bạn có thể cấu hình AWS credentials trực tiếp trong file `.env` bằng cách thêm `AWS_ACCESS_KEY_ID` và `AWS_SECRET_ACCESS_KEY`. Không cần dùng `aws configure` nữa.
 
 ## Tích hợp với AI Models
 

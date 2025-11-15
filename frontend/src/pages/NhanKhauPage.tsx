@@ -1,5 +1,5 @@
 // src/pages/NhanKhauPage.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -55,10 +55,11 @@ import {
   type NhanKhau,
 } from '../api/nhanKhauApi';
 import { ghiNhanBienDong } from '../api/bienDongApi';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function NhanKhauPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
 
   // State mở/tắt modal chờ AppSheet
@@ -71,6 +72,7 @@ export default function NhanKhauPage() {
 
   // State cho tìm kiếm và lọc
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchInputValue, setSearchInputValue] = useState('');
   const [ageFilter, setAgeFilter] = useState('all');
   const [genderFilter, setGenderFilter] = useState('all');
   const [locationFilter, setLocationFilter] = useState('all');
@@ -87,17 +89,29 @@ export default function NhanKhauPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedNhanKhau, setSelectedNhanKhau] = useState<NhanKhau | null>(null);
   const [editingNhanKhau, setEditingNhanKhau] = useState<NhanKhauFormValues | null>(null);
+  const [pendingAgentSearch, setPendingAgentSearch] = useState<{ query: string; triggeredAt: number; statusId?: string } | null>(null);
+  const [pendingAgentDetailId, setPendingAgentDetailId] = useState<string | null>(null);
+  const [lastDataLoadedAt, setLastDataLoadedAt] = useState(0);
+  const searchQueryRef = useRef('');
+  const [isAgentTypingSearch, setIsAgentTypingSearch] = useState(false);
+  const agentTypingTimeoutRef = useRef<number | null>(null);
 
   // State for menu
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
+  const handleMenuClose = useCallback(() => {
+    setAnchorEl(null);
+  }, []);
+
+  const handleViewDetail = useCallback((nhanKhau: NhanKhau) => {
+    handleMenuClose();
+    setSelectedNhanKhau(nhanKhau);
+    setDetailOpen(true);
+  }, [handleMenuClose]);
+
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>, nhanKhau: NhanKhau) => {
     setAnchorEl(event.currentTarget);
     setSelectedNhanKhau(nhanKhau);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
   };
 
   // Load dữ liệu từ API
@@ -115,6 +129,7 @@ export default function NhanKhauPage() {
 
       setNhanKhauList(response.data);
       setTotalItems(response.totalItems);
+      setLastDataLoadedAt(Date.now());
     } catch (error) {
       console.error('Error loading nhan khau:', error);
       enqueueSnackbar('Không thể tải dữ liệu nhân khẩu. Vui lòng kiểm tra backend có đang chạy không.', { variant: 'error' });
@@ -128,39 +143,158 @@ export default function NhanKhauPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, rowsPerPage, searchQuery, ageFilter, genderFilter, locationFilter]);
 
+  useEffect(() => {
+    searchQueryRef.current = searchQuery;
+  }, [searchQuery]);
+
+  useEffect(() => {
+    return () => {
+      if (agentTypingTimeoutRef.current) {
+        window.clearTimeout(agentTypingTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const updateSearchValue = (
+    value: string,
+    options: { commit?: boolean; resetPage?: boolean } = {}
+  ) => {
+    const { commit = true, resetPage = true } = options;
+    setSearchInputValue(value);
+    if (commit) {
+      setSearchQuery(value);
+      if (resetPage) setPage(0);
+    }
+  };
+
+  const simulateSearchTyping = (text: string, statusId?: string) => {
+    if (!text) return;
+    if (agentTypingTimeoutRef.current) {
+      window.clearTimeout(agentTypingTimeoutRef.current);
+    }
+    setIsAgentTypingSearch(true);
+    updateSearchValue('', { commit: false, resetPage: false });
+    let index = 0;
+    const typeNext = () => {
+      const partial = text.slice(0, index + 1);
+      updateSearchValue(partial, { commit: false, resetPage: false });
+      index++;
+      if (index < text.length) {
+        agentTypingTimeoutRef.current = window.setTimeout(typeNext, 65);
+      } else {
+        setIsAgentTypingSearch(false);
+        updateSearchValue(text, { commit: true, resetPage: true });
+        setPendingAgentSearch({ query: text, triggeredAt: Date.now(), statusId });
+      }
+    };
+    typeNext();
+  };
+
   // Nhận QR từ AppSheet -> chỉ lấy số CCCD (trường đầu tiên trước ký tự '|') để tìm kiếm
   const handleReceiveQRCode = (qr: string) => {
     const parts = (qr || '').split('|').map(p => p.trim());
     const cccd = parts[0] || qr;
-    setSearchQuery(cccd);
+    updateSearchValue(cccd);
     enqueueSnackbar('Đã điền CCCD từ QR vào ô tìm kiếm', { variant: 'success' });
   };
 
   // Lắng nghe agent action sau khi điều hướng
   useEffect(() => {
     const s = location.state as any;
-    if (s && s.agentAction) {
-      const act = s.agentAction;
-      // Search
-      if (act.type === 'search' && act.target === 'person_list' && act.params?.q) {
-        setSearchQuery(act.params.q);
-        enqueueSnackbar('Agent: Đang tìm kiếm nhân khẩu: ' + act.params.q, { variant: 'info' });
-      }
-      // Open detail modal nếu có personId (tìm trong list)
-      if (act.type === 'navigate' && act.target === 'person_detail' && act.params?.personId) {
-        const nk = nhanKhauList.find(nk => nk.cmndCccd === act.params.personId);
-        if (nk) {
-          setSelectedNhanKhau(nk);
-          setDetailOpen(true);
-          enqueueSnackbar('Agent: Đang mở chi tiết nhân khẩu: ' + nk.hoTen, { variant: 'info' });
+    if (!s || !s.agentAction) return;
+    const act = s.agentAction;
+    if (act.type === 'search' && act.target === 'person_list' && act.params?.q) {
+      const query = String(act.params.q).trim();
+      if (query) {
+        let finalQuery = query;
+        const currentQuery = searchQueryRef.current.trim();
+        const addressKeywords = ['biệt thự', 'biet thu', 'thự', 'phố', 'đường', 'duong', 'xã', 'phường', 'quận', 'huyện', 'tỉnh', 'thành phố', 'the vesta', 'ấp', 'thôn', 'ngõ', 'ngõ', 'ngách'];
+        const isAddress = addressKeywords.some(kw => query.toLowerCase().includes(kw));
+        if (isAddress && currentQuery && !query.toLowerCase().includes(currentQuery.toLowerCase())) {
+          finalQuery = `${currentQuery} ${query}`.trim();
         }
-        else {
-          enqueueSnackbar('Agent: Không tìm thấy nhân khẩu trong danh sách hiện tại', { variant: 'warning' });
-        }
+        setPendingAgentSearch(null);
+        enqueueSnackbar('Agent: Đang tìm kiếm nhân khẩu: ' + finalQuery, { variant: 'info' });
+        simulateSearchTyping(finalQuery, act.statusId);
+        setPendingAgentDetailId(null);
       }
     }
-    // eslint-disable-next-line
-  }, [location.state, nhanKhauList]);
+    if (act.type === 'search' && act.target === 'person_list' && !act.params?.q) {
+      setPendingAgentSearch(null);
+    }
+    if (act.type === 'navigate' && act.target === 'person_detail' && act.params?.personId) {
+      setPendingAgentDetailId(String(act.params.personId));
+    }
+    navigate(location.pathname, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
+
+  useEffect(() => {
+    if (!pendingAgentSearch) return;
+    if (loading) return;
+    if (lastDataLoadedAt < pendingAgentSearch.triggeredAt) return;
+    const { query, statusId } = pendingAgentSearch;
+
+    const notifySearchStatus = (text?: string) => {
+      if (!statusId) return;
+      window.dispatchEvent(
+        new CustomEvent('agent-action-status', {
+          detail: {
+            statusId,
+            text: text || `🔎 Đã tìm kiếm nhân khẩu: ${query}`,
+            status: 'success',
+          },
+        })
+      );
+    };
+
+    if (nhanKhauList.length === 0) {
+      notifySearchStatus();
+      window.dispatchEvent(new CustomEvent('agent-bot-message', {
+        detail: `Không tìm thấy nhân khẩu phù hợp với từ khóa "${query}". Vui lòng cung cấp CCCD, mã hộ khẩu hoặc địa chỉ cụ thể hơn.`,
+      }));
+      setPendingAgentSearch(null);
+      return;
+    }
+    if (nhanKhauList.length === 1) {
+      notifySearchStatus();
+      const only = nhanKhauList[0];
+      handleViewDetail(only);
+      window.dispatchEvent(new CustomEvent('agent-bot-message', {
+        detail: `Hiện tại đang có 1 người tên là ${query}. Đang mở chi tiết hồ sơ cho bạn.`,
+      }));
+      setPendingAgentSearch(null);
+      setPendingAgentDetailId(null);
+      return;
+    }
+    const normalized = query.toLowerCase();
+    const sameNameCount = nhanKhauList.filter(nk => (nk.hoTen || '').toLowerCase() === normalized).length;
+    const totalDisplay = sameNameCount > 0 ? sameNameCount : nhanKhauList.length;
+    const detailMessage = totalDisplay >= 2
+      ? `Hiện tại đang có ${totalDisplay} người tên là ${query}. Bạn muốn tìm người nào? Vui lòng cung cấp thêm CCCD, mã hộ khẩu hoặc địa chỉ.`
+      : `Hiện tại đang có ${totalDisplay} người tên là ${query}.`;
+    notifySearchStatus();
+    window.dispatchEvent(new CustomEvent('agent-bot-message', { detail: detailMessage }));
+    setPendingAgentSearch(null);
+  }, [pendingAgentSearch, loading, nhanKhauList, handleViewDetail, lastDataLoadedAt]);
+
+  useEffect(() => {
+    if (!pendingAgentDetailId || loading) return;
+    const nk = nhanKhauList.find(
+      item =>
+        item.cmndCccd === pendingAgentDetailId ||
+        String(item.id) === pendingAgentDetailId
+    );
+    if (nk) {
+      setSelectedNhanKhau(nk);
+      setDetailOpen(true);
+      enqueueSnackbar('Agent: Đang mở chi tiết nhân khẩu: ' + nk.hoTen, { variant: 'info' });
+      setPendingAgentDetailId(null);
+    } else if (!loading) {
+      enqueueSnackbar('Agent: Không tìm thấy nhân khẩu trong danh sách hiện tại', { variant: 'warning' });
+      setPendingAgentDetailId(null);
+    }
+  }, [pendingAgentDetailId, nhanKhauList, loading, enqueueSnackbar]);
 
   // Tính tuổi từ ngày sinh
   const calculateAge = (birthDate: string): number => {
@@ -340,13 +474,6 @@ export default function NhanKhauPage() {
     setFormOpen(true);
   };
 
-  // Xử lý xem chi tiết
-  const handleViewDetail = (nhanKhau: NhanKhau) => {
-    handleMenuClose();
-    setSelectedNhanKhau(nhanKhau);
-    setDetailOpen(true);
-  };
-
   // Xử lý mở dialog xóa
   const handleOpenDeleteDialog = (nhanKhau: NhanKhau) => {
     handleMenuClose();
@@ -362,7 +489,7 @@ export default function NhanKhauPage() {
 
   // Xử lý xóa bộ lọc
   const handleClearFilters = () => {
-    setSearchQuery('');
+    updateSearchValue('');
     setAgeFilter('all');
     setGenderFilter('all');
     setLocationFilter('all');
@@ -400,8 +527,7 @@ export default function NhanKhauPage() {
 
   // Reset page khi filter thay đổi
   const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
-    setPage(0);
+    updateSearchValue(value);
   };
 
   const handleAgeFilterChange = (value: string) => {
@@ -457,8 +583,8 @@ export default function NhanKhauPage() {
       <Box sx={{ mb: 3, width: '100%' }}>
         <TextField
           fullWidth
-          placeholder="Tìm kiếm theo họ tên, CCCD, nghề nghiệp, mã hộ khẩu, ngày sinh..."
-          value={searchQuery}
+          placeholder="Tìm kiếm theo họ tên, CCCD, địa chỉ hộ khẩu, nghề nghiệp, mã hộ khẩu, ngày sinh..."
+          value={searchInputValue}
           onChange={(e) => handleSearchChange(e.target.value)}
           InputProps={{
             startAdornment: (
@@ -469,7 +595,7 @@ export default function NhanKhauPage() {
             endAdornment: (
               <InputAdornment position="end">
                 <Stack direction="row" spacing={0.5}>
-                  {searchQuery && (
+                  {searchInputValue && (
                     <IconButton size="small" onClick={() => handleSearchChange('')}>
                       <ClearIcon />
                     </IconButton>
@@ -486,7 +612,12 @@ export default function NhanKhauPage() {
               </InputAdornment>
             ),
           }}
-          helperText="Bạn có thể nhập cả Họ tên và CCCD để tìm kiếm : Nguyễn Mạnh Tí 023456789"
+          inputProps={{ readOnly: isAgentTypingSearch }}
+          helperText={
+            isAgentTypingSearch
+              ? 'Trợ lý ảo đang nhập từ khóa giúp bạn...'
+              : 'Bạn có thể nhập Họ tên, CCCD, hoặc địa chỉ hộ khẩu để tìm kiếm. Ví dụ: Nguyễn Mạnh Tí 023456789 hoặc Trần Thị Thảo Biệt thự The Vesta'
+          }
           sx={{
             '& .MuiOutlinedInput-root': {
               borderRadius: 2,
@@ -763,6 +894,7 @@ export default function NhanKhauPage() {
           setSelectedNhanKhau(null);
         }}
         nhanKhau={selectedNhanKhau}
+        loading={loading}
       />
 
       {/* Dialog xác nhận xóa */}

@@ -10,18 +10,29 @@ import json
 load_dotenv()
 
 AWS_REGION = os.getenv('AWS_REGION')
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
 AWS_S3_BUCKET = os.getenv('AWS_S3_BUCKET')
 AWS_DDB_TABLE = os.getenv('AWS_DDB_TABLE')
 
 print(f"AWS Region: {AWS_REGION}")
 print(f"S3 Bucket: {AWS_S3_BUCKET}")
 print(f"DynamoDB Table: {AWS_DDB_TABLE}")
+print(f"AWS Credentials: {'Configured' if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY else 'Using default chain'}")
 print("-" * 50)
+
+# Build credentials dict if provided
+aws_credentials = {}
+if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
+    aws_credentials = {
+        'aws_access_key_id': AWS_ACCESS_KEY_ID,
+        'aws_secret_access_key': AWS_SECRET_ACCESS_KEY
+    }
 
 # Test S3
 if AWS_S3_BUCKET:
     try:
-        s3_client = boto3.client('s3', region_name=AWS_REGION)
+        s3_client = boto3.client('s3', region_name=AWS_REGION, **aws_credentials)
         # Test list bucket (read permission)
         s3_client.head_bucket(Bucket=AWS_S3_BUCKET)
         print("[OK] S3 Connection: OK")
@@ -49,7 +60,7 @@ if AWS_S3_BUCKET:
 # Test DynamoDB
 if AWS_DDB_TABLE:
     try:
-        ddb_client = boto3.client('dynamodb', region_name=AWS_REGION)
+        ddb_client = boto3.client('dynamodb', region_name=AWS_REGION, **aws_credentials)
         # Test describe table (read permission)
         ddb_client.describe_table(TableName=AWS_DDB_TABLE)
         print("[OK] DynamoDB Connection: OK")

@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Image, TouchableOpacity, Text, Alert, ScrollView } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../context/AuthContext';
-import { SettingsStackParamList } from '../navigation/SettingsStackNavigator';
 
 interface SettingsItemProps {
   title: string;
@@ -36,11 +33,8 @@ function SettingsItem({ title, icon, onPress, showIcon = true, isBold = false, r
   );
 }
 
-type SettingsScreenNavigationProp = StackNavigationProp<SettingsStackParamList, 'SettingsMain'>;
-
 export default function SettingsScreen() {
   const { logout } = useAuth();
-  const navigation = useNavigation<SettingsScreenNavigationProp>();
   const [headerHeight, setHeaderHeight] = useState(0);
 
   const handleLogout = async () => {
@@ -54,10 +48,6 @@ export default function SettingsScreen() {
 
   const handleAccountPress = () => {
     // TODO: Navigate to account screen
-  };
-
-  const handleShareHistoryPress = () => {
-    navigation.navigate('BankAccount');
   };
 
   const handleLoginSettingsPress = () => {
@@ -101,13 +91,6 @@ export default function SettingsScreen() {
             isBold={true}
             reducedPadding={true}
           />
-          
-          <SettingsItem 
-            title="Tài khoản ngân hàng" 
-            icon="bank"
-            onPress={handleShareHistoryPress}
-          />
-          <View style={styles.separator} />
           
           <SettingsItem 
             title="Cài đặt đăng nhập" 

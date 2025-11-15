@@ -47,9 +47,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Cho phép API đăng nhập
                         .requestMatchers("/api/auth/**").permitAll()
-                        
-                        // Cho phép webhook từ VietQR (không cần authentication)
-                        .requestMatchers("/api/payment/vietqr/webhook").permitAll()
+
+                        // Cho phép webhook từ PayOS (không cần authentication)
+                        .requestMatchers("/api/payment/webhook").permitAll()
 
                         // Cho phép các request OPTIONS (preflight) của CORS
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()

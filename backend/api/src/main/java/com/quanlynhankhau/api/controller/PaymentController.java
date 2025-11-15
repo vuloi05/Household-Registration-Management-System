@@ -1,17 +1,24 @@
 package com.quanlynhankhau.api.controller;
 
 import com.quanlynhankhau.api.dto.*;
+import com.quanlynhankhau.api.entity.NhanKhau;
+import com.quanlynhankhau.api.entity.User;
+import com.quanlynhankhau.api.repository.NhanKhauRepository;
+import com.quanlynhankhau.api.repository.UserRepository;
 import com.quanlynhankhau.api.service.PaymentService;
+import com.quanlynhankhau.api.service.PayOSService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/payment")
@@ -21,61 +28,14 @@ public class PaymentController {
     @Autowired
     private PaymentService paymentService;
 
-    /**
-     * Tạo payment request
-     */
-    @PostMapping("/vietqr/create")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT', 'RESIDENT')")
-    public ResponseEntity<?> createPaymentRequest(
-            @RequestBody PaymentRequestDTO request,
-            Authentication authentication) {
-        try {
-            // Lấy hoKhauId từ request hoặc từ user context
-            // Nếu request có hoKhauId thì dùng, nếu không thì để null
-            // (Có thể implement logic lấy từ user context sau)
-            Long hoKhauId = request.getHoKhauId();
-            
-            PaymentResponseDTO response = paymentService.createPaymentRequest(request, hoKhauId);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-        }
-    }
+    @Autowired
+    private PayOSService payOSService;
 
-    /**
-     * Kiểm tra trạng thái payment
-     */
-    @GetMapping("/vietqr/status/{paymentId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT', 'RESIDENT')")
-    public ResponseEntity<?> checkPaymentStatus(@PathVariable String paymentId) {
-        try {
-            PaymentStatusDTO status = paymentService.getPaymentStatus(paymentId);
-            return ResponseEntity.ok(status);
-        } catch (Exception e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-        }
-    }
+    @Autowired
+    private UserRepository userRepository;
 
-    /**
-     * Webhook nhận thông báo từ Casso/payOS hoặc service khác
-     * Lưu ý: VietQR.io không có webhook, cần tích hợp với Casso/payOS
-     * Endpoint này không cần authentication vì được gọi từ service bên thứ 3
-     */
-    @PostMapping("/vietqr/webhook")
-    public ResponseEntity<?> handleWebhook(@RequestBody VietQRWebhookDTO webhook) {
-        try {
-            paymentService.handlePaymentWebhook(webhook);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            // Log lỗi nhưng vẫn trả về 200 để service không retry
-            System.err.println("Webhook error: " + e.getMessage());
-            return ResponseEntity.ok().build();
-        }
-    }
+    @Autowired
+    private NhanKhauRepository nhanKhauRepository;
 
     /**
      * Lấy danh sách notifications
@@ -117,6 +77,85 @@ public class PaymentController {
         Map<String, Long> response = new HashMap<>();
         response.put("count", count);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Tạo payment link từ PayOS
+     */
+    @PostMapping("/create")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT', 'RESIDENT')")
+    public ResponseEntity<PayOSPaymentResponseDTO> createPayment(@RequestBody PayOSCreatePaymentRequestDTO request) {
+        // Lấy user hiện tại
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        
+        // Log để debug
+        System.out.println("🔐 Payment create request - Authentication: " + (authentication != null ? "Authenticated" : "Not authenticated"));
+        if (authentication != null) {
+            System.out.println("   Principal: " + authentication.getPrincipal().getClass().getName());
+            System.out.println("   Authorities: " + authentication.getAuthorities());
+        }
+        
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String username = userDetails.getUsername();
+        System.out.println("   Username: " + username);
+
+        // Tìm user
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        if (!userOpt.isPresent()) {
+            throw new RuntimeException("Không tìm thấy user");
+        }
+
+        User user = userOpt.get();
+        Long hoKhauId = null;
+
+        // Nếu là RESIDENT, lấy hoKhauId từ NhanKhau
+        if ("ROLE_RESIDENT".equals(user.getRole())) {
+            Optional<NhanKhau> nhanKhauOpt = nhanKhauRepository.findByCmndCccd(username);
+            if (nhanKhauOpt.isPresent() && nhanKhauOpt.get().getHoKhau() != null) {
+                hoKhauId = nhanKhauOpt.get().getHoKhau().getId();
+            }
+        }
+
+        PayOSPaymentResponseDTO response = payOSService.createPaymentLink(request, hoKhauId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Webhook từ PayOS
+     */
+    @PostMapping("/webhook")
+    public ResponseEntity<?> handleWebhook(
+            @RequestBody PayOSWebhookDTO webhookDTO,
+            @RequestHeader(value = "x-payos-signature", required = false) String signature,
+            @RequestHeader(value = "X-PayOS-Signature", required = false) String signatureAlt) {
+        // PayOS có thể gửi signature với tên header khác nhau, kiểm tra cả hai
+        String finalSignature = signature != null ? signature : signatureAlt;
+        try {
+            // Log webhook received
+            System.out.println("📥 PayOS Webhook received: " + webhookDTO.getCode() + " - " + webhookDTO.getDesc());
+            if (webhookDTO.getData() != null) {
+                System.out.println("   Order Code: " + webhookDTO.getData().getOrderCode());
+                System.out.println("   Amount: " + webhookDTO.getData().getAmount());
+            }
+            
+            payOSService.handleWebhook(webhookDTO, finalSignature);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            System.err.println("❌ Error processing webhook: " + e.getMessage());
+            e.printStackTrace();
+            // Trả về 200 để PayOS không retry (hoặc 500 nếu muốn PayOS retry)
+            return ResponseEntity.status(200).body("Error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Lấy trạng thái payment
+     */
+    @GetMapping("/status/{paymentId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT', 'RESIDENT')")
+    public ResponseEntity<PaymentStatusDTO> getPaymentStatus(@PathVariable String paymentId) {
+        PaymentStatusDTO status = paymentService.getPaymentStatus(paymentId);
+        return ResponseEntity.ok(status);
     }
 }
 

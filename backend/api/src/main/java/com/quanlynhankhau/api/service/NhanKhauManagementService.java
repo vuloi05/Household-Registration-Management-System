@@ -94,8 +94,8 @@ public class NhanKhauManagementService {
     }
 
     /**
-     * Lọc theo tìm kiếm (tên, CCCD, nghề nghiệp, mã hộ khẩu, ngày sinh).
-     * Hỗ trợ tìm kiếm đa trường: "Nguyễn Văn A 023456789 HK001"
+     * Lọc theo tìm kiếm (tên, CCCD, nghề nghiệp, mã hộ khẩu, ngày sinh, địa chỉ hộ khẩu).
+     * Hỗ trợ tìm kiếm đa trường: "Nguyễn Văn A 023456789 HK001 Biệt thự The Vesta"
      */
     private boolean applySearchFilter(NhanKhau nhanKhau, String search) {
         if (search == null || search.isEmpty()) {
@@ -110,6 +110,8 @@ public class NhanKhauManagementService {
         String ngheNghiepLower = nhanKhau.getNgheNghiep() != null ? nhanKhau.getNgheNghiep().toLowerCase() : "";
         String maHoKhauLower = nhanKhau.getHoKhau() != null && nhanKhau.getHoKhau().getMaHoKhau() != null 
             ? nhanKhau.getHoKhau().getMaHoKhau().toLowerCase() : "";
+        String diaChiHoKhauLower = nhanKhau.getHoKhau() != null && nhanKhau.getHoKhau().getDiaChi() != null 
+            ? nhanKhau.getHoKhau().getDiaChi().toLowerCase() : "";
         String ngaySinhStr = nhanKhau.getNgaySinh() != null ? nhanKhau.getNgaySinh().toString() : "";
         
         // Tìm kiếm đơn giản: kiểm tra trong tất cả các trường
@@ -117,6 +119,7 @@ public class NhanKhauManagementService {
             cmndCccdLower.contains(searchLower) ||
             ngheNghiepLower.contains(searchLower) ||
             maHoKhauLower.contains(searchLower) ||
+            diaChiHoKhauLower.contains(searchLower) ||
             ngaySinhStr.contains(searchLower)) {
             return true;
         }
@@ -131,6 +134,7 @@ public class NhanKhauManagementService {
                     cmndCccdLower.contains(word) ||
                     ngheNghiepLower.contains(word) ||
                     maHoKhauLower.contains(word) ||
+                    diaChiHoKhauLower.contains(word) ||
                     ngaySinhStr.contains(word)) {
                     matchCount++;
                 }
@@ -185,17 +189,27 @@ public class NhanKhauManagementService {
     }
 
     /**
-     * Lọc theo quê quán.
+     * Lọc theo quê quán hoặc địa chỉ hộ khẩu.
      */
     private boolean applyLocationFilter(NhanKhau nhanKhau, String locationFilter) {
         if (locationFilter == null || locationFilter.isEmpty() || locationFilter.equals("all")) {
             return true;
         }
 
+        String locationFilterLower = locationFilter.toLowerCase();
+
         // Lọc theo quê quán của nhân khẩu
         if (nhanKhau.getQueQuan() != null) {
-            return nhanKhau.getQueQuan().toLowerCase()
-                    .contains(locationFilter.toLowerCase());
+            if (nhanKhau.getQueQuan().toLowerCase().contains(locationFilterLower)) {
+                return true;
+            }
+        }
+
+        // Lọc theo địa chỉ hộ khẩu
+        if (nhanKhau.getHoKhau() != null && nhanKhau.getHoKhau().getDiaChi() != null) {
+            if (nhanKhau.getHoKhau().getDiaChi().toLowerCase().contains(locationFilterLower)) {
+                return true;
+            }
         }
 
         return false;
