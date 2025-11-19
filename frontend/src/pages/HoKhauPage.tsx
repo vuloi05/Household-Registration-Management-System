@@ -57,11 +57,22 @@ export default function HoKhauPage() {
     if (searchTerm.trim() === '') {
       setFilteredHoKhauList(hoKhauList);
     } else {
-      const filtered = hoKhauList.filter(hoKhau => 
-        hoKhau.maHoKhau.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        hoKhau.chuHo?.hoTen?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        hoKhau.diaChi.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      // Tách searchTerm thành các từ khóa
+      const keywords = searchTerm.toLowerCase().trim().split(/\s+/).filter(k => k.length > 0);
+      
+      const filtered = hoKhauList.filter(hoKhau => {
+        // Tạo một chuỗi kết hợp tất cả các trường để tìm kiếm
+        const searchableText = [
+          hoKhau.maHoKhau,
+          hoKhau.chuHo?.hoTen || '',
+          hoKhau.diaChi
+        ].join(' ').toLowerCase();
+        
+        // Kiểm tra xem tất cả các từ khóa có xuất hiện trong chuỗi kết hợp không
+        // Điều này cho phép tìm kiếm kết hợp như "Bùi Tiến Dũng HK055" hoặc "Bùi Tiến Dũng Mộ Lao"
+        return keywords.every(keyword => searchableText.includes(keyword));
+      });
+      
       setFilteredHoKhauList(filtered);
     }
     // reset về trang đầu khi filter thay đổi để tránh vượt quá tổng số trang
@@ -76,6 +87,22 @@ export default function HoKhauPage() {
       if (act.type === 'search' && act.target === 'household_list' && act.params?.q) {
         setSearchTerm(act.params.q);
         enqueueSnackbar('Agent: Đang tìm kiếm hộ khẩu: ' + act.params.q, { variant: 'info' });
+        // Dispatch event để cập nhật status message ngay khi filter hoàn thành
+        // Vì filter là client-side nên hoàn thành ngay lập tức
+        if (act.statusId) {
+          // Sử dụng setTimeout nhỏ để đảm bảo filter đã hoàn thành
+          setTimeout(() => {
+            window.dispatchEvent(
+              new CustomEvent('agent-action-status', {
+                detail: {
+                  statusId: act.statusId,
+                  text: `🔎 Đã tìm kiếm hộ khẩu: ${act.params.q}`,
+                  status: 'success',
+                },
+              })
+            );
+          }, 100);
+        }
       }
     }
     // eslint-disable-next-line
@@ -148,7 +175,7 @@ export default function HoKhauPage() {
         <Box sx={{ mb: 3, width: '100%' }}>
           <TextField
             fullWidth
-            placeholder="Tìm kiếm theo mã hộ khẩu, tên chủ hộ hoặc địa chỉ..."
+            placeholder="Tìm kiếm theo mã hộ khẩu, tên chủ hộ hoặc địa chỉ (ví dụ: Bùi Tiến Dũng HK055 hoặc Bùi Tiến Dũng Mộ Lao)..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{

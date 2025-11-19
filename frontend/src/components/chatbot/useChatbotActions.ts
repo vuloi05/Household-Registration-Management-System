@@ -178,7 +178,8 @@ export function useChatbotActions({ setMessages }: UseChatbotActionsParams) {
       if (act.type === 'search' && act.target === 'household_list' && act.params?.q) {
         const statusId = pushStatusMessage('Đang tìm kiếm hộ khẩu, vui lòng chờ...', 'pending');
         act.statusId = statusId;
-        scheduleStatusAutoComplete(statusId, `🔎 Đã tìm kiếm hộ khẩu: ${act.params.q}`, 15000);
+        // Giảm delay xuống 500ms vì filter là client-side và hoàn thành ngay
+        scheduleStatusAutoComplete(statusId, `🔎 Đã tìm kiếm hộ khẩu: ${act.params.q}`, 500);
         navigate('/ho-khau', { state: { agentAction: act } });
         enqueueSnackbar('Agent: Đang tìm kiếm hộ khẩu: ' + act.params.q, { variant: 'info' });
       }
