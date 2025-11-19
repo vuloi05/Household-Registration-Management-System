@@ -9,7 +9,7 @@ import PaymentsIcon from '@mui/icons-material/Payments';
 import TransferWithinAStationIcon from '@mui/icons-material/TransferWithinAStation';
 import HistoryIcon from '@mui/icons-material/History';
 import { useAuth } from '../../context/AuthContext'; // Import hook useAuth
-import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 
 /**
  * Mảng cấu hình cho các mục menu trong Sidebar.
@@ -20,7 +20,7 @@ import { Link as RouterLink, useLocation } from 'react-router-dom';
  * - roles: Mảng các vai trò được phép nhìn thấy mục menu này.
  */
 const menuItems = [
-  { text: 'Bảng điều khiển', icon: <DashboardIcon />, path: '/', roles: ['ROLE_ADMIN', 'ROLE_ACCOUNTANT'] },
+  { text: 'Bảng điều khiển', icon: <DashboardIcon />, path: '/dashboard', roles: ['ROLE_ADMIN', 'ROLE_ACCOUNTANT'] },
   { text: 'Quản lý Hộ khẩu', icon: <PeopleIcon />, path: '/ho-khau', roles: ['ROLE_ADMIN'] },
   { text: 'Quản lý Nhân khẩu', icon: <PersonIcon />, path: '/nhan-khau', roles: ['ROLE_ADMIN'] },
   { text: 'Lịch sử Biến động', icon: <HistoryIcon />, path: '/lich-su-bien-dong', roles: ['ROLE_ADMIN'] },
@@ -32,7 +32,13 @@ const drawerWidth = 240;
 
 export default function Sidebar() {
   const location = useLocation(); // Hook để lấy URL hiện tại, giúp highlight mục menu đang active.
+  const navigate = useNavigate();
   const { user, logout } = useAuth(); // Lấy thông tin user và logout
+
+  const handleLogout = () => {
+    logout();
+    navigate('/', { replace: true });
+  };
 
   /**
    * Lọc danh sách menuItems ban đầu để chỉ giữ lại những mục mà
@@ -90,7 +96,7 @@ export default function Sidebar() {
           fullWidth
           variant="outlined"
           startIcon={<LogoutIcon />}
-          onClick={logout}
+          onClick={handleLogout}
         >
           Đăng xuất
         </Button>

@@ -27,7 +27,7 @@ export default function LoginPage() {
     setLoginError(null);
     try {
       await loginWithRefresh(data.username!, data.password!);
-      navigate('/');
+      navigate('/dashboard');
     } catch (error) {
       console.error("Login failed:", error);
       setLoginError("Tên đăng nhập hoặc mật khẩu không chính xác.");
