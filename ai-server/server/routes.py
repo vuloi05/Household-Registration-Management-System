@@ -4,7 +4,7 @@ from flask import jsonify, request, Response, stream_with_context
 from .app import app
 from . import settings
 from .kb import find_best_local_answer, trigger_reload, get_kb_status
-from .logic import process_message, get_logic_metrics
+from .logic import process_message, process_message_stream, get_logic_metrics
 from .actions import infer_actions
 from .utils import get_timestamp, persist_chat_event
 from .memory import get_or_create_session, add_message, get_conversation_history, clear_session
@@ -60,46 +60,55 @@ def chat():
         # Thử suy luận hành động trước để tránh gọi AI không cần thiết
         actions = infer_actions(user_message)
 
-        if actions:
-            # Bỏ qua tạo câu trả lời AI, chỉ trả về action
+        # Nếu có actions hoặc không phải stream mode, xử lý bình thường
+        if actions or not stream_mode:
+            if actions:
+                # Bỏ qua tạo câu trả lời AI, chỉ trả về action
+                response_text = ""
+                source = 'agent/actions'
+                from_cache = False
+                validation = {'valid': True, 'score': 1.0}
+            else:
+                # Process message với các tính năng nâng cao (AI)
+                result = process_message(
+                    user_message,
+                    context,
+                    bypass_kb=False,
+                    session_id=session_id,
+                    history=history,
+                    system_info=system_info
+                )
+                response_text = result['response']
+                source = result.get('source', 'unknown')
+                from_cache = result.get('from_cache', False)
+                validation = result.get('validation', {})
+        else:
+            # Streaming mode - sẽ xử lý trong generate_streamed_response
             response_text = ""
-            source = 'agent/actions'
+            source = 'unknown'
             from_cache = False
             validation = {'valid': True, 'score': 1.0}
-        else:
-            # Process message với các tính năng nâng cao (AI)
-            result = process_message(
-                user_message,
-                context,
-                bypass_kb=False,
-                session_id=session_id,
-                history=history,
-                system_info=system_info
-            )
-            response_text = result['response']
-            source = result.get('source', 'unknown')
-            from_cache = result.get('from_cache', False)
-            validation = result.get('validation', {})
 
-        # Lưu vào conversation memory
-        if settings.ENABLE_CONVERSATION_MEMORY and session_id:
-            add_message(session_id, 'user', user_message)
-            if response_text:
-                add_message(session_id, 'assistant', response_text)
+        # Non-streaming mode: lưu vào memory và persist ngay
+        if not stream_mode:
+            # Lưu vào conversation memory
+            if settings.ENABLE_CONVERSATION_MEMORY and session_id:
+                add_message(session_id, 'user', user_message)
+                if response_text:
+                    add_message(session_id, 'assistant', response_text)
 
-        # Persist chat event
-        persist_chat_event({
-            "timestamp": get_timestamp(),
-            "message": user_message,
-            "response": response_text,
-            "context": context,
-            "source": source,
-            "session_id": session_id,
-            "from_cache": from_cache,
-            "validation_score": validation.get('score', 1.0)
-        })
+            # Persist chat event
+            persist_chat_event({
+                "timestamp": get_timestamp(),
+                "message": user_message,
+                "response": response_text,
+                "context": context,
+                "source": source,
+                "session_id": session_id,
+                "from_cache": from_cache,
+                "validation_score": validation.get('score', 1.0)
+            })
 
-        if not stream_mode or len(response_text) < 200:
             return jsonify({
                 "success": True,
                 "response": response_text,
@@ -111,20 +120,70 @@ def chat():
                 "validation": validation
             })
 
-        def generate_streamed_response(full_response: str):
-            import time
-            chunk_len = 24
-            for i in range(0, len(full_response), chunk_len):
-                chunk = full_response[i:i+chunk_len]
-                yield f"data: {chunk}\n\n"
-                time.sleep(0.04)
-            yield f"data: [END] \n\n"
-            if actions:
-                yield f"agent_actions: {json.dumps(actions, ensure_ascii=False)}\n\n"
-                actions_data = {"actions": actions, "session_id": session_id, "source": source}
-                yield f"data: {json.dumps(actions_data, ensure_ascii=False)}\n\n"
+        # Streaming mode: stream trực tiếp từ AI models
+        def generate_streamed_response():
+            full_response = ""
+            stream_source = 'unknown'
+            stream_from_cache = False
+            
+            try:
+                # Nếu có actions, không cần stream
+                if actions:
+                    yield f"data: [END] \n\n"
+                    yield f"agent_actions: {json.dumps(actions, ensure_ascii=False)}\n\n"
+                    actions_data = {"actions": actions, "session_id": session_id, "source": 'agent/actions'}
+                    yield f"data: {json.dumps(actions_data, ensure_ascii=False)}\n\n"
+                    return
+                
+                # Stream từ AI models
+                for chunk in process_message_stream(
+                    user_message,
+                    context,
+                    bypass_kb=False,
+                    session_id=session_id,
+                    history=history,
+                    system_info=system_info
+                ):
+                    full_response += chunk
+                    yield f"data: {chunk}\n\n"
+                
+                # Xác định source từ full response (đơn giản hóa)
+                # Trong thực tế, bạn có thể thêm metadata vào stream
+                stream_source = 'ollama' if settings.OLLAMA_HOST and settings.OLLAMA_MODEL else 'gemini' if settings.GOOGLE_GEMINI_API_KEY else 'fallback'
+                
+                # Lưu vào conversation memory sau khi stream xong
+                if settings.ENABLE_CONVERSATION_MEMORY and session_id and full_response:
+                    add_message(session_id, 'user', user_message)
+                    add_message(session_id, 'assistant', full_response)
+                
+                # Persist chat event sau khi stream xong
+                if full_response:
+                    persist_chat_event({
+                        "timestamp": get_timestamp(),
+                        "message": user_message,
+                        "response": full_response,
+                        "context": context,
+                        "source": stream_source,
+                        "session_id": session_id,
+                        "from_cache": stream_from_cache,
+                        "validation_score": 1.0
+                    })
+                
+                yield f"data: [END] \n\n"
+                
+                # Send actions nếu có (sẽ không có trong trường hợp này vì đã check ở trên)
+                if actions:
+                    yield f"agent_actions: {json.dumps(actions, ensure_ascii=False)}\n\n"
+                    actions_data = {"actions": actions, "session_id": session_id, "source": stream_source}
+                    yield f"data: {json.dumps(actions_data, ensure_ascii=False)}\n\n"
+                    
+            except Exception as e:
+                # Send error message nếu có lỗi
+                error_msg = f"Xin lỗi, có lỗi xảy ra: {str(e)}"
+                yield f"data: {error_msg}\n\n"
+                yield f"data: [END] \n\n"
 
-        return Response(stream_with_context(generate_streamed_response(response_text)), mimetype='text/event-stream')
+        return Response(stream_with_context(generate_streamed_response()), mimetype='text/event-stream')
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
