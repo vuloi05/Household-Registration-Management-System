@@ -26,8 +26,8 @@ export default function ProtectedRoute() {
   }
 
   if (!isAuthenticated) {
-    // Nếu người dùng chưa được xác thực, chuyển hướng họ về trang login
-    return <Navigate to="/login" replace />;
+    // Nếu người dùng chưa được xác thực, chuyển hướng họ về trang home
+    return <Navigate to="/" replace />;
   }
 
   // Nếu đã được xác thực, render layout chính và nội dung của trang con (qua Outlet)
