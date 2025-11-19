@@ -25,6 +25,12 @@ import {
   CircularProgress,
   Autocomplete,
   Menu,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -66,7 +72,8 @@ export default function NhanKhauPage() {
   const [qrPollingModalOpen, setQrPollingModalOpen] = useState(false);
 
   // State cho dữ liệu nhân khẩu
-  const [nhanKhauList, setNhanKhauList] = useState<NhanKhau[]>([]);
+  const [nhanKhauList, setNhanKhauList] = useState<NhanKhau[]>([]); // Danh sách hiển thị (có lọc)
+  const [allNhanKhau, setAllNhanKhau] = useState<NhanKhau[]>([]); // Toàn bộ danh sách (dùng cho xuất file)
   const [loading, setLoading] = useState(false);
   const [totalItems, setTotalItems] = useState(0);
 
@@ -99,6 +106,16 @@ export default function NhanKhauPage() {
   // State for menu
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
+  // State for export dialog
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportType, setExportType] = useState<'excel' | 'pdf'>('excel');
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+  const [toastSeverity, setToastSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('success');
+  const [exportSearchTerm, setExportSearchTerm] = useState('');
+  const [exportFrom, setExportFrom] = useState<string>('');
+  const [exportTo, setExportTo] = useState<string>('');
+
   const handleMenuClose = useCallback(() => {
     setAnchorEl(null);
   }, []);
@@ -118,6 +135,7 @@ export default function NhanKhauPage() {
   const loadNhanKhauData = async () => {
     setLoading(true);
     try {
+      // Lấy toàn bộ dữ liệu cho danh sách hiển thị
       const response = await getAllNhanKhau({
         page: page,
         size: rowsPerPage,
@@ -127,8 +145,26 @@ export default function NhanKhauPage() {
         locationFilter: locationFilter !== 'all' ? locationFilter : undefined,
       });
 
-      setNhanKhauList(response.data);
-      setTotalItems(response.totalItems);
+      // Lấy toàn bộ dữ liệu không phân trang và sắp xếp theo tên (dùng cho xuất file và hiển thị)
+      const allDataResponse = await getAllNhanKhau({
+        page: 0,
+        size: 10000, // Lấy rất nhiều để có tất cả
+        search: searchQuery || undefined,
+        ageFilter: ageFilter !== 'all' ? ageFilter : undefined,
+        genderFilter: genderFilter !== 'all' ? genderFilter : undefined,
+        locationFilter: locationFilter !== 'all' ? locationFilter : undefined,
+      });
+
+      // Sắp xếp theo tên (A-Z)
+      const sortedData = [...allDataResponse.data].sort((a, b) => {
+        const nameA = a.hoTen.toLowerCase();
+        const nameB = b.hoTen.toLowerCase();
+        return nameA.localeCompare(nameB, 'vi');
+      });
+
+      setNhanKhauList(sortedData);
+      setAllNhanKhau(sortedData);
+      setTotalItems(allDataResponse.totalItems);
       setLastDataLoadedAt(Date.now());
     } catch (error) {
       console.error('Error loading nhan khau:', error);
@@ -141,7 +177,7 @@ export default function NhanKhauPage() {
   useEffect(() => {
     loadNhanKhauData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, rowsPerPage, searchQuery, ageFilter, genderFilter, locationFilter]);
+  }, [searchQuery, ageFilter, genderFilter, locationFilter]);
 
   useEffect(() => {
     searchQueryRef.current = searchQuery;
@@ -497,21 +533,71 @@ export default function NhanKhauPage() {
 
   // Xử lý xuất Excel
   const handleExportExcel = () => {
-    try {
-      exportToExcel(nhanKhauList, 'Danh_sach_nhan_khau');
-      enqueueSnackbar('Xuất Excel thành công', { variant: 'success' });
-    } catch {
-      enqueueSnackbar('Không thể xuất file Excel', { variant: 'error' });
-    }
+    setExportType('excel');
+    setExportOpen(true);
   };
 
   // Xử lý xuất PDF
   const handleExportPDF = () => {
+    setExportType('pdf');
+    setExportOpen(true);
+  };
+
+  // Xử lý xuất file thực tế
+  const handleExportConfirm = () => {
     try {
-      exportToPDF(nhanKhauList, 'Danh sach Nhan khau');
-      enqueueSnackbar('Xuất PDF thành công', { variant: 'success' });
-    } catch {
-      enqueueSnackbar('Không thể xuất file PDF', { variant: 'error' });
+      // Lọc dữ liệu
+      let filteredData = [...allNhanKhau];
+
+      // Lọc theo tên/địa chỉ/quê quán/nơi sinh
+      if (exportSearchTerm.trim()) {
+        const searchLower = exportSearchTerm.toLowerCase();
+        filteredData = filteredData.filter(nk => {
+          const hoTen = (nk.hoTen || '').toLowerCase();
+          const diaChi = (nk.diaChiHoKhau || '').toLowerCase();
+          const queQuan = (nk.queQuan || '').toLowerCase();
+          const noiSinh = (nk.noiSinh || '').toLowerCase();
+          return hoTen.includes(searchLower) || 
+                 diaChi.includes(searchLower) || 
+                 queQuan.includes(searchLower) ||
+                 noiSinh.includes(searchLower);
+        });
+      }
+
+      // Lọc theo ngày sinh (chỉ khi có nhập)
+      if (exportFrom || exportTo) {
+        filteredData = filteredData.filter(nk => {
+          const ngaySinh = nk.ngaySinh;
+          if (!ngaySinh) return false;
+          if (exportFrom && ngaySinh < exportFrom) return false;
+          if (exportTo && ngaySinh > exportTo) return false;
+          return true;
+        });
+      }
+
+      if (filteredData.length === 0) {
+        setToastSeverity('warning');
+        setToastMsg('Không có dữ liệu phù hợp với bộ lọc');
+        setToastOpen(true);
+        return;
+      }
+
+      if (exportType === 'excel') {
+        exportToExcel(filteredData, 'Danh_sach_nhan_khau');
+        setToastSeverity('success');
+        setToastMsg('Xuất Excel thành công');
+      } else {
+        exportToPDF(filteredData, 'Danh sach Nhan khau');
+        setToastSeverity('success');
+        setToastMsg('Xuất PDF thành công');
+      }
+      setToastOpen(true);
+      setExportOpen(false);
+    } catch (e) {
+      console.error('Export failed', e);
+      setToastSeverity('error');
+      setToastMsg(`Xuất ${exportType === 'excel' ? 'Excel' : 'PDF'} thất bại`);
+      setToastOpen(true);
     }
   };
 
@@ -714,33 +800,33 @@ export default function NhanKhauPage() {
         </Typography>
       </Box>
 
-      {/* Bảng dữ liệu */}
-      <Paper sx={{ borderRadius: 2, p: 2, width: '100%' }}>
+      {/* Bảng dữ liệu - Hộp có thanh cuộn */}
+      <Paper sx={{ borderRadius: 2, width: '100%' }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
             <CircularProgress />
           </Box>
         ) : (
-          <TableContainer sx={{ width: '100%' }}>
-            <Table sx={{ width: '100%', tableLayout: 'fixed' }} size="small">
+          <TableContainer sx={{ maxHeight: 600, overflow: 'auto' }}>
+            <Table sx={{ width: '100%', tableLayout: 'fixed' }} size="small" stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold', width: '5%' }}>STT</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '18%' }}>Họ và Tên</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '11%' }}>Ngày sinh</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '6%' }}>Tuổi</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '9%' }}>Giới tính</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '12%' }}>CCCD</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>Nghề nghiệp</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '11%' }}>Quan hệ</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '10%' }}>Mã HK</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 'bold', width: '14%' }}>Thao tác</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '5%', bgcolor: 'background.paper', zIndex: 1 }}>STT</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '18%', bgcolor: 'background.paper', zIndex: 1 }}>Họ và Tên</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '11%', bgcolor: 'background.paper', zIndex: 1 }}>Ngày sinh</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '6%', bgcolor: 'background.paper', zIndex: 1 }}>Tuổi</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '9%', bgcolor: 'background.paper', zIndex: 1 }}>Giới tính</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '12%', bgcolor: 'background.paper', zIndex: 1 }}>CCCD</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '14%', bgcolor: 'background.paper', zIndex: 1 }}>Nghề nghiệp</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '11%', bgcolor: 'background.paper', zIndex: 1 }}>Quan hệ</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '10%', bgcolor: 'background.paper', zIndex: 1 }}>Mã HK</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold', width: '14%', bgcolor: 'background.paper', zIndex: 1 }}>Thao tác</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {nhanKhauList.map((nhanKhau, index) => (
                   <TableRow key={nhanKhau.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                    <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+                    <TableCell>{index + 1}</TableCell>
                     <TableCell sx={{
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -839,20 +925,55 @@ export default function NhanKhauPage() {
         )}
       </Paper>
 
-      {/* Phân trang */}
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25, 50]}
-        component="div"
-        count={totalItems}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-        labelRowsPerPage="Số hàng mỗi trang:"
-        labelDisplayedRows={({ from, to, count }) =>
-          `${from}-${to} của ${count}`
-        }
-      />
+      {/* Export options dialog */}
+      <Dialog open={exportOpen} onClose={() => setExportOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Tùy chọn xuất {exportType === 'excel' ? 'Excel' : 'PDF'}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder="Lọc theo họ tên, địa chỉ, quê quán, nơi sinh..."
+              value={exportSearchTerm}
+              onChange={(e) => setExportSearchTerm(e.target.value)}
+            />
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                type="date"
+                label="Từ ngày"
+                InputLabelProps={{ shrink: true }}
+                value={exportFrom}
+                onChange={(e) => setExportFrom(e.target.value)}
+                fullWidth
+              />
+              <TextField
+                type="date"
+                label="Đến ngày"
+                InputLabelProps={{ shrink: true }}
+                value={exportTo}
+                onChange={(e) => setExportTo(e.target.value)}
+                fullWidth
+              />
+            </Stack>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setExportOpen(false)}>Hủy</Button>
+          <Button variant="contained" onClick={handleExportConfirm}>Xuất</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar notifications */}
+      <Snackbar
+        open={toastOpen}
+        autoHideDuration={3500}
+        onClose={() => setToastOpen(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert elevation={6} variant="filled" onClose={() => setToastOpen(false)} severity={toastSeverity} sx={{ width: '100%' }}>
+          {toastMsg}
+        </Alert>
+      </Snackbar>
 
       {/* Menu thao tác */}
       <Menu

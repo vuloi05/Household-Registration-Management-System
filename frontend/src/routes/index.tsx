@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import DashboardPage from '../pages/DashboardPage';
 import LoginPage from '../pages/LoginPage';
+import HomePage from '../pages/Home';
 import HoKhauPage from '../pages/HoKhauPage';
 import NhanKhauPage from '../pages/NhanKhauPage';
 import ThuPhiPage from '../pages/ThuPhiPage';
@@ -13,16 +14,19 @@ import TamVangTamTruPage from '../pages/TamVangTamTruPage';
 
 const router = createBrowserRouter([
   {
+    path: '/',
+    element: <HomePage />,
+  },
+  {
     path: '/login',
     element: <LoginPage />,
   },
-  // 2. Nhóm các route cần bảo vệ làm con của ProtectedRoute
+  // Nhóm các route cần bảo vệ làm con của ProtectedRoute
   {
-    path: '/',
     element: <ProtectedRoute />, // "Gác cổng" ở đây
     children: [
       {
-        path: '/', // Trang chủ
+        path: '/dashboard', // Trang dashboard
         element: <DashboardPage />,
       },
       {
