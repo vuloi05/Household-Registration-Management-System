@@ -1,6 +1,7 @@
 import re
-from .gemini import call_gemini
-from .ollama import call_ollama
+from typing import Generator
+from .gemini import call_gemini, call_gemini_stream
+from .ollama import call_ollama, call_ollama_stream
 from .kb import find_best_local_answer
 from .prompts import enrich_context, get_system_context
 from .cache import get_cached_response, cache_response
@@ -145,5 +146,124 @@ def process_message(
         'validation': validation,
         'source': source
     }
+
+
+def process_message_stream(
+    message: str, 
+    context: str = "", 
+    bypass_kb: bool = False,
+    session_id: str = None,
+    history: list = None,
+    system_info: dict = None
+) -> Generator[str, None, None]:
+    """
+    Process message với streaming mode - trả về generator để stream trực tiếp từ AI.
+    
+    Args:
+        message: User message
+        context: System context
+        bypass_kb: Bypass knowledge base check
+        session_id: Session ID for memory
+        history: Conversation history
+        system_info: System info/metadata
+    
+    Yields:
+        str: Chunks of text as they come from the AI model
+    """
+    message_lower = message.lower().strip()
+    message_clean = re.sub(r"[!?.]", "", message_lower)
+    
+    # 1. Kiểm tra cache (không stream cache, trả về ngay)
+    if settings.ENABLE_RESPONSE_CACHE and not bypass_kb:
+        cached = get_cached_response(message, context)
+        if cached:
+            _metrics['cache_hits'] += 1
+            # Yield cached response in chunks to maintain streaming behavior
+            chunk_size = 20
+            for i in range(0, len(cached), chunk_size):
+                yield cached[i:i+chunk_size]
+            return
+    
+    # 2. Kiểm tra knowledge base (không stream KB, trả về ngay)
+    if not bypass_kb:
+        kb_ans = find_best_local_answer(message)
+        if kb_ans:
+            _metrics['kb_hits'] += 1
+            # Yield KB answer in chunks
+            chunk_size = 20
+            for i in range(0, len(kb_ans), chunk_size):
+                yield kb_ans[i:i+chunk_size]
+            # Cache KB answer
+            if settings.ENABLE_RESPONSE_CACHE:
+                cache_response(message, context, kb_ans)
+            return
+    
+    # 3. Xử lý các pattern chung chung (fallback patterns)
+    if re.fullmatch(r"(xin chào|chào|chào bạn|hello|hi)", message_clean):
+        response = "Xin chào! Tôi là trợ lý AI của hệ thống Quản lý Nhân khẩu. Tôi có thể giúp bạn tìm hiểu về các tính năng của hệ thống."
+        chunk_size = 20
+        for i in range(0, len(response), chunk_size):
+            yield response[i:i+chunk_size]
+        return
+    elif any(w in message_clean for w in ['giúp', 'help', 'hướng dẫn', 'huong dan']) and len(message_clean.split()) <= 4:
+        response = '''Tôi có thể giúp bạn với:
+        
+        - Quản lý Hộ khẩu
+        - Quản lý Nhân khẩu
+        - Thu phí và Khoản thu
+        - Xem Thống kê
+        - Hướng dẫn Đăng nhập
+        
+        Hãy hỏi tôi về bất kỳ chức năng nào!'''
+        chunk_size = 20
+        for i in range(0, len(response), chunk_size):
+            yield response[i:i+chunk_size]
+        return
+    
+    # 4. Enrich context với system prompt và system info
+    enriched_context = enrich_context(context or get_system_context(), system_info)
+    
+    # 5. Stream từ AI models
+    stream_generator = None
+    source = "fallback"
+    
+    # Prefer local Ollama first if configured
+    if settings.OLLAMA_HOST and settings.OLLAMA_MODEL:
+        try:
+            stream_generator = call_ollama_stream(message, enriched_context, history)
+            source = "ollama"
+            _metrics['ollama_calls'] += 1
+        except Exception:
+            pass
+    
+    # Fallback to Gemini
+    if not stream_generator and settings.GOOGLE_GEMINI_API_KEY:
+        try:
+            stream_generator = call_gemini_stream(message, enriched_context, history)
+            source = "gemini"
+            _metrics['gemini_calls'] += 1
+        except Exception:
+            pass
+    
+    # Stream từ generator nếu có
+    if stream_generator:
+        full_response = ""
+        for chunk in stream_generator:
+            full_response += chunk
+            yield chunk
+        
+        # Sanitize full response after streaming
+        if full_response:
+            sanitized = sanitize_response(full_response)
+            # Nếu sanitized khác với full_response, cần validate
+            if settings.ENABLE_RESPONSE_CACHE and source in ['ollama', 'gemini']:
+                cache_response(message, context, sanitized)
+    else:
+        # Fallback message nếu không có AI nào available
+        response_text = "Cảm ơn bạn đã liên hệ! Tôi là trợ lý AI của hệ thống Quản lý Nhân khẩu. Bạn có thể hỏi tôi về bất kỳ tính năng nào của hệ thống."
+        _metrics['fallbacks'] += 1
+        chunk_size = 20
+        for i in range(0, len(response_text), chunk_size):
+            yield response_text[i:i+chunk_size]
 
 

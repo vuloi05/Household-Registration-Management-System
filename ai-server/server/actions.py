@@ -239,14 +239,37 @@ def extract_owner_name(text: str) -> Optional[str]:
     """Trích xuất tên sau cụm 'chủ hộ' hoặc 'chu ho'.
     Ví dụ: 'xem hộ khẩu của chủ hộ Bùi Tiến Dũng' -> 'Bùi Tiến Dũng'
     """
-    m = re.search(r"ch[uư]\s*h[ôo]\s*(?:[:#]?\s*)?(?:tên\s*)?(?:là\s*)?([A-ZÀÁÂÃÄÅĀĂĄÆÇÈÉÊËĒĔĖĘĚÌÍÎÏĪĮİÑÒÓÔÕÖØŌŎŐÙÚÛÜŪŬŮŰŲỲÝỶỸỴĐ][^\d\n,.;!?]+)$",
-                  text, flags=re.IGNORECASE)
-    if m:
-        return m.group(1).strip()
-    # Bắt cụm 'của chủ hộ <tên>' phổ biến
-    m2 = re.search(r"của\s+ch[uư]\s*h[ôo]\s+([^\d\n,.;!?]+)$", text, flags=re.IGNORECASE)
+    # Pattern 1: Bắt cụm 'của chủ hộ <tên>' - ưu tiên pattern này vì phổ biến nhất
+    # Bắt tất cả các từ sau "của chủ hộ" cho đến cuối câu hoặc dấu câu
+    # Sử dụng pattern đơn giản: bắt trực tiếp "chủ hộ" (không dùng character class vì có vấn đề với Unicode)
+    pattern1 = r"của\s+ch(?:ủ|u)\s*h(?:ộ|o)\s+([^\d\n,.;!?]+?)(?:\s*$|\s*[.!?]|$)"
+    m2 = re.search(pattern1, text, flags=re.IGNORECASE)
     if m2:
-        return m2.group(1).strip()
+        name = m2.group(1).strip()
+        # Loại bỏ các từ thừa ở cuối như "này", "đó", "kia"
+        trailing_words = {"này", "nay", "đó", "do", "kia", "nào", "nao"}
+        tokens = name.split()
+        while tokens and tokens[-1].lower() in trailing_words:
+            tokens.pop()
+        # Chỉ trả về nếu có ít nhất 1 từ
+        if len(tokens) >= 1 and all(len(t) > 0 for t in tokens):
+            return " ".join(tokens).strip()
+    
+    # Pattern 2: Bắt 'chủ hộ' ở bất kỳ đâu trong câu, tên sau đó
+    # Sử dụng alternation thay vì character class để tránh vấn đề với Unicode
+    pattern2 = r"ch(?:ủ|u)\s*h(?:ộ|o)\s+(?:[:#]?\s*)?(?:tên\s*)?(?:là\s*)?([^\d\n,.;!?]+?)(?:\s*$|\s*[.!?]|$)"
+    m = re.search(pattern2, text, flags=re.IGNORECASE)
+    if m:
+        name = m.group(1).strip()
+        # Loại bỏ các từ thừa ở cuối
+        trailing_words = {"này", "nay", "đó", "do", "kia", "nào", "nao"}
+        tokens = name.split()
+        while tokens and tokens[-1].lower() in trailing_words:
+            tokens.pop()
+        # Chỉ trả về nếu có ít nhất 1 từ
+        if len(tokens) >= 1 and all(len(t) > 0 for t in tokens):
+            return " ".join(tokens).strip()
+    
     return None
 
 

@@ -1,7 +1,88 @@
 import json
 import time
 import requests
+from typing import Generator
 from . import settings
+
+
+def call_ollama_stream(message: str, context: str = "", history: list = None) -> Generator[str, None, None]:
+    """
+    Call Ollama API với streaming mode thật.
+    
+    Args:
+        message: User message
+        context: System context
+        history: Conversation history [{'role': 'user'|'assistant', 'content': str}, ...]
+    
+    Yields:
+        str: Chunks of text as they come from the model
+    """
+    host = (settings.OLLAMA_HOST or "").strip()
+    model = (settings.OLLAMA_MODEL or "").strip()
+    if not host or not model:
+        return
+    
+    try:
+        url = host.rstrip("/") + "/api/chat"
+        messages = []
+        
+        if context:
+            messages.append({"role": "system", "content": context})
+        
+        # Add conversation history
+        if history:
+            for msg in history[-settings.MAX_HISTORY_MESSAGES:]:
+                role = msg.get('role', 'user')
+                content = msg.get('content', '').strip()
+                if content:
+                    messages.append({"role": role, "content": content})
+        
+        messages.append({"role": "user", "content": message})
+        
+        payload = {
+            "model": model,
+            "messages": messages,
+            "stream": True,
+        }
+        headers = {"Content-Type": "application/json"}
+        
+        response = requests.post(url, headers=headers, json=payload, timeout=45, stream=True)
+        
+        if response.ok:
+            for line in response.iter_lines():
+                if line:
+                    try:
+                        data = json.loads(line)
+                        if 'message' in data:
+                            content = data['message'].get('content', '')
+                            if content:
+                                yield content
+                        elif 'response' in data:
+                            content = data.get('response', '')
+                            if content:
+                                yield content
+                        # Check if done
+                        if data.get('done', False):
+                            break
+                    except json.JSONDecodeError:
+                        continue
+        else:
+            # Fallback to non-streaming if streaming fails
+            yield from _call_ollama_fallback(message, context, history)
+            
+    except Exception:
+        # Fallback to non-streaming on error
+        yield from _call_ollama_fallback(message, context, history)
+
+
+def _call_ollama_fallback(message: str, context: str = "", history: list = None) -> Generator[str, None, None]:
+    """Fallback: call non-streaming and yield full response."""
+    result = call_ollama(message, context, history)
+    if result:
+        # Chunk the result to simulate streaming
+        chunk_size = 20
+        for i in range(0, len(result), chunk_size):
+            yield result[i:i+chunk_size]
 
 
 def call_ollama(message: str, context: str = "", history: list = None, retry_attempt: int = 0) -> str:
