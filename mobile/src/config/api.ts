@@ -16,7 +16,7 @@ import { Platform } from 'react-native';
 // 3. Tìm "IPv4 Address" (thường là 192.168.x.x hoặc 10.0.x.x)
 // 4. Copy IP đó và paste vào biến LOCAL_IP bên dưới
 // ============================================
-const LOCAL_IP = '192.168.1.235'; // ✅ IP đã được tự động detect - Nếu không kết nối được, thử IP khác: 172.21.64.1
+const LOCAL_IP = '192.168.1.172'; // ✅ IP đã được tự động detect - Nếu không kết nối được, thử IP khác: 172.21.64.1
 
 const getBaseURL = () => {
   if (__DEV__) {
