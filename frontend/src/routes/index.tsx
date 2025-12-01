@@ -11,6 +11,7 @@ import HoKhauDetailPage from '../pages/HoKhauDetailPage';
 import KhoanThuDetailPage from '../pages/KhoanThuDetailPage';
 import LichSuBienDongPage from '../pages/LichSuBienDongPage';
 import TamVangTamTruPage from '../pages/TamVangTamTruPage';
+import UserPage from '../pages/UserPage';
 
 const router = createBrowserRouter([
   {
@@ -56,6 +57,10 @@ const router = createBrowserRouter([
       {
         path: '/thu-phi/:khoanThuId',
         element: <KhoanThuDetailPage />,
+      },
+      {
+        path: '/quan-ly-nguoi-dung',
+        element: <UserPage />,
       },
       // Thêm các route cần bảo vệ khác vào đây
     ],

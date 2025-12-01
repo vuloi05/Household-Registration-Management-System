@@ -11,6 +11,12 @@ DROP TABLE IF EXISTS khoan_thu CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS nhan_khau CASCADE;
 DROP TABLE IF EXISTS ho_khau CASCADE;
+DROP TABLE IF EXISTS lich_su_bien_dong_nhan_khau CASCADE;
+DROP TABLE IF EXISTS lich_su_thay_doi_ho_khau CASCADE;
+DROP TABLE IF EXISTS payment_notifications CASCADE;
+DROP TABLE IF EXISTS payments CASCADE;
+DROP TABLE IF EXISTS tam_tru CASCADE;
+DROP TABLE IF EXISTS tam_vang CASCADE;
 
 -- TẠO BẢNG HỘ KHẨU (ho_khau)
 -- Bảng này được tạo trước, cột chu_ho_id sẽ được liên kết sau

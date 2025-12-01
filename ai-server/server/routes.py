@@ -8,6 +8,22 @@ from .logic import process_message, process_message_stream, get_logic_metrics
 from .actions import infer_actions
 from .utils import get_timestamp, persist_chat_event
 from .memory import get_or_create_session, add_message, get_conversation_history, clear_session
+SESSION_COOKIE_NAME = "ai_session_id"
+SESSION_COOKIE_MAX_AGE = settings.SESSION_TIMEOUT_HOURS * 3600
+
+
+def attach_session_cookie(resp: Response, session_id: str | None):
+    """Gắn session cookie vào response để client không cần tự lưu session_id."""
+    if settings.ENABLE_CONVERSATION_MEMORY and session_id:
+        resp.set_cookie(
+            SESSION_COOKIE_NAME,
+            session_id,
+            max_age=SESSION_COOKIE_MAX_AGE,
+            httponly=False,  # cho phép JS đọc nếu cần (không chứa thông tin nhạy cảm)
+            secure=False,
+            samesite='Lax'
+        )
+    return resp
 from .cache import get_cache_stats, clear_cache
 try:
     from .auto_learning import analyze_and_learn_from_conversations, get_auto_learning_status
@@ -43,7 +59,8 @@ def chat():
         data = request.json or {}
         user_message = data.get('message', '').strip()
         context = data.get('context', '').strip()
-        session_id = data.get('session_id')
+        incoming_session_id = data.get('session_id') or request.cookies.get(SESSION_COOKIE_NAME)
+        session_id = incoming_session_id
         system_info = data.get('system_info')  # Optional: stats, metadata
         
         if not user_message:
@@ -52,13 +69,13 @@ def chat():
         # Lấy hoặc tạo session
         if settings.ENABLE_CONVERSATION_MEMORY:
             session_id = get_or_create_session(session_id)
-            # Lấy conversation history
-            history = get_conversation_history(session_id)
+            # Lấy conversation history (lấy nhiều hơn để đảm bảo có đủ context)
+            history = get_conversation_history(session_id, max_messages=20)
         else:
             history = None
 
         # Thử suy luận hành động trước để tránh gọi AI không cần thiết
-        actions = infer_actions(user_message)
+        actions = infer_actions(user_message, history=history)
 
         # Nếu có actions hoặc không phải stream mode, xử lý bình thường
         if actions or not stream_mode:
@@ -93,9 +110,15 @@ def chat():
         if not stream_mode:
             # Lưu vào conversation memory
             if settings.ENABLE_CONVERSATION_MEMORY and session_id:
+                # Luôn lưu user message
                 add_message(session_id, 'user', user_message)
+                # Lưu assistant response nếu có (có thể là text hoặc actions)
                 if response_text:
                     add_message(session_id, 'assistant', response_text)
+                elif actions:
+                    # Nếu có actions nhưng không có text response, lưu thông tin về actions
+                    actions_summary = f"[Actions: {len(actions)} action(s) executed]"
+                    add_message(session_id, 'assistant', actions_summary)
 
             # Persist chat event
             persist_chat_event({
@@ -109,7 +132,7 @@ def chat():
                 "validation_score": validation.get('score', 1.0)
             })
 
-            return jsonify({
+            response = jsonify({
                 "success": True,
                 "response": response_text,
                 "actions": actions,
@@ -119,6 +142,7 @@ def chat():
                 "from_cache": from_cache,
                 "validation": validation
             })
+            return attach_session_cookie(response, session_id)
 
         # Streaming mode: stream trực tiếp từ AI models
         def generate_streamed_response():
@@ -129,11 +153,26 @@ def chat():
             try:
                 # Nếu có actions, không cần stream
                 if actions:
+                    # Lưu user message và actions vào conversation history
+                    if settings.ENABLE_CONVERSATION_MEMORY and session_id:
+                        add_message(session_id, 'user', user_message)
+                        actions_summary = f"[Actions: {len(actions)} action(s) executed]"
+                        add_message(session_id, 'assistant', actions_summary)
+                    
                     yield f"data: [END] \n\n"
                     yield f"agent_actions: {json.dumps(actions, ensure_ascii=False)}\n\n"
                     actions_data = {"actions": actions, "session_id": session_id, "source": 'agent/actions'}
                     yield f"data: {json.dumps(actions_data, ensure_ascii=False)}\n\n"
                     return
+                
+                # Gửi metadata session_id để client có thể lưu history
+                if session_id:
+                    session_event = {
+                        "event": "session",
+                        "session_id": session_id,
+                        "timestamp": get_timestamp()
+                    }
+                    yield f"data: {json.dumps(session_event, ensure_ascii=False)}\n\n"
                 
                 # Stream từ AI models
                 for chunk in process_message_stream(
@@ -152,9 +191,16 @@ def chat():
                 stream_source = 'ollama' if settings.OLLAMA_HOST and settings.OLLAMA_MODEL else 'gemini' if settings.GOOGLE_GEMINI_API_KEY else 'fallback'
                 
                 # Lưu vào conversation memory sau khi stream xong
-                if settings.ENABLE_CONVERSATION_MEMORY and session_id and full_response:
+                if settings.ENABLE_CONVERSATION_MEMORY and session_id:
+                    # Luôn lưu user message
                     add_message(session_id, 'user', user_message)
-                    add_message(session_id, 'assistant', full_response)
+                    # Lưu assistant response nếu có
+                    if full_response:
+                        add_message(session_id, 'assistant', full_response)
+                    else:
+                        # Nếu không có response, lưu thông báo lỗi
+                        error_msg = "Không nhận được phản hồi từ AI"
+                        add_message(session_id, 'assistant', error_msg)
                 
                 # Persist chat event sau khi stream xong
                 if full_response:
@@ -182,8 +228,26 @@ def chat():
                 error_msg = f"Xin lỗi, có lỗi xảy ra: {str(e)}"
                 yield f"data: {error_msg}\n\n"
                 yield f"data: [END] \n\n"
+                
+                # Lưu user message và error response vào conversation history
+                if settings.ENABLE_CONVERSATION_MEMORY and session_id:
+                    add_message(session_id, 'user', user_message)
+                    add_message(session_id, 'assistant', error_msg)
+                
+                # Persist error event
+                persist_chat_event({
+                    "timestamp": get_timestamp(),
+                    "message": user_message,
+                    "response": error_msg,
+                    "context": context,
+                    "source": "error",
+                    "session_id": session_id,
+                    "from_cache": False,
+                    "validation_score": 0.0
+                })
 
-        return Response(stream_with_context(generate_streamed_response()), mimetype='text/event-stream')
+        stream_response = Response(stream_with_context(generate_streamed_response()), mimetype='text/event-stream')
+        return attach_session_cookie(stream_response, session_id)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
