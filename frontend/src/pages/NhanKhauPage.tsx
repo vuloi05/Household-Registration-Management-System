@@ -1,5 +1,5 @@
 // src/pages/NhanKhauPage.tsx
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -31,6 +31,12 @@ import {
   DialogActions,
   Snackbar,
   Alert,
+  Card,
+  CardContent,
+  CardActions,
+  useMediaQuery,
+  useTheme,
+  Skeleton,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -63,10 +69,28 @@ import {
 import { ghiNhanBienDong } from '../api/bienDongApi';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+// Custom debounce hook
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  
+  return debouncedValue;
+}
+
 export default function NhanKhauPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
 
   // State mở/tắt modal chờ AppSheet
   const [qrPollingModalOpen, setQrPollingModalOpen] = useState(false);
@@ -132,10 +156,10 @@ export default function NhanKhauPage() {
   };
 
   // Load dữ liệu từ API
-  const loadNhanKhauData = async () => {
+  const loadNhanKhauData = useCallback(async () => {
     setLoading(true);
     try {
-      // Lấy toàn bộ dữ liệu cho danh sách hiển thị
+      // Chỉ lấy dữ liệu cho trang hiện tại
       const response = await getAllNhanKhau({
         page: page,
         size: rowsPerPage,
@@ -145,26 +169,15 @@ export default function NhanKhauPage() {
         locationFilter: locationFilter !== 'all' ? locationFilter : undefined,
       });
 
-      // Lấy toàn bộ dữ liệu không phân trang và sắp xếp theo tên (dùng cho xuất file và hiển thị)
-      const allDataResponse = await getAllNhanKhau({
-        page: 0,
-        size: 10000, // Lấy rất nhiều để có tất cả
-        search: searchQuery || undefined,
-        ageFilter: ageFilter !== 'all' ? ageFilter : undefined,
-        genderFilter: genderFilter !== 'all' ? genderFilter : undefined,
-        locationFilter: locationFilter !== 'all' ? locationFilter : undefined,
-      });
-
       // Sắp xếp theo tên (A-Z)
-      const sortedData = [...allDataResponse.data].sort((a, b) => {
+      const sortedData = [...response.data].sort((a, b) => {
         const nameA = a.hoTen.toLowerCase();
         const nameB = b.hoTen.toLowerCase();
         return nameA.localeCompare(nameB, 'vi');
       });
 
       setNhanKhauList(sortedData);
-      setAllNhanKhau(sortedData);
-      setTotalItems(allDataResponse.totalItems);
+      setTotalItems(response.totalItems);
       setLastDataLoadedAt(Date.now());
     } catch (error) {
       console.error('Error loading nhan khau:', error);
@@ -172,12 +185,37 @@ export default function NhanKhauPage() {
     } finally {
       setLoading(false);
     }
+  }, [page, rowsPerPage, searchQuery, ageFilter, genderFilter, locationFilter, enqueueSnackbar]);
+
+  // Load toàn bộ dữ liệu khi xuất file
+  const loadAllDataForExport = async () => {
+    try {
+      const allDataResponse = await getAllNhanKhau({
+        page: 0,
+        size: 10000,
+        search: searchQuery || undefined,
+        ageFilter: ageFilter !== 'all' ? ageFilter : undefined,
+        genderFilter: genderFilter !== 'all' ? genderFilter : undefined,
+        locationFilter: locationFilter !== 'all' ? locationFilter : undefined,
+      });
+
+      const sortedData = [...allDataResponse.data].sort((a, b) => {
+        return a.hoTen.toLowerCase().localeCompare(b.hoTen.toLowerCase(), 'vi');
+      });
+
+      return sortedData;
+    } catch (error) {
+      console.error('Error loading all data:', error);
+      throw error;
+    }
   };
+
+  // Debounce search query
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
   useEffect(() => {
     loadNhanKhauData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, ageFilter, genderFilter, locationFilter]);
+  }, [debouncedSearchQuery, ageFilter, genderFilter, locationFilter, page, rowsPerPage, loadNhanKhauData]);
 
   useEffect(() => {
     searchQueryRef.current = searchQuery;
@@ -532,22 +570,39 @@ export default function NhanKhauPage() {
   };
 
   // Xử lý xuất Excel
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     setExportType('excel');
     setExportOpen(true);
+    // Load dữ liệu khi mở dialog
+    if (allNhanKhau.length === 0) {
+      const data = await loadAllDataForExport();
+      setAllNhanKhau(data);
+    }
   };
 
   // Xử lý xuất PDF
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     setExportType('pdf');
     setExportOpen(true);
+    // Load dữ liệu khi mở dialog
+    if (allNhanKhau.length === 0) {
+      const data = await loadAllDataForExport();
+      setAllNhanKhau(data);
+    }
   };
 
   // Xử lý xuất file thực tế
-  const handleExportConfirm = () => {
+  const handleExportConfirm = async () => {
     try {
+      // Load toàn bộ dữ liệu nếu chưa có
+      let allData = allNhanKhau;
+      if (allData.length === 0) {
+        allData = await loadAllDataForExport();
+        setAllNhanKhau(allData);
+      }
+
       // Lọc dữ liệu
-      let filteredData = [...allNhanKhau];
+      let filteredData = [...allData];
 
       // Lọc theo tên/địa chỉ/quê quán/nơi sinh
       if (exportSearchTerm.trim()) {
@@ -631,34 +686,53 @@ export default function NhanKhauPage() {
     setPage(0);
   };
 
+  // Memoize displayed data
+  const displayedNhanKhau = useMemo(() => {
+    return nhanKhauList;
+  }, [nhanKhauList]);
+
   return (
     <Box sx={{ width: '100%', maxWidth: '100%' }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, width: '100%' }}>
-        <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'stretch', sm: 'center' },
+        gap: 2,
+        mb: 3, 
+        width: '100%' 
+      }}>
+        <Typography variant={isMobile ? 'h5' : 'h4'} sx={{ fontWeight: 'bold' }}>
           Quản lý Nhân khẩu
         </Typography>
-        <Stack direction="row" spacing={2}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ width: { xs: '100%', sm: 'auto' } }}>
           <Button
             variant="outlined"
-            startIcon={<FileDownloadIcon />}
+            startIcon={!isMobile && <FileDownloadIcon />}
             onClick={handleExportExcel}
             disabled={totalItems === 0}
+            fullWidth={isMobile}
+            size={isMobile ? 'medium' : 'medium'}
           >
             Xuất Excel
           </Button>
           <Button
             variant="outlined"
-            startIcon={<FileDownloadIcon />}
+            startIcon={!isMobile && <FileDownloadIcon />}
             onClick={handleExportPDF}
             disabled={totalItems === 0}
+            fullWidth={isMobile}
+            size={isMobile ? 'medium' : 'medium'}
           >
             Xuất PDF
           </Button>
           <Button
             variant="contained"
-            startIcon={<AddIcon />}
+            startIcon={!isMobile && <AddIcon />}
             onClick={handleOpenAddForm}
+            fullWidth={isMobile}
+            size={isMobile ? 'medium' : 'medium'}
           >
             Thêm Nhân khẩu
           </Button>
@@ -800,15 +874,100 @@ export default function NhanKhauPage() {
         </Typography>
       </Box>
 
-      {/* Bảng dữ liệu - Hộp có thanh cuộn */}
-      <Paper sx={{ borderRadius: 2, width: '100%' }}>
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <TableContainer sx={{ maxHeight: 600, overflow: 'auto' }}>
-            <Table sx={{ width: '100%', tableLayout: 'fixed' }} size="small" stickyHeader>
+      {/* Bảng dữ liệu - Responsive */}
+      {isMobile ? (
+        // Mobile: Card view
+        <Box sx={{ width: '100%' }}>
+          {loading ? (
+            <Stack spacing={2}>
+              {[1, 2, 3].map((i) => (
+                <Card key={i}>
+                  <CardContent>
+                    <Skeleton variant="text" width="60%" height={30} />
+                    <Skeleton variant="text" width="40%" />
+                    <Skeleton variant="text" width="80%" />
+                  </CardContent>
+                </Card>
+              ))}
+            </Stack>
+          ) : displayedNhanKhau.length === 0 ? (
+            <Paper sx={{ p: 4, textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                Không tìm thấy nhân khẩu nào
+              </Typography>
+            </Paper>
+          ) : (
+            <Stack spacing={2}>
+              {displayedNhanKhau.map((nhanKhau) => (
+                <Card key={nhanKhau.id} sx={{ '&:hover': { boxShadow: 3 } }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1rem' }}>
+                        {nhanKhau.hoTen}
+                      </Typography>
+                      <Chip
+                        label={nhanKhau.gioiTinh || 'N/A'}
+                        size="small"
+                        color={nhanKhau.gioiTinh === 'Nam' ? 'primary' : 'secondary'}
+                      />
+                    </Box>
+                    <Stack spacing={0.5}>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>CCCD:</strong> {nhanKhau.cmndCccd || 'N/A'}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Ngày sinh:</strong> {new Date(nhanKhau.ngaySinh).toLocaleDateString('vi-VN')} ({calculateAge(nhanKhau.ngaySinh)} tuổi)
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Nghề nghiệp:</strong> {nhanKhau.ngheNghiep || 'N/A'}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Quan hệ:</strong> {nhanKhau.quanHeVoiChuHo}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Mã HK:</strong> {nhanKhau.maHoKhau || 'N/A'}
+                      </Typography>
+                    </Stack>
+                  </CardContent>
+                  <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 2 }}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => handleViewDetail(nhanKhau)}
+                    >
+                      Chi tiết
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="primary"
+                      onClick={() => handleOpenEditForm(nhanKhau)}
+                    >
+                      Sửa
+                    </Button>
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => handleOpenDeleteDialog(nhanKhau)}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </CardActions>
+                </Card>
+              ))}
+            </Stack>
+          )}
+        </Box>
+      ) : (
+        // Desktop: Table view
+        <Paper sx={{ borderRadius: 2, width: '100%' }}>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <TableContainer sx={{ maxHeight: 600, overflow: 'auto' }}>
+              <Table sx={{ width: '100%', tableLayout: 'fixed' }} size="small" stickyHeader>
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 'bold', width: '5%', bgcolor: 'background.paper', zIndex: 1 }}>STT</TableCell>
@@ -826,7 +985,7 @@ export default function NhanKhauPage() {
               <TableBody>
                 {nhanKhauList.map((nhanKhau, index) => (
                   <TableRow key={nhanKhau.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>{page * rowsPerPage + index + 1}</TableCell>
                     <TableCell sx={{
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -922,8 +1081,9 @@ export default function NhanKhauPage() {
               </TableBody>
             </Table>
           </TableContainer>
-        )}
-      </Paper>
+          )}
+        </Paper>
+      )}
 
       {/* Export options dialog */}
       <Dialog open={exportOpen} onClose={() => setExportOpen(false)} fullWidth maxWidth="sm">
@@ -974,6 +1134,26 @@ export default function NhanKhauPage() {
           {toastMsg}
         </Alert>
       </Snackbar>
+
+      {/* Phân trang */}
+      <TablePagination
+        rowsPerPageOptions={isMobile ? [10, 25] : [5, 10, 25, 50]}
+        component="div"
+        count={totalItems}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        labelRowsPerPage={isMobile ? 'Dòng:' : 'Số hàng mỗi trang:'}
+        labelDisplayedRows={({ from, to, count }) =>
+          isMobile ? `${from}-${to}/${count}` : `${from}-${to} của ${count}`
+        }
+        sx={{
+          '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
+            fontSize: isMobile ? '0.875rem' : '1rem',
+          },
+        }}
+      />
 
       {/* Menu thao tác */}
       <Menu

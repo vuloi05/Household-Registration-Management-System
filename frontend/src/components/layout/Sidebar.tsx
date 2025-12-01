@@ -8,6 +8,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import PaymentsIcon from '@mui/icons-material/Payments';
 import TransferWithinAStationIcon from '@mui/icons-material/TransferWithinAStation';
 import HistoryIcon from '@mui/icons-material/History';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import { useAuth } from '../../context/AuthContext'; // Import hook useAuth
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 
@@ -21,6 +22,7 @@ import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
  */
 const menuItems = [
   { text: 'Bảng điều khiển', icon: <DashboardIcon />, path: '/dashboard', roles: ['ROLE_ADMIN', 'ROLE_ACCOUNTANT'] },
+  { text: 'Quản lý Người dùng', icon: <ManageAccountsIcon />, path: '/quan-ly-nguoi-dung', roles: ['ROLE_ADMIN'] },
   { text: 'Quản lý Hộ khẩu', icon: <PeopleIcon />, path: '/ho-khau', roles: ['ROLE_ADMIN'] },
   { text: 'Quản lý Nhân khẩu', icon: <PersonIcon />, path: '/nhan-khau', roles: ['ROLE_ADMIN'] },
   { text: 'Lịch sử Biến động', icon: <HistoryIcon />, path: '/lich-su-bien-dong', roles: ['ROLE_ADMIN'] },
