@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import type { AgentAction, Message } from './types';
 
 interface UseChatbotStreamParams {
@@ -13,6 +14,8 @@ export function useChatbotStream({
   setIsLoading,
   handleAgentActions,
 }: UseChatbotStreamParams) {
+  const sessionIdRef = useRef<string | null>(null);
+
   const sendMessage = async (input: string) => {
     if (!input.trim()) return;
 
@@ -25,11 +28,21 @@ export function useChatbotStream({
     setIsLoading(true);
 
     try {
+      const payload: Record<string, string> = {
+        message: userMessage.text,
+        context: '',
+      };
+      if (sessionIdRef.current) {
+        payload.session_id = sessionIdRef.current;
+      }
+
       // (A) ENABLE STREAM MODE:
+      // QUAN TRỌNG: Gửi cookie với credentials để đảm bảo session được giữ
       const resp = await fetch(`${finalApiUrl}/chat?stream=true`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage.text, context: '' }),
+        credentials: 'include', // QUAN TRỌNG: Gửi cookie với request
+        body: JSON.stringify(payload),
       });
       if (resp.status === 200 && resp.headers.get('content-type')?.includes('text/event-stream')) {
         // (A1) Streaming mode
@@ -59,6 +72,17 @@ export function useChatbotStream({
                   // Ignore parse errors
                 }
               } else {
+                if (content.trim().startsWith('{')) {
+                  try {
+                    const parsed = JSON.parse(content);
+                    if (parsed?.event === 'session' && parsed.session_id) {
+                      sessionIdRef.current = parsed.session_id;
+                      return;
+                    }
+                  } catch (e) {
+                    // Nếu không phải JSON metadata thì xử lý như text bình thường
+                  }
+                }
                 allResult += content;
                 if (content.trim()) receivedAny = true;
                 setMessages((prev) => {
@@ -77,7 +101,11 @@ export function useChatbotStream({
               }
             } else if (part.startsWith('agent_actions: ')) {
               try {
-                agentActions = JSON.parse(part.replace('agent_actions: ', ''));
+                const parsedActions = JSON.parse(part.replace('agent_actions: ', ''));
+                if (parsedActions?.session_id) {
+                  sessionIdRef.current = parsedActions.session_id;
+                }
+                agentActions = parsedActions.actions ?? parsedActions;
               } catch (e) {
                 // Ignore parse errors
               }
@@ -100,6 +128,9 @@ export function useChatbotStream({
       } else {
         // (A2) Fallback về JSON mode cũ nếu backend không hỗ trợ streaming
         const data = await resp.json();
+        if (data?.session_id) {
+          sessionIdRef.current = data.session_id;
+        }
         if (data.actions && Array.isArray(data.actions)) handleAgentActions(data.actions);
         if (data.response) {
           const botMessage: Message = {

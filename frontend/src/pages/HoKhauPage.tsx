@@ -5,7 +5,7 @@ import {
   TableRow, TableCell, TableBody, IconButton, CircularProgress, TextField, InputAdornment,
   TablePagination
 } from '@mui/material';
-import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ConfirmationDialog from '../components/shared/ConfirmationDialog';
 import AddIcon from '@mui/icons-material/Add';
@@ -22,6 +22,7 @@ import { useSnackbar } from 'notistack';
 
 export default function HoKhauPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const [openForm, setOpenForm] = useState(false);
   const [hoKhauList, setHoKhauList] = useState<HoKhau[]>([]);
@@ -34,6 +35,9 @@ export default function HoKhauPage() {
   // Phân trang client-side để đồng bộ UI với trang Nhân khẩu
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  // State để theo dõi tìm kiếm từ agent
+  const [pendingAgentSearch, setPendingAgentSearch] = useState<{ query: string; triggeredAt: number; statusId?: string } | null>(null);
+  const [lastFilteredAt, setLastFilteredAt] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -74,6 +78,7 @@ export default function HoKhauPage() {
       });
       
       setFilteredHoKhauList(filtered);
+      setLastFilteredAt(Date.now());
     }
     // reset về trang đầu khi filter thay đổi để tránh vượt quá tổng số trang
     setPage(0);
@@ -85,28 +90,75 @@ export default function HoKhauPage() {
     if (s && s.agentAction) {
       const act = s.agentAction;
       if (act.type === 'search' && act.target === 'household_list' && act.params?.q) {
-        setSearchTerm(act.params.q);
-        enqueueSnackbar('Agent: Đang tìm kiếm hộ khẩu: ' + act.params.q, { variant: 'info' });
-        // Dispatch event để cập nhật status message ngay khi filter hoàn thành
-        // Vì filter là client-side nên hoàn thành ngay lập tức
-        if (act.statusId) {
-          // Sử dụng setTimeout nhỏ để đảm bảo filter đã hoàn thành
-          setTimeout(() => {
-            window.dispatchEvent(
-              new CustomEvent('agent-action-status', {
-                detail: {
-                  statusId: act.statusId,
-                  text: `🔎 Đã tìm kiếm hộ khẩu: ${act.params.q}`,
-                  status: 'success',
-                },
-              })
-            );
-          }, 100);
+        const query = String(act.params.q).trim();
+        if (query) {
+          setSearchTerm(query);
+          setPendingAgentSearch({ query, triggeredAt: Date.now(), statusId: act.statusId });
+          enqueueSnackbar('Agent: Đang tìm kiếm hộ khẩu: ' + query, { variant: 'info' });
         }
       }
     }
+    // Clear location state after processing
+    navigate(location.pathname, { replace: true });
     // eslint-disable-next-line
   }, [location.state]);
+
+  // Xử lý kết quả tìm kiếm từ agent sau khi filter hoàn thành
+  useEffect(() => {
+    if (!pendingAgentSearch) return;
+    if (loading) return;
+    if (lastFilteredAt < pendingAgentSearch.triggeredAt) return;
+    
+    const { query, statusId } = pendingAgentSearch;
+
+    const notifySearchStatus = (text?: string) => {
+      if (!statusId) return;
+      window.dispatchEvent(
+        new CustomEvent('agent-action-status', {
+          detail: {
+            statusId,
+            text: text || `🔎 Đã tìm kiếm hộ khẩu: ${query}`,
+            status: 'success',
+          },
+        })
+      );
+    };
+
+    if (filteredHoKhauList.length === 0) {
+      notifySearchStatus();
+      window.dispatchEvent(new CustomEvent('agent-bot-message', {
+        detail: `Không tìm thấy hộ khẩu phù hợp với từ khóa "${query}". Vui lòng cung cấp mã hộ khẩu hoặc địa chỉ cụ thể hơn.`,
+      }));
+      setPendingAgentSearch(null);
+      return;
+    }
+
+    if (filteredHoKhauList.length === 1) {
+      notifySearchStatus();
+      const only = filteredHoKhauList[0];
+      navigate(`/ho-khau/${encodeURIComponent(only.maHoKhau)}`);
+      window.dispatchEvent(new CustomEvent('agent-bot-message', {
+        detail: `Đã tìm thấy 1 hộ khẩu có tên chủ hộ là ${query}. Đang mở chi tiết hộ khẩu cho bạn.`,
+      }));
+      setPendingAgentSearch(null);
+      return;
+    }
+
+    // Nếu có nhiều hộ khẩu, kiểm tra xem có bao nhiêu hộ khẩu có cùng tên chủ hộ
+    const normalized = query.toLowerCase();
+    const sameNameCount = filteredHoKhauList.filter(hk => 
+      (hk.chuHo?.hoTen || '').toLowerCase() === normalized
+    ).length;
+    const totalDisplay = sameNameCount > 0 ? sameNameCount : filteredHoKhauList.length;
+    
+    const detailMessage = totalDisplay >= 2
+      ? `Đã tìm thấy ${totalDisplay} hộ khẩu có tên chủ hộ là ${query}. Bạn vui lòng cung cấp thêm chi tiết thông tin như: mã hộ khẩu hay địa chỉ.`
+      : `Đã tìm thấy ${totalDisplay} hộ khẩu có tên chủ hộ là ${query}.`;
+    
+    notifySearchStatus();
+    window.dispatchEvent(new CustomEvent('agent-bot-message', { detail: detailMessage }));
+    setPendingAgentSearch(null);
+  }, [pendingAgentSearch, loading, filteredHoKhauList, navigate, lastFilteredAt]);
 
   const handleOpenCreateForm = () => {
     setEditingHoKhau(null);
