@@ -4,11 +4,12 @@ Dự án phần mềm quản lý thông tin khu dân cư / tổ dân phố, giú
 
 ## Kiến trúc hệ thống
 
-Dự án bao gồm 3 thành phần chính hoạt động độc lập:
+Dự án bao gồm 4 thành phần chính hoạt động độc lập:
 
 1.  **`backend`**: Một API server xây dựng bằng **Java Spring Boot** để xử lý toàn bộ logic nghiệp vụ và tương tác với cơ sở dữ liệu.
 2.  **`frontend`**: Một ứng dụng giao diện người dùng (SPA) xây dựng bằng **React & TypeScript** để người dùng tương tác.
-3.  **`ai-server`**: Một server **Python Flask** cung cấp chức năng Chatbot AI, tích hợp với các mô hình ngôn ngữ lớn (LLM) như Ollama và Gemini.
+3.  **`mobile`**: Một ứng dụng mobile xây dựng bằng **React Native & Expo** để người dùng truy cập hệ thống trên thiết bị di động.
+4.  **`ai-server`**: Một server **Python Flask** cung cấp chức năng Chatbot AI, tích hợp với các mô hình ngôn ngữ lớn (LLM) như Ollama và Gemini.
 
 ## Công nghệ sử dụng
 
@@ -22,6 +23,11 @@ Dự án bao gồm 3 thành phần chính hoạt động độc lập:
     *   Build tool: **Vite**
     *   Thư viện UI: **Material-UI (MUI)**
     *   Quản lý Form: **React Hook Form** & **Zod**
+*   **Mobile:**
+    *   Framework: **React Native** với **Expo**
+    *   Ngôn ngữ: **TypeScript**
+    *   Navigation: **React Navigation**
+    *   UI Library: **React Native Paper**
 *   **AI Agent Server:**
     *   Framework: **Flask (Python 3.11+)**
     *   Chức năng: Chatbot AI Assistant (Ollama & Google Gemini)
@@ -37,6 +43,8 @@ Dự án bao gồm 3 thành phần chính hoạt động độc lập:
 - **PostgreSQL** đã được cài đặt và đang chạy.
 - **Python 3.11+** (cho AI Agent Server).
 - **Maven** và **Git** (thường đã có sẵn hoặc tích hợp trong IDE).
+- **Expo CLI** (sẽ được cài đặt tự động qua npm).
+- **Expo Go app** trên thiết bị di động (tùy chọn, để test trên thiết bị thật).
 
 ### 2. Cấu hình môi trường
 
@@ -145,9 +153,22 @@ Chức năng này cho phép bạn quét QR bằng AppSheet. AppSheet ghi dữ li
         VITE_AI_SERVER_URL=http://localhost:5000
         ```
 
+#### d. Mobile
+
+1.  **Cấu hình kết nối Backend:**
+    *   Di chuyển đến thư mục `mobile/src/config`.
+    *   Mở file `api.ts`.
+    *   Tìm dòng `const LOCAL_IP = '192.168.1.235';` và thay đổi IP thành địa chỉ IP của máy tính bạn.
+    *   **Lưu ý:** 
+        - Để tìm IP của máy tính, chạy lệnh `ipconfig` (Windows) hoặc `ifconfig` (macOS/Linux) và tìm "IPv4 Address".
+        - Nếu sử dụng Android Emulator, có thể sử dụng `10.0.2.2` thay vì IP thực.
+        - Nếu sử dụng iOS Simulator trên Mac, có thể sử dụng `localhost`.
+        - Thiết bị mobile và máy tính phải cùng một mạng Wi-Fi để kết nối được.
+    *   Xem thêm hướng dẫn chi tiết trong file `mobile/CONNECTION_GUIDE.md`.
+
 ### 3. Cài đặt và Chạy
 
-Bạn cần mở **3 cửa sổ terminal** riêng biệt, mỗi cửa sổ cho một thành phần của hệ thống.
+Bạn cần mở **4 cửa sổ terminal** riêng biệt, mỗi cửa sổ cho một thành phần của hệ thống.
 
 #### Terminal 1: Chạy Backend
 
@@ -204,9 +225,40 @@ python main.py
 ```
 > AI Server sẽ khởi động và chạy tại `http://localhost:5000`.
 
+---
+
+#### Terminal 4: Chạy Mobile App
+
+```bash
+# Di chuyển đến thư mục mobile
+cd mobile
+
+# Cài đặt các thư viện cần thiết (chỉ cần chạy lần đầu)
+npm install
+
+# Khởi động Expo development server
+npm start
+# hoặc
+npx expo start
+
+# Để xóa cache và khởi động lại (nếu gặp vấn đề)
+npx expo start --clear
+```
+> Expo sẽ khởi động và hiển thị QR code. Bạn có thể:
+> - Quét QR code bằng **Expo Go** app trên thiết bị di động (iOS/Android) để chạy app trên thiết bị thật.
+> - Nhấn `a` để mở trên Android Emulator (nếu đã cài đặt).
+> - Nhấn `i` để mở trên iOS Simulator (chỉ trên macOS).
+> - Nhấn `w` để mở trên trình duyệt web.
+
+**Lưu ý quan trọng:**
+- Đảm bảo Backend đang chạy trước khi sử dụng Mobile app.
+- Nếu gặp lỗi "Network Error", hãy kiểm tra lại cấu hình IP trong `mobile/src/config/api.ts` và đảm bảo thiết bị mobile cùng mạng Wi-Fi với máy tính chạy Backend.
+- Xem thêm hướng dẫn kết nối trong file `mobile/CONNECTION_GUIDE.md`.
+
 ### 4. Truy cập ứng dụng
 
-Mở trình duyệt và truy cập `http://localhost:5173`. Chatbot AI sẽ xuất hiện ở góc dưới bên phải màn hình.
+- **Web Frontend:** Mở trình duyệt và truy cập `http://localhost:5173`. Chatbot AI sẽ xuất hiện ở góc dưới bên phải màn hình.
+- **Mobile App:** Sử dụng Expo Go app để quét QR code hoặc mở trên emulator/simulator như hướng dẫn ở Terminal 4.
 
 ---
 

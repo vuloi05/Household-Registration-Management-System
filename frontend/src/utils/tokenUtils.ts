@@ -46,6 +46,7 @@ export const isTokenValid = (): boolean => {
     const payload = JSON.parse(atob(token.split('.')[1]));
     const currentTime = Math.floor(Date.now() / 1000);
     return payload.exp && payload.exp > currentTime;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     return false;
   }

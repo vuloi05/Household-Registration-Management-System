@@ -5,18 +5,37 @@
 // - iOS Simulator: sử dụng 'http://localhost:8080/api' hoặc IP thực tế
 // - Thiết bị thật: sử dụng IP máy tính của bạn, ví dụ 'http://192.168.1.100:8080/api'
 
-// Tự động detect platform
-import { Platform } from 'react-native';
+// Tự động detect platform + host IP của Metro để dùng cho API
+import { NativeModules, Platform } from 'react-native';
 
-// ============================================
-// QUAN TRỌNG: Thay đổi IP này thành IP máy tính của bạn!
-// Để lấy IP trên Windows:
-// 1. Mở PowerShell hoặc Command Prompt
-// 2. Chạy lệnh: ipconfig
-// 3. Tìm "IPv4 Address" (thường là 192.168.x.x hoặc 10.0.x.x)
-// 4. Copy IP đó và paste vào biến LOCAL_IP bên dưới
-// ============================================
-const LOCAL_IP = '192.168.1.172'; // ✅ IP đã được tự động detect - Nếu không kết nối được, thử IP khác: 172.21.64.1
+// Đọc IP từ file config (được tạo bởi script setup-ip.js)
+let configIP: string | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const ipConfig = require('./ip-config.json');
+  configIP = ipConfig?.localIP || null;
+} catch (error) {
+  // File chưa tồn tại hoặc lỗi đọc file - sẽ dùng fallback
+}
+
+// Hàm lấy host IP từ Metro bundler (tự động khi chạy `npm start`)
+const getHostIpFromBundle = (): string | null => {
+  // React Native dev mode cung cấp scriptURL, chứa host IP/port của bundler
+  const scriptURL: string | undefined =
+    (NativeModules as any)?.SourceCode?.scriptURL;
+  if (!scriptURL) return null;
+
+  const match = scriptURL.match(/https?:\/\/([^/:]+)/);
+  if (match?.[1]) {
+    // Nếu đang chạy trên Android emulator, host thường đã là 10.0.2.2
+    return match[1];
+  }
+  return null;
+};
+
+// Ưu tiên: IP từ file config > IP từ Metro bundler > Fallback
+const FALLBACK_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+const LOCAL_IP = configIP || getHostIpFromBundle() || FALLBACK_HOST;
 
 const getBaseURL = () => {
   if (__DEV__) {
