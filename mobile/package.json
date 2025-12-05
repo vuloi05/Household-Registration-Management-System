@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
+    "setup-ip": "node scripts/setup-ip.js",
+    "prestart": "npm run setup-ip",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
