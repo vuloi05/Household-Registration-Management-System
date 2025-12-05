@@ -267,7 +267,7 @@ const HomePage = () => {
                 Hệ thống trực quan và nhân viên thích nghi rất nhanh."
               </Typography>
               <Typography variant="caption" color="primary">
-                — Giám đốc Hành chính, Quận Hà Nội
+                — Giám đốc Hành chính, TP. Hà Nội
               </Typography>
             </Paper>
             <Paper sx={{ p: 4, height: '100%' }}>
@@ -292,7 +292,7 @@ const HomePage = () => {
                 xu hướng nhân khẩu học. Dữ liệu này định hướng các quyết định quy hoạch đô thị của chúng tôi."
               </Typography>
               <Typography variant="caption" color="primary">
-                — Chuyên viên Quy hoạch Thành phố, Đà Nẵng
+                — Chuyên viên Quy hoạch Thành phố Đà Nẵng
               </Typography>
             </Paper>
             <Paper sx={{ p: 4, height: '100%' }}>
