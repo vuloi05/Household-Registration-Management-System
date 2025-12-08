@@ -1,54 +1,19 @@
 // src/pages/NhanKhauPage.tsx
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
-  TextField,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TablePagination,
-  IconButton,
-  Chip,
-  InputAdornment,
-  FormControl,
-  InputLabel,
-  Select,
   MenuItem,
   Stack,
-  Tooltip,
-  Paper,
-  CircularProgress,
-  Autocomplete,
   Menu,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Snackbar,
-  Alert,
-  Card,
-  CardContent,
-  CardActions,
   useMediaQuery,
   useTheme,
-  Skeleton,
 } from '@mui/material';
 import {
-  Search as SearchIcon,
   Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Visibility as VisibilityIcon,
-  FilterList as FilterListIcon,
-  Clear as ClearIcon,
   FileDownload as FileDownloadIcon,
-  QrCodeScanner as QrCodeScannerIcon,
-  MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import NhanKhauForm from '../components/forms/NhanKhauForm';
@@ -57,17 +22,15 @@ import ConfirmationDialog from '../components/shared/ConfirmationDialog';
 import QRPollingModal from '../components/shared/QRPollingModal';
 import BienDongNhanKhauForm from '../components/forms/BienDongNhanKhauForm';
 import type { NhanKhauFormValues } from '../types/nhanKhau';
-import type { BienDongNhanKhauFormValues } from '../types/bienDong';
-import { exportToExcel, exportToPDF } from '../utils/exportUtils';
+import NhanKhauExportDialog from '../components/nhanKhau/NhanKhauExportDialog';
+import NhanKhauTable from '../components/nhanKhau/NhanKhauTable';
 import {
   getAllNhanKhau,
-  createNhanKhauManagement,
-  updateNhanKhauManagement,
-  deleteNhanKhauManagement,
   type NhanKhau,
 } from '../api/nhanKhauApi';
-import { ghiNhanBienDong } from '../api/bienDongApi';
-import { useLocation, useNavigate } from 'react-router-dom';
+import NhanKhauSearchAndFilter from '../components/nhanKhau/NhanKhauSearchAndFilter';
+import { useNhanKhauAgent } from '../hooks/useNhanKhauAgent';
+import { useNhanKhauHandlers } from '../hooks/useNhanKhauHandlers';
 
 // Custom debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -85,12 +48,9 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function NhanKhauPage() {
-  const location = useLocation();
-  const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
 
   // State mở/tắt modal chờ AppSheet
   const [qrPollingModalOpen, setQrPollingModalOpen] = useState(false);
@@ -120,12 +80,7 @@ export default function NhanKhauPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedNhanKhau, setSelectedNhanKhau] = useState<NhanKhau | null>(null);
   const [editingNhanKhau, setEditingNhanKhau] = useState<NhanKhauFormValues | null>(null);
-  const [pendingAgentSearch, setPendingAgentSearch] = useState<{ query: string; triggeredAt: number; statusId?: string } | null>(null);
-  const [pendingAgentDetailId, setPendingAgentDetailId] = useState<string | null>(null);
   const [lastDataLoadedAt, setLastDataLoadedAt] = useState(0);
-  const searchQueryRef = useRef('');
-  const [isAgentTypingSearch, setIsAgentTypingSearch] = useState(false);
-  const agentTypingTimeoutRef = useRef<number | null>(null);
 
   // State for menu
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -133,12 +88,6 @@ export default function NhanKhauPage() {
   // State for export dialog
   const [exportOpen, setExportOpen] = useState(false);
   const [exportType, setExportType] = useState<'excel' | 'pdf'>('excel');
-  const [toastOpen, setToastOpen] = useState(false);
-  const [toastMsg, setToastMsg] = useState('');
-  const [toastSeverity, setToastSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('success');
-  const [exportSearchTerm, setExportSearchTerm] = useState('');
-  const [exportFrom, setExportFrom] = useState<string>('');
-  const [exportTo, setExportTo] = useState<string>('');
 
   const handleMenuClose = useCallback(() => {
     setAnchorEl(null);
@@ -217,158 +166,29 @@ export default function NhanKhauPage() {
     loadNhanKhauData();
   }, [debouncedSearchQuery, ageFilter, genderFilter, locationFilter, page, rowsPerPage, loadNhanKhauData]);
 
-  useEffect(() => {
-    searchQueryRef.current = searchQuery;
-  }, [searchQuery]);
-
-  useEffect(() => {
-    return () => {
-      if (agentTypingTimeoutRef.current) {
-        window.clearTimeout(agentTypingTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const updateSearchValue = (
-    value: string,
-    options: { commit?: boolean; resetPage?: boolean } = {}
-  ) => {
-    const { commit = true, resetPage = true } = options;
+  const updateSearchValue = (value: string) => {
     setSearchInputValue(value);
-    if (commit) {
-      setSearchQuery(value);
-      if (resetPage) setPage(0);
-    }
+    setSearchQuery(value);
+    setPage(0);
   };
 
-  const simulateSearchTyping = (text: string, statusId?: string) => {
-    if (!text) return;
-    if (agentTypingTimeoutRef.current) {
-      window.clearTimeout(agentTypingTimeoutRef.current);
-    }
-    setIsAgentTypingSearch(true);
-    updateSearchValue('', { commit: false, resetPage: false });
-    let index = 0;
-    const typeNext = () => {
-      const partial = text.slice(0, index + 1);
-      updateSearchValue(partial, { commit: false, resetPage: false });
-      index++;
-      if (index < text.length) {
-        agentTypingTimeoutRef.current = window.setTimeout(typeNext, 65);
-      } else {
-        setIsAgentTypingSearch(false);
-        updateSearchValue(text, { commit: true, resetPage: true });
-        setPendingAgentSearch({ query: text, triggeredAt: Date.now(), statusId });
-      }
-    };
-    typeNext();
-  };
-
-  // Nhận QR từ AppSheet -> chỉ lấy số CCCD (trường đầu tiên trước ký tự '|') để tìm kiếm
-  const handleReceiveQRCode = (qr: string) => {
-    const parts = (qr || '').split('|').map(p => p.trim());
-    const cccd = parts[0] || qr;
-    updateSearchValue(cccd);
-    enqueueSnackbar('Đã điền CCCD từ QR vào ô tìm kiếm', { variant: 'success' });
-  };
-
-  // Lắng nghe agent action sau khi điều hướng
-  useEffect(() => {
-    const s = location.state as any;
-    if (!s || !s.agentAction) return;
-    const act = s.agentAction;
-    if (act.type === 'search' && act.target === 'person_list' && act.params?.q) {
-      const query = String(act.params.q).trim();
-      if (query) {
-        let finalQuery = query;
-        const currentQuery = searchQueryRef.current.trim();
-        const addressKeywords = ['biệt thự', 'biet thu', 'thự', 'phố', 'đường', 'duong', 'xã', 'phường', 'quận', 'huyện', 'tỉnh', 'thành phố', 'the vesta', 'ấp', 'thôn', 'ngõ', 'ngõ', 'ngách'];
-        const isAddress = addressKeywords.some(kw => query.toLowerCase().includes(kw));
-        if (isAddress && currentQuery && !query.toLowerCase().includes(currentQuery.toLowerCase())) {
-          finalQuery = `${currentQuery} ${query}`.trim();
-        }
-        setPendingAgentSearch(null);
-        enqueueSnackbar('Agent: Đang tìm kiếm nhân khẩu: ' + finalQuery, { variant: 'info' });
-        simulateSearchTyping(finalQuery, act.statusId);
-        setPendingAgentDetailId(null);
-      }
-    }
-    if (act.type === 'search' && act.target === 'person_list' && !act.params?.q) {
-      setPendingAgentSearch(null);
-    }
-    if (act.type === 'navigate' && act.target === 'person_detail' && act.params?.personId) {
-      setPendingAgentDetailId(String(act.params.personId));
-    }
-    navigate(location.pathname, { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state]);
-
-  useEffect(() => {
-    if (!pendingAgentSearch) return;
-    if (loading) return;
-    if (lastDataLoadedAt < pendingAgentSearch.triggeredAt) return;
-    const { query, statusId } = pendingAgentSearch;
-
-    const notifySearchStatus = (text?: string) => {
-      if (!statusId) return;
-      window.dispatchEvent(
-        new CustomEvent('agent-action-status', {
-          detail: {
-            statusId,
-            text: text || `🔎 Đã tìm kiếm nhân khẩu: ${query}`,
-            status: 'success',
-          },
-        })
-      );
-    };
-
-    if (nhanKhauList.length === 0) {
-      notifySearchStatus();
-      window.dispatchEvent(new CustomEvent('agent-bot-message', {
-        detail: `Không tìm thấy nhân khẩu phù hợp với từ khóa "${query}". Vui lòng cung cấp CCCD, mã hộ khẩu hoặc địa chỉ cụ thể hơn.`,
-      }));
-      setPendingAgentSearch(null);
-      return;
-    }
-    if (nhanKhauList.length === 1) {
-      notifySearchStatus();
-      const only = nhanKhauList[0];
-      handleViewDetail(only);
-      window.dispatchEvent(new CustomEvent('agent-bot-message', {
-        detail: `Hiện tại đang có 1 người tên là ${query}. Đang mở chi tiết hồ sơ cho bạn.`,
-      }));
-      setPendingAgentSearch(null);
-      setPendingAgentDetailId(null);
-      return;
-    }
-    const normalized = query.toLowerCase();
-    const sameNameCount = nhanKhauList.filter(nk => (nk.hoTen || '').toLowerCase() === normalized).length;
-    const totalDisplay = sameNameCount > 0 ? sameNameCount : nhanKhauList.length;
-    const detailMessage = totalDisplay >= 2
-      ? `Hiện tại đang có ${totalDisplay} người tên là ${query}. Bạn muốn tìm người nào? Vui lòng cung cấp thêm CCCD, mã hộ khẩu hoặc địa chỉ.`
-      : `Hiện tại đang có ${totalDisplay} người tên là ${query}.`;
-    notifySearchStatus();
-    window.dispatchEvent(new CustomEvent('agent-bot-message', { detail: detailMessage }));
-    setPendingAgentSearch(null);
-  }, [pendingAgentSearch, loading, nhanKhauList, handleViewDetail, lastDataLoadedAt]);
-
-  useEffect(() => {
-    if (!pendingAgentDetailId || loading) return;
-    const nk = nhanKhauList.find(
-      item =>
-        item.cmndCccd === pendingAgentDetailId ||
-        String(item.id) === pendingAgentDetailId
-    );
-    if (nk) {
-      setSelectedNhanKhau(nk);
-      setDetailOpen(true);
-      enqueueSnackbar('Agent: Đang mở chi tiết nhân khẩu: ' + nk.hoTen, { variant: 'info' });
-      setPendingAgentDetailId(null);
-    } else if (!loading) {
-      enqueueSnackbar('Agent: Không tìm thấy nhân khẩu trong danh sách hiện tại', { variant: 'warning' });
-      setPendingAgentDetailId(null);
-    }
-  }, [pendingAgentDetailId, nhanKhauList, loading, enqueueSnackbar]);
+  // Use agent hook
+  const { isAgentTypingSearch, handleReceiveQRCode } = useNhanKhauAgent({
+    searchQuery,
+    setSearchQuery,
+    setSearchInputValue: (value: string) => {
+      setSearchInputValue(value);
+      return value;
+    },
+    setPage,
+    nhanKhauList,
+    loading,
+    lastDataLoadedAt,
+    setLastDataLoadedAt,
+    handleViewDetail,
+    setSelectedNhanKhau,
+    setDetailOpen,
+  });
 
   // Tính tuổi từ ngày sinh
   const calculateAge = (birthDate: string): number => {
@@ -382,184 +202,26 @@ export default function NhanKhauPage() {
     return age;
   };
 
-  // Không cần lấy locations từ data nữa vì đã có danh sách đầy đủ các tỉnh thành
-
-  // Danh sách đầy đủ các tỉnh thành Việt Nam
-  const vietnamProvinces = [
-    'Hà Nội',
-    'TP. Hồ Chí Minh',
-    'Đà Nẵng',
-    'Hải Phòng',
-    'Cần Thơ',
-    'An Giang',
-    'Bà Rịa - Vũng Tàu',
-    'Bắc Giang',
-    'Bắc Kạn',
-    'Bạc Liêu',
-    'Bắc Ninh',
-    'Bến Tre',
-    'Bình Định',
-    'Bình Dương',
-    'Bình Phước',
-    'Bình Thuận',
-    'Cà Mau',
-    'Cao Bằng',
-    'Đắk Lắk',
-    'Đắk Nông',
-    'Điện Biên',
-    'Đồng Nai',
-    'Đồng Tháp',
-    'Gia Lai',
-    'Hà Giang',
-    'Hà Nam',
-    'Hà Tĩnh',
-    'Hải Dương',
-    'Hậu Giang',
-    'Hòa Bình',
-    'Hưng Yên',
-    'Khánh Hòa',
-    'Kiên Giang',
-    'Kon Tum',
-    'Lai Châu',
-    'Lâm Đồng',
-    'Lạng Sơn',
-    'Lào Cai',
-    'Long An',
-    'Nam Định',
-    'Nghệ An',
-    'Ninh Bình',
-    'Ninh Thuận',
-    'Phú Thọ',
-    'Phú Yên',
-    'Quảng Bình',
-    'Quảng Nam',
-    'Quảng Ngãi',
-    'Quảng Ninh',
-    'Quảng Trị',
-    'Sóc Trăng',
-    'Sơn La',
-    'Tây Ninh',
-    'Thái Bình',
-    'Thái Nguyên',
-    'Thanh Hóa',
-    'Thừa Thiên Huế',
-    'Tiền Giang',
-    'Trà Vinh',
-    'Tuyên Quang',
-    'Vĩnh Long',
-    'Vĩnh Phúc',
-    'Yên Bái',
-    'Hà Tây',
-  ];
-
-  // Xử lý thêm nhân khẩu
-  const handleAddNhanKhau = async (data: NhanKhauFormValues) => {
-    try {
-      await createNhanKhauManagement(data);
-      enqueueSnackbar('Thêm nhân khẩu thành công', { variant: 'success' });
-      setFormOpen(false);
-      loadNhanKhauData(); // Reload data
-    } catch (error: unknown) {
-      console.error('Error creating nhan khau:', error);
-      
-      // Xử lý lỗi từ backend
-      if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { data?: { error?: string } } };
-        if (axiosError.response?.data?.error) {
-          enqueueSnackbar(axiosError.response.data.error, { variant: 'error' });
-        } else {
-          enqueueSnackbar('Không thể thêm nhân khẩu', { variant: 'error' });
-        }
-      } else {
-        enqueueSnackbar('Không thể thêm nhân khẩu', { variant: 'error' });
-      }
-    }
-  };
-
-
-  // Xử lý cập nhật nhân khẩu
-  const handleUpdateNhanKhau = async (data: NhanKhauFormValues) => {
-    if (!selectedNhanKhau) return;
-
-    try {
-      await updateNhanKhauManagement(selectedNhanKhau.id, data);
-      enqueueSnackbar('Cập nhật nhân khẩu thành công', { variant: 'success' });
-      setFormOpen(false);
-      setSelectedNhanKhau(null);
-      setEditingNhanKhau(null);
-      loadNhanKhauData(); // Reload data
-    } catch (error) {
-      console.error('Error updating nhan khau:', error);
-      enqueueSnackbar('Không thể cập nhật nhân khẩu', { variant: 'error' });
-    }
-  };
-
-  // Xử lý xóa nhân khẩu
-  const handleDeleteNhanKhau = async () => {
-    if (!selectedNhanKhau) return;
-
-    try {
-      await deleteNhanKhauManagement(selectedNhanKhau.id);
-      enqueueSnackbar('Xóa nhân khẩu thành công', { variant: 'success' });
-      setDeleteDialogOpen(false);
-      setSelectedNhanKhau(null);
-      loadNhanKhauData(); // Reload data
-    } catch (error) {
-      console.error('Error deleting nhan khau:', error);
-      enqueueSnackbar('Không thể xóa nhân khẩu', { variant: 'error' });
-    }
-  };
-
-  const handleBienDongSubmit = async (data: BienDongNhanKhauFormValues) => {
-    try {
-      await ghiNhanBienDong(data);
-      enqueueSnackbar('Ghi nhận biến động thành công', { variant: 'success' });
-      setBienDongFormOpen(false);
-      loadNhanKhauData();
-    } catch (error: any) {
-      console.error('Error recording bien dong:', error);
-      if (error.response?.data?.error) {
-        enqueueSnackbar(error.response.data.error, { variant: 'error' });
-      } else {
-        enqueueSnackbar('Không thể ghi nhận biến động', { variant: 'error' });
-      }
-    }
-  };
-
-  // Xử lý mở form thêm mới
-  const handleOpenAddForm = () => {
-    setSelectedNhanKhau(null);
-    setEditingNhanKhau(null);
-    setFormOpen(true);
-  };
-
-  // Xử lý mở form chỉnh sửa
-  const handleOpenEditForm = (nhanKhau: NhanKhau) => {
-    handleMenuClose();
-    setSelectedNhanKhau(nhanKhau);
-    // Đảm bảo maHoKhau được map đúng từ dữ liệu nhân khẩu
-    const formData: NhanKhauFormValues = {
-      ...nhanKhau,
-      ngayCap: nhanKhau.ngayCap || '',
-      noiCap: nhanKhau.noiCap || '',
-      maHoKhau: nhanKhau.maHoKhau || '',
-    };
-    setEditingNhanKhau(formData);
-    setFormOpen(true);
-  };
-
-  // Xử lý mở dialog xóa
-  const handleOpenDeleteDialog = (nhanKhau: NhanKhau) => {
-    handleMenuClose();
-    setSelectedNhanKhau(nhanKhau);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleOpenBienDongForm = (nhanKhau: NhanKhau) => {
-    handleMenuClose();
-    setSelectedNhanKhau(nhanKhau);
-    setBienDongFormOpen(true);
-  };
+  // Use handlers hook
+  const {
+    handleAddNhanKhau,
+    handleUpdateNhanKhau,
+    handleDeleteNhanKhau,
+    handleBienDongSubmit,
+    handleOpenAddForm,
+    handleOpenEditForm,
+    handleOpenDeleteDialog,
+    handleOpenBienDongForm,
+  } = useNhanKhauHandlers({
+    loadNhanKhauData,
+    setFormOpen,
+    setBienDongFormOpen,
+    setDeleteDialogOpen,
+    setSelectedNhanKhau,
+    setEditingNhanKhau,
+    handleMenuClose,
+    selectedNhanKhau,
+  });
 
   // Xử lý xóa bộ lọc
   const handleClearFilters = () => {
@@ -567,6 +229,10 @@ export default function NhanKhauPage() {
     setAgeFilter('all');
     setGenderFilter('all');
     setLocationFilter('all');
+  };
+
+  const handleSearchChange = (value: string) => {
+    updateSearchValue(value);
   };
 
   // Xử lý xuất Excel
@@ -591,71 +257,6 @@ export default function NhanKhauPage() {
     }
   };
 
-  // Xử lý xuất file thực tế
-  const handleExportConfirm = async () => {
-    try {
-      // Load toàn bộ dữ liệu nếu chưa có
-      let allData = allNhanKhau;
-      if (allData.length === 0) {
-        allData = await loadAllDataForExport();
-        setAllNhanKhau(allData);
-      }
-
-      // Lọc dữ liệu
-      let filteredData = [...allData];
-
-      // Lọc theo tên/địa chỉ/quê quán/nơi sinh
-      if (exportSearchTerm.trim()) {
-        const searchLower = exportSearchTerm.toLowerCase();
-        filteredData = filteredData.filter(nk => {
-          const hoTen = (nk.hoTen || '').toLowerCase();
-          const diaChi = (nk.diaChiHoKhau || '').toLowerCase();
-          const queQuan = (nk.queQuan || '').toLowerCase();
-          const noiSinh = (nk.noiSinh || '').toLowerCase();
-          return hoTen.includes(searchLower) || 
-                 diaChi.includes(searchLower) || 
-                 queQuan.includes(searchLower) ||
-                 noiSinh.includes(searchLower);
-        });
-      }
-
-      // Lọc theo ngày sinh (chỉ khi có nhập)
-      if (exportFrom || exportTo) {
-        filteredData = filteredData.filter(nk => {
-          const ngaySinh = nk.ngaySinh;
-          if (!ngaySinh) return false;
-          if (exportFrom && ngaySinh < exportFrom) return false;
-          if (exportTo && ngaySinh > exportTo) return false;
-          return true;
-        });
-      }
-
-      if (filteredData.length === 0) {
-        setToastSeverity('warning');
-        setToastMsg('Không có dữ liệu phù hợp với bộ lọc');
-        setToastOpen(true);
-        return;
-      }
-
-      if (exportType === 'excel') {
-        exportToExcel(filteredData, 'Danh_sach_nhan_khau');
-        setToastSeverity('success');
-        setToastMsg('Xuất Excel thành công');
-      } else {
-        exportToPDF(filteredData, 'Danh sach Nhan khau');
-        setToastSeverity('success');
-        setToastMsg('Xuất PDF thành công');
-      }
-      setToastOpen(true);
-      setExportOpen(false);
-    } catch (e) {
-      console.error('Export failed', e);
-      setToastSeverity('error');
-      setToastMsg(`Xuất ${exportType === 'excel' ? 'Excel' : 'PDF'} thất bại`);
-      setToastOpen(true);
-    }
-  };
-
   // Phân trang - reset về page 0 khi thay đổi filter
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -666,10 +267,6 @@ export default function NhanKhauPage() {
     setPage(0);
   };
 
-  // Reset page khi filter thay đổi
-  const handleSearchChange = (value: string) => {
-    updateSearchValue(value);
-  };
 
   const handleAgeFilterChange = (value: string) => {
     setAgeFilter(value);
@@ -739,133 +336,22 @@ export default function NhanKhauPage() {
         </Stack>
       </Box>
 
-      {/* Thanh tìm kiếm */}
-      <Box sx={{ mb: 3, width: '100%' }}>
-        <TextField
-          fullWidth
-          placeholder="Tìm kiếm theo họ tên, CCCD, địa chỉ hộ khẩu, nghề nghiệp, mã hộ khẩu, ngày sinh..."
-          value={searchInputValue}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-            endAdornment: (
-              <InputAdornment position="end">
-                <Stack direction="row" spacing={0.5}>
-                  {searchInputValue && (
-                    <IconButton size="small" onClick={() => handleSearchChange('')}>
-                      <ClearIcon />
-                    </IconButton>
-                  )}
-                  <Tooltip title="Quét từ AppSheet">
-                    <IconButton
-                      size="small"
-                      onClick={() => setQrPollingModalOpen(true)}
-                    >
-                      <QrCodeScannerIcon />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-              </InputAdornment>
-            ),
-          }}
-          inputProps={{ readOnly: isAgentTypingSearch }}
-          helperText={
-            isAgentTypingSearch
-              ? 'Trợ lý ảo đang nhập từ khóa giúp bạn...'
-              : 'Bạn có thể nhập Họ tên, CCCD, hoặc địa chỉ hộ khẩu để tìm kiếm. Ví dụ: Nguyễn Mạnh Tí 023456789 hoặc Trần Thị Thảo Biệt thự The Vesta'
-          }
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              borderRadius: 2,
-            }
-          }}
-        />
-      </Box>
-
-      {/* Nút hiển thị/ẩn bộ lọc */}
-      <Box sx={{ mb: 2 }}>
-        <Button
-          startIcon={<FilterListIcon />}
-          onClick={() => setShowFilters(!showFilters)}
-          variant="outlined"
-          size="small"
-        >
-          {showFilters ? 'Ẩn bộ lọc' : 'Hiển thị bộ lọc'}
-        </Button>
-      </Box>
-
-      {/* Bộ lọc */}
-      {showFilters && (
-        <Paper sx={{ p: 2, mb: 3, bgcolor: 'background.default' }}>
-          <Stack spacing={2}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Độ tuổi</InputLabel>
-                <Select
-                  value={ageFilter}
-                  label="Độ tuổi"
-                  onChange={(e) => handleAgeFilterChange(e.target.value)}
-                >
-                  <MenuItem value="all">Tất cả</MenuItem>
-                  <MenuItem value="under18">Dưới 18 tuổi</MenuItem>
-                  <MenuItem value="18-35">18-35 tuổi</MenuItem>
-                  <MenuItem value="36-60">36-60 tuổi</MenuItem>
-                  <MenuItem value="over60">Trên 60 tuổi</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl fullWidth size="small">
-                <InputLabel>Giới tính</InputLabel>
-                <Select
-                  value={genderFilter}
-                  label="Giới tính"
-                  onChange={(e) => handleGenderFilterChange(e.target.value)}
-                >
-                  <MenuItem value="all">Tất cả</MenuItem>
-                  <MenuItem value="Nam">Nam</MenuItem>
-                  <MenuItem value="Nữ">Nữ</MenuItem>
-                </Select>
-              </FormControl>
-              <Autocomplete
-                fullWidth
-                size="small"
-                options={['all', ...vietnamProvinces]}
-                value={locationFilter}
-                onChange={(_event, newValue) => {
-                  handleLocationFilterChange(newValue || 'all');
-                }}
-                getOptionLabel={(option) => option === 'all' ? 'Tất cả' : option}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Quê quán"
-                    placeholder="Chọn hoặc nhập tỉnh/thành phố"
-                  />
-                )}
-                isOptionEqualToValue={(option, value) => option === value}
-                autoHighlight
-                ListboxProps={{
-                  style: {
-                    maxHeight: 300,
-                  },
-                }}
-              />
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<ClearIcon />}
-                onClick={handleClearFilters}
-                sx={{ minWidth: { sm: '150px' } }}
-              >
-                Xóa bộ lọc
-              </Button>
-            </Stack>
-          </Stack>
-        </Paper>
-      )}
+      {/* Search and Filter */}
+      <NhanKhauSearchAndFilter
+        searchInputValue={searchInputValue}
+        onSearchChange={handleSearchChange}
+        ageFilter={ageFilter}
+        onAgeFilterChange={handleAgeFilterChange}
+        genderFilter={genderFilter}
+        onGenderFilterChange={handleGenderFilterChange}
+        locationFilter={locationFilter}
+        onLocationFilterChange={handleLocationFilterChange}
+        showFilters={showFilters}
+        onToggleFilters={() => setShowFilters(!showFilters)}
+        onClearFilters={handleClearFilters}
+        isAgentTypingSearch={isAgentTypingSearch}
+        onOpenQrScanner={() => setQrPollingModalOpen(true)}
+      />
 
       {/* Kết quả tìm kiếm */}
       <Box sx={{ mb: 2 }}>
@@ -875,265 +361,29 @@ export default function NhanKhauPage() {
       </Box>
 
       {/* Bảng dữ liệu - Responsive */}
-      {isMobile ? (
-        // Mobile: Card view
-        <Box sx={{ width: '100%' }}>
-          {loading ? (
-            <Stack spacing={2}>
-              {[1, 2, 3].map((i) => (
-                <Card key={i}>
-                  <CardContent>
-                    <Skeleton variant="text" width="60%" height={30} />
-                    <Skeleton variant="text" width="40%" />
-                    <Skeleton variant="text" width="80%" />
-                  </CardContent>
-                </Card>
-              ))}
-            </Stack>
-          ) : displayedNhanKhau.length === 0 ? (
-            <Paper sx={{ p: 4, textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">
-                Không tìm thấy nhân khẩu nào
-              </Typography>
-            </Paper>
-          ) : (
-            <Stack spacing={2}>
-              {displayedNhanKhau.map((nhanKhau) => (
-                <Card key={nhanKhau.id} sx={{ '&:hover': { boxShadow: 3 } }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1rem' }}>
-                        {nhanKhau.hoTen}
-                      </Typography>
-                      <Chip
-                        label={nhanKhau.gioiTinh || 'N/A'}
-                        size="small"
-                        color={nhanKhau.gioiTinh === 'Nam' ? 'primary' : 'secondary'}
-                      />
-                    </Box>
-                    <Stack spacing={0.5}>
-                      <Typography variant="body2" color="text.secondary">
-                        <strong>CCCD:</strong> {nhanKhau.cmndCccd || 'N/A'}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        <strong>Ngày sinh:</strong> {new Date(nhanKhau.ngaySinh).toLocaleDateString('vi-VN')} ({calculateAge(nhanKhau.ngaySinh)} tuổi)
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        <strong>Nghề nghiệp:</strong> {nhanKhau.ngheNghiep || 'N/A'}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        <strong>Quan hệ:</strong> {nhanKhau.quanHeVoiChuHo}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        <strong>Mã HK:</strong> {nhanKhau.maHoKhau || 'N/A'}
-                      </Typography>
-                    </Stack>
-                  </CardContent>
-                  <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 2 }}>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => handleViewDetail(nhanKhau)}
-                    >
-                      Chi tiết
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      color="primary"
-                      onClick={() => handleOpenEditForm(nhanKhau)}
-                    >
-                      Sửa
-                    </Button>
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => handleOpenDeleteDialog(nhanKhau)}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </CardActions>
-                </Card>
-              ))}
-            </Stack>
-          )}
-        </Box>
-      ) : (
-        // Desktop: Table view
-        <Paper sx={{ borderRadius: 2, width: '100%' }}>
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <TableContainer sx={{ maxHeight: 600, overflow: 'auto' }}>
-              <Table sx={{ width: '100%', tableLayout: 'fixed' }} size="small" stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold', width: '5%', bgcolor: 'background.paper', zIndex: 1 }}>STT</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '18%', bgcolor: 'background.paper', zIndex: 1 }}>Họ và Tên</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '11%', bgcolor: 'background.paper', zIndex: 1 }}>Ngày sinh</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '6%', bgcolor: 'background.paper', zIndex: 1 }}>Tuổi</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '9%', bgcolor: 'background.paper', zIndex: 1 }}>Giới tính</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '12%', bgcolor: 'background.paper', zIndex: 1 }}>CCCD</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '14%', bgcolor: 'background.paper', zIndex: 1 }}>Nghề nghiệp</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '11%', bgcolor: 'background.paper', zIndex: 1 }}>Quan hệ</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '10%', bgcolor: 'background.paper', zIndex: 1 }}>Mã HK</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 'bold', width: '14%', bgcolor: 'background.paper', zIndex: 1 }}>Thao tác</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {nhanKhauList.map((nhanKhau, index) => (
-                  <TableRow key={nhanKhau.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                    <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-                    <TableCell sx={{
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap'
-                    }}>
-                      <Tooltip title={nhanKhau.hoTen}>
-                        <Typography variant="body2" fontWeight={600} noWrap>
-                          {nhanKhau.hoTen}
-                        </Typography>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell sx={{ fontSize: '0.85rem' }}>
-                      {new Date(nhanKhau.ngaySinh).toLocaleDateString('vi-VN')}
-                    </TableCell>
-                    <TableCell>{calculateAge(nhanKhau.ngaySinh)}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={nhanKhau.gioiTinh || 'N/A'}
-                        size="small"
-                        color={nhanKhau.gioiTinh === 'Nam' ? 'primary' : 'secondary'}
-                        sx={{ fontSize: '0.75rem', height: 24 }}
-                      />
-                    </TableCell>
-                    <TableCell sx={{ fontSize: '0.85rem' }}>{nhanKhau.cmndCccd || 'N/A'}</TableCell>
-                    <TableCell sx={{
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap'
-                    }}>
-                      <Tooltip title={nhanKhau.ngheNghiep || 'N/A'}>
-                        <span>{nhanKhau.ngheNghiep || 'N/A'}</span>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={nhanKhau.quanHeVoiChuHo}
-                        size="small"
-                        variant="outlined"
-                        sx={{ fontSize: '0.7rem', height: 24 }}
-                      />
-                    </TableCell>
-                    <TableCell sx={{ fontSize: '0.85rem' }}>{nhanKhau.maHoKhau || 'N/A'}</TableCell>
-                    <TableCell align="center">
-                      <Stack direction="row" spacing={0.5} justifyContent="center">
-                        <Tooltip title="Xem chi tiết">
-                          <IconButton
-                            size="small"
-                            color="info"
-                            onClick={() => handleViewDetail(nhanKhau)}
-                          >
-                            <VisibilityIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Chỉnh sửa">
-                          <IconButton
-                            size="small"
-                            color="primary"
-                            onClick={() => handleOpenEditForm(nhanKhau)}
-                          >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Xóa">
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleOpenDeleteDialog(nhanKhau)}
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Thao tác khác">
-                          <IconButton
-                            size="small"
-                            onClick={(e) => handleMenuClick(e, nhanKhau)}
-                          >
-                            <MoreVertIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {nhanKhauList.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Không tìm thấy nhân khẩu nào
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          )}
-        </Paper>
-      )}
+      <NhanKhauTable
+        nhanKhauList={nhanKhauList}
+        displayedNhanKhau={displayedNhanKhau}
+        loading={loading}
+        isMobile={isMobile}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        calculateAge={calculateAge}
+        handleViewDetail={handleViewDetail}
+        handleOpenEditForm={handleOpenEditForm}
+        handleOpenDeleteDialog={handleOpenDeleteDialog}
+        handleMenuClick={handleMenuClick}
+      />
 
-      {/* Export options dialog */}
-      <Dialog open={exportOpen} onClose={() => setExportOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Tùy chọn xuất {exportType === 'excel' ? 'Excel' : 'PDF'}</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              fullWidth
-              variant="outlined"
-              placeholder="Lọc theo họ tên, địa chỉ, quê quán, nơi sinh..."
-              value={exportSearchTerm}
-              onChange={(e) => setExportSearchTerm(e.target.value)}
-            />
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                type="date"
-                label="Từ ngày"
-                InputLabelProps={{ shrink: true }}
-                value={exportFrom}
-                onChange={(e) => setExportFrom(e.target.value)}
-                fullWidth
-              />
-              <TextField
-                type="date"
-                label="Đến ngày"
-                InputLabelProps={{ shrink: true }}
-                value={exportTo}
-                onChange={(e) => setExportTo(e.target.value)}
-                fullWidth
-              />
-            </Stack>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setExportOpen(false)}>Hủy</Button>
-          <Button variant="contained" onClick={handleExportConfirm}>Xuất</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Snackbar notifications */}
-      <Snackbar
-        open={toastOpen}
-        autoHideDuration={3500}
-        onClose={() => setToastOpen(false)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
-        <Alert elevation={6} variant="filled" onClose={() => setToastOpen(false)} severity={toastSeverity} sx={{ width: '100%' }}>
-          {toastMsg}
-        </Alert>
-      </Snackbar>
+      {/* Export Dialog */}
+      <NhanKhauExportDialog
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        exportType={exportType}
+        allNhanKhau={allNhanKhau}
+        loadAllDataForExport={loadAllDataForExport}
+        setAllNhanKhau={setAllNhanKhau}
+      />
 
       {/* Phân trang */}
       <TablePagination
@@ -1216,6 +466,7 @@ export default function NhanKhauPage() {
         onClose={() => setQrPollingModalOpen(false)}
         onReceiveQRCode={handleReceiveQRCode}
       />
+
     </Box>
   );
 }

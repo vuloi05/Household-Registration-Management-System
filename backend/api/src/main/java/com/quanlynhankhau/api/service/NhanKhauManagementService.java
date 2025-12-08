@@ -7,7 +7,6 @@ import java.time.Period;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -25,11 +24,14 @@ import com.quanlynhankhau.api.repository.NhanKhauRepository;
 @Service
 public class NhanKhauManagementService {
 
-    @Autowired
-    private NhanKhauRepository nhanKhauRepository;
+    private final NhanKhauRepository nhanKhauRepository;
 
-    @Autowired
-    private HoKhauRepository hoKhauRepository;
+    private final HoKhauRepository hoKhauRepository;
+
+    public NhanKhauManagementService(NhanKhauRepository nhanKhauRepository, HoKhauRepository hoKhauRepository) {
+        this.nhanKhauRepository = nhanKhauRepository;
+        this.hoKhauRepository = hoKhauRepository;
+    }
 
     /**
      * Lấy tất cả nhân khẩu với phân trang và các bộ lọc.
@@ -50,7 +52,7 @@ public class NhanKhauManagementService {
                 .filter(nk -> applyAgeFilter(nk, ageFilter))
                 .filter(nk -> applyGenderFilter(nk, genderFilter))
                 .filter(nk -> applyLocationFilter(nk, locationFilter))
-                .collect(Collectors.toList());
+                .toList();
 
         // Phân trang thủ công
         int start = (int) pageable.getOffset();
@@ -94,8 +96,7 @@ public class NhanKhauManagementService {
     }
 
     /**
-     * Lọc theo tìm kiếm (tên, CCCD, nghề nghiệp, mã hộ khẩu, ngày sinh, địa chỉ hộ khẩu).
-     * Hỗ trợ tìm kiếm đa trường: "Nguyễn Văn A 023456789 HK001 Biệt thự The Vesta"
+     * Lọc theo tìm kiếm (chỉ tìm kiếm theo họ tên, CCCD, quê quán, ngày sinh).
      */
     private boolean applySearchFilter(NhanKhau nhanKhau, String search) {
         if (search == null || search.isEmpty()) {
@@ -104,22 +105,16 @@ public class NhanKhauManagementService {
         
         String searchLower = search.toLowerCase().trim();
         
-        // Chuẩn bị các trường để tìm kiếm
+        // Chuẩn bị các trường để tìm kiếm (chỉ 4 trường: họ tên, CCCD, quê quán, ngày sinh)
         String hoTenLower = nhanKhau.getHoTen() != null ? nhanKhau.getHoTen().toLowerCase() : "";
         String cmndCccdLower = nhanKhau.getCmndCccd() != null ? nhanKhau.getCmndCccd().toLowerCase() : "";
-        String ngheNghiepLower = nhanKhau.getNgheNghiep() != null ? nhanKhau.getNgheNghiep().toLowerCase() : "";
-        String maHoKhauLower = nhanKhau.getHoKhau() != null && nhanKhau.getHoKhau().getMaHoKhau() != null 
-            ? nhanKhau.getHoKhau().getMaHoKhau().toLowerCase() : "";
-        String diaChiHoKhauLower = nhanKhau.getHoKhau() != null && nhanKhau.getHoKhau().getDiaChi() != null 
-            ? nhanKhau.getHoKhau().getDiaChi().toLowerCase() : "";
+        String queQuanLower = nhanKhau.getQueQuan() != null ? nhanKhau.getQueQuan().toLowerCase() : "";
         String ngaySinhStr = nhanKhau.getNgaySinh() != null ? nhanKhau.getNgaySinh().toString() : "";
         
-        // Tìm kiếm đơn giản: kiểm tra trong tất cả các trường
+        // Tìm kiếm đơn giản: kiểm tra trong 4 trường
         if (hoTenLower.contains(searchLower) || 
             cmndCccdLower.contains(searchLower) ||
-            ngheNghiepLower.contains(searchLower) ||
-            maHoKhauLower.contains(searchLower) ||
-            diaChiHoKhauLower.contains(searchLower) ||
+            queQuanLower.contains(searchLower) ||
             ngaySinhStr.contains(searchLower)) {
             return true;
         }
@@ -132,9 +127,7 @@ public class NhanKhauManagementService {
             if (!word.isEmpty()) {
                 if (hoTenLower.contains(word) || 
                     cmndCccdLower.contains(word) ||
-                    ngheNghiepLower.contains(word) ||
-                    maHoKhauLower.contains(word) ||
-                    diaChiHoKhauLower.contains(word) ||
+                    queQuanLower.contains(word) ||
                     ngaySinhStr.contains(word)) {
                     matchCount++;
                 }
@@ -159,18 +152,13 @@ public class NhanKhauManagementService {
 
         int age = Period.between(nhanKhau.getNgaySinh(), LocalDate.now()).getYears();
 
-        switch (ageFilter) {
-            case "under18":
-                return age < 18;
-            case "18-35":
-                return age >= 18 && age <= 35;
-            case "36-60":
-                return age >= 36 && age <= 60;
-            case "over60":
-                return age > 60;
-            default:
-                return true;
-        }
+        return switch (ageFilter) {
+            case "under18" -> age < 18;
+            case "18-35" -> age >= 18 && age <= 35;
+            case "36-60" -> age >= 36 && age <= 60;
+            case "over60" -> age > 60;
+            default -> true;
+        };
     }
 
     /**
@@ -207,9 +195,7 @@ public class NhanKhauManagementService {
 
         // Lọc theo địa chỉ hộ khẩu
         if (nhanKhau.getHoKhau() != null && nhanKhau.getHoKhau().getDiaChi() != null) {
-            if (nhanKhau.getHoKhau().getDiaChi().toLowerCase().contains(locationFilterLower)) {
-                return true;
-            }
+            return nhanKhau.getHoKhau().getDiaChi().toLowerCase().contains(locationFilterLower);
         }
 
         return false;

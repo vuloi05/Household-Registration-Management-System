@@ -1,14 +1,10 @@
-// src/main/java/com/quanlynhankhau/api/controller/KhoanThuController.java
-
 package com.quanlynhankhau.api.controller;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,11 +25,13 @@ import com.quanlynhankhau.api.service.LichSuNopTienService;
 @RequestMapping("/api/khoanthu")
 public class KhoanThuController {
 
-    @Autowired
-    private KhoanThuService khoanThuService;
+    private final KhoanThuService khoanThuService;
+    private final LichSuNopTienService lichSuNopTienService;
 
-    @Autowired
-    private LichSuNopTienService lichSuNopTienService;
+    public KhoanThuController(KhoanThuService khoanThuService, LichSuNopTienService lichSuNopTienService) {
+        this.khoanThuService = khoanThuService;
+        this.lichSuNopTienService = lichSuNopTienService;
+    }
 
     // Các endpoint CRUD cho Khoản thu, được phân quyền cho cả ADMIN và ACCOUNTANT
 

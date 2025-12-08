@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
 import type { AgentAction, Message } from './types';
@@ -42,7 +42,7 @@ export function useChatbotActions({ setMessages }: UseChatbotActionsParams) {
     }
   };
 
-  const updateStatusMessage = (statusId: string, updates: Partial<Message>) => {
+  const updateStatusMessage = useCallback((statusId: string, updates: Partial<Message>) => {
     clearStatusTimeout(statusId);
     const timestamp = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     setMessages((prev) =>
@@ -57,7 +57,7 @@ export function useChatbotActions({ setMessages }: UseChatbotActionsParams) {
         };
       })
     );
-  };
+  }, [setMessages]);
 
   const scheduleStatusAutoComplete = (statusId: string, text: string, delay = 1200) => {
     clearStatusTimeout(statusId);
@@ -111,7 +111,7 @@ export function useChatbotActions({ setMessages }: UseChatbotActionsParams) {
           .filter(Boolean)
           .join('\n');
         pushBotMessage(summary);
-      } catch (err) {
+      } catch {
         // Im lặng nếu tóm tắt lỗi, tránh làm phiền người dùng
       }
     };
@@ -128,13 +128,14 @@ export function useChatbotActions({ setMessages }: UseChatbotActionsParams) {
           navigate('/ho-khau');
           scheduleStatusAutoComplete(statusId, '✅ Đã mở trang Quản lý Hộ khẩu!', 900);
         } else if (act.target === 'household_detail' && act.params?.householdId) {
-          const statusId = pushStatusMessage(`Đang mở chi tiết hộ khẩu ${act.params.householdId}...`);
+          const householdId = String(act.params.householdId);
+          const statusId = pushStatusMessage(`Đang mở chi tiết hộ khẩu ${householdId}...`);
           act.statusId = statusId;
-          enqueueSnackbar(`Agent: Đang mở chi tiết hộ khẩu ${act.params.householdId}`, { variant: 'info' });
-          navigate(`/ho-khau/${encodeURIComponent(act.params.householdId)}`);
-          scheduleStatusAutoComplete(statusId, `✅ Đã mở chi tiết hộ khẩu: ${act.params.householdId}`, 1000);
+          enqueueSnackbar(`Agent: Đang mở chi tiết hộ khẩu ${householdId}`, { variant: 'info' });
+          navigate(`/ho-khau/${encodeURIComponent(householdId)}`);
+          scheduleStatusAutoComplete(statusId, `✅ Đã mở chi tiết hộ khẩu: ${householdId}`, 1000);
           // Sau khi mở trang, gửi kèm tóm tắt thông tin hộ khẩu
-          void pushHouseholdSummary(act.params.householdId);
+          void pushHouseholdSummary(householdId);
         } else if (act.target === 'person_list') {
           const statusId = pushStatusMessage('Đang mở trang Quản lý Nhân khẩu...');
           act.statusId = statusId;
@@ -200,7 +201,7 @@ export function useChatbotActions({ setMessages }: UseChatbotActionsParams) {
     };
     window.addEventListener('agent-action-status', handler as EventListener);
     return () => window.removeEventListener('agent-action-status', handler as EventListener);
-  }, []);
+  }, [updateStatusMessage]);
 
   return {
     pushAgentAction,

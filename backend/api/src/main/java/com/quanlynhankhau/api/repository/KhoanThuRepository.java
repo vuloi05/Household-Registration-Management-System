@@ -1,5 +1,3 @@
-// src/main/java/com/quanlynhankhau/api/repository/KhoanThuRepository.java
-
 package com.quanlynhankhau.api.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;

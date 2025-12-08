@@ -102,9 +102,9 @@ export const exportToExcel = (data: NhanKhau[], filename: string = 'Danh_sach_nh
 };
 
 /**
- * Xuất dữ liệu ra file PDF với font tiếng Việt có dấu
+ * Tạo PDF document từ dữ liệu nhân khẩu (dùng chung cho export và preview)
  */
-export const exportToPDF = (data: NhanKhau[], title: string = 'Danh sách Nhân khẩu') => {
+const createPDFDocument = (data: NhanKhau[], title: string = 'Danh sách Nhân khẩu'): jsPDF => {
   // Khởi tạo jsPDF với orientation landscape để có nhiều không gian
   const doc = new jsPDF({
     orientation: 'landscape',
@@ -118,7 +118,7 @@ export const exportToPDF = (data: NhanKhau[], title: string = 'Danh sách Nhân 
   // Tiêu đề - GIỮ NGUYÊN TIẾNG VIỆT CÓ DẤU
   doc.setFontSize(16);
   doc.setFont('Roboto', 'bold');
-  doc.text('DANH SÁCH NHÂN KHẨU', doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+  doc.text(title.toUpperCase(), doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
   
   // Ngày xuất
   doc.setFontSize(10);
@@ -188,6 +188,24 @@ export const exportToPDF = (data: NhanKhau[], title: string = 'Danh sách Nhân 
     margin: { top: 32 },
   });
 
+  return doc;
+};
+
+/**
+ * Tạo PDF và trả về blob URL để preview
+ */
+export const generatePDFBlobUrl = (data: NhanKhau[], title: string = 'Danh sách Nhân khẩu'): string => {
+  const doc = createPDFDocument(data, title);
+  const pdfBlob = doc.output('blob');
+  const pdfUrl = URL.createObjectURL(pdfBlob);
+  return pdfUrl;
+};
+
+/**
+ * Xuất dữ liệu ra file PDF với font tiếng Việt có dấu
+ */
+export const exportToPDF = (data: NhanKhau[], title: string = 'Danh sách Nhân khẩu') => {
+  const doc = createPDFDocument(data, title);
   // Xuất file
   const timestamp = new Date().toISOString().split('T')[0];
   doc.save(`${title.replace(/\s+/g, '_')}_${timestamp}.pdf`);

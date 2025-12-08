@@ -4,7 +4,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, TextField, Box, Divider, Typography,
   FormControl, InputLabel, Select, MenuItem,
-  IconButton, InputAdornment, Tooltip
+  Tooltip
 } from '@mui/material';
 import { QrCodeScanner as QrCodeScannerIcon } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
@@ -82,7 +82,6 @@ export default function NhanKhauForm({ open, onClose, onSubmit, initialData, sho
   const handleQRSuccess = (decodedText: string) => {
     const parts = (decodedText || '').split('|').map(p => p.trim());
     const cccd = parts[0] || '';
-    const _cmnd = parts[1] || '';
     const hoTen = parts[2] || '';
     const ngaySinhISO = parseDateDDMMYYYYToISO(parts[3] || '');
     const gioiTinh = parts[4] === 'Nam' || parts[4] === 'Nữ' ? parts[4] : '';
@@ -92,7 +91,7 @@ export default function NhanKhauForm({ open, onClose, onSubmit, initialData, sho
     if (cccd) setValue('cmndCccd', cccd, { shouldValidate: true });
     if (hoTen) setValue('hoTen', hoTen, { shouldValidate: true });
     if (ngaySinhISO) setValue('ngaySinh', ngaySinhISO, { shouldValidate: true });
-    if (gioiTinh) setValue('gioiTinh', gioiTinh as any, { shouldValidate: true });
+    if (gioiTinh) setValue('gioiTinh', gioiTinh, { shouldValidate: true });
     // Lấy tỉnh/thành (sau dấu phẩy cuối cùng) làm "Quê quán"
     if (diaChi) {
       const lastSegment = diaChi.split(',').pop()?.trim() || '';

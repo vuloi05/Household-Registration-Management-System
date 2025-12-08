@@ -1,6 +1,6 @@
 // src/pages/KhoanThuDetailPage.tsx
 
-import { Box, Typography, Paper, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, TextField, InputAdornment, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Stack, MenuItem, Select, FormControl, InputLabel, Snackbar, Alert } from '@mui/material';
+import { Box, Typography, Paper, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, TextField, InputAdornment, IconButton } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import PeopleIcon from '@mui/icons-material/People';
@@ -9,10 +9,6 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DownloadIcon from '@mui/icons-material/Download';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
-import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { setupVietnameseFont } from '../utils/fonts/setupFonts';
 import StatCard from '../components/dashboard/StatCard';
 
 import { getKhoanThuById, getLichSuNopTienByKhoanThuId, getThongKeKhoanThu } from '../api/khoanThuApi';
@@ -20,8 +16,8 @@ import { getDanhSachHoKhau } from '../api/hoKhauApi';
 import type { HoKhau } from '../api/hoKhauApi';
 import type { KhoanThu, ThongKeKhoanThu } from '../api/khoanThuApi';
 import type { LichSuNopTien } from '../api/nopTienApi';
-
-const formatCurrency = (value: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+import { formatCurrency } from '../utils/khoanThuExportUtils';
+import KhoanThuExportDialog from '../components/khoanThu/KhoanThuExportDialog';
 
 const makeSearchableText = (item: LichSuNopTien): string => {
       const plainAmount = (item.soTien ?? 0).toString();
@@ -35,97 +31,6 @@ const makeSearchableText = (item: LichSuNopTien): string => {
         .join(' ')
         .toLowerCase();
     };
-
-type ExportRow = {
-  hoTen: string;
-  diaChi: string;
-  ngayNop?: string | '';
-  soTien?: number | 0;
-};
-
-// Hàm xuất Excel
-const exportToExcel = (rows: ExportRow[]) => {
-  const worksheetData = rows.map((item, index) => ({
-    'STT': index + 1,
-    'Họ tên Chủ hộ': item.hoTen || '',
-    'Địa chỉ': item.diaChi || '',
-    'Ngày nộp': item.ngayNop || '',
-    'Số tiền': item.soTien || 0
-  }));
-
-  const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Danh sách các hộ');
-  
-  const timestamp = new Date().toISOString().split('T')[0];
-  const fileName = `Danh_sach_cac_ho_${timestamp}.xlsx`;
-  XLSX.writeFile(workbook, fileName);
-};
-
-// Hàm xuất PDF
-const exportToPDF = (rows: ExportRow[], khoanThu: KhoanThu) => {
-  const doc = new jsPDF();
-  // Embed Vietnamese-capable font (Roboto) so accents render correctly
-  setupVietnameseFont(doc);
-  
-  // Tiêu đề
-  doc.setFontSize(16);
-  doc.setFont('Roboto', 'bold');
-  doc.text('DANH SÁCH CÁC HỘ', 105, 20, { align: 'center' });
-  
-  // Thông tin khoản thu
-  doc.setFontSize(12);
-  doc.setFont('Roboto', 'normal');
-  doc.text(`Khoản thu: ${khoanThu.tenKhoanThu}`, 20, 35);
-  doc.text(`Loại: ${khoanThu.loaiKhoanThu === 'BAT_BUOC' ? 'Bắt buộc' : 'Đóng góp'}`, 20, 42);
-  doc.text(`Ngày xuất: ${new Date().toLocaleDateString('vi-VN')}`, 20, 49);
-  doc.text(`Tổng số: ${rows.length} hộ`, 20, 56);
-  
-  // Chuẩn bị dữ liệu cho bảng
-  const tableData = rows.map((item, index) => [
-    index + 1,
-    item.hoTen || '',
-    item.diaChi || '',
-    item.ngayNop || '',
-    formatCurrency(item.soTien || 0)
-  ]);
-  
-  // Tạo bảng với font chuẩn
-  autoTable(doc, {
-    head: [['STT', 'Họ tên Chủ hộ', 'Địa chỉ', 'Ngày nộp', 'Số tiền']],
-    body: tableData,
-    startY: 65,
-    styles: { 
-      fontSize: 9,
-      font: 'Roboto',
-      fontStyle: 'normal'
-    },
-    headStyles: { 
-      fillColor: [220, 53, 47],
-      font: 'Roboto',
-      fontStyle: 'bold',
-      textColor: [255, 255, 255]
-    },
-    bodyStyles: {
-      font: 'Roboto',
-      fontStyle: 'normal'
-    },
-    columnStyles: {
-      0: { cellWidth: 15, halign: 'center' },
-      1: { cellWidth: 40, halign: 'left' },
-      2: { cellWidth: 50, halign: 'left' },
-      3: { cellWidth: 25, halign: 'center' },
-      4: { cellWidth: 30, halign: 'right' }
-    },
-    alternateRowStyles: {
-      fillColor: [245, 245, 245]
-    }
-  });
-  
-  const timestamp = new Date().toISOString().split('T')[0];
-  const fileName = `Danh_sach_cac_ho_${timestamp}.pdf`;
-  doc.save(fileName);
-};
 
 export default function KhoanThuDetailPage() {
   const { khoanThuId } = useParams<{ khoanThuId: string }>();
@@ -143,13 +48,6 @@ export default function KhoanThuDetailPage() {
   // Export dialog state
   const [exportOpen, setExportOpen] = useState(false);
   const [exportType, setExportType] = useState<'excel' | 'pdf'>('excel');
-  const [exportStatus, setExportStatus] = useState<'ALL' | 'PAID' | 'UNPAID'>('PAID');
-  const [exportSearchTerm, setExportSearchTerm] = useState('');
-  const [exportFrom, setExportFrom] = useState<string>('');
-  const [exportTo, setExportTo] = useState<string>('');
-  const [toastOpen, setToastOpen] = useState(false);
-  const [toastMsg, setToastMsg] = useState('');
-  const [toastSeverity, setToastSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('success');
 
   useEffect(() => {
     if (khoanThuId) {
@@ -183,7 +81,7 @@ export default function KhoanThuDetailPage() {
       try {
         const all = await getDanhSachHoKhau();
         setAllHouseholds(all);
-      } catch (e) {
+      } catch {
         // ignore
       }
     })();
@@ -270,69 +168,6 @@ export default function KhoanThuDetailPage() {
     setSearchTerm('');
   };
 
-  // Build export rows based on dialog options
-  const buildExportRows = (): ExportRow[] => {
-    // Helper compare date within range (inclusive)
-    const inRange = (ngay: string | undefined): boolean => {
-      if (!ngay) return false;
-      if (exportFrom && ngay < exportFrom) return false;
-      if (exportTo && ngay > exportTo) return false;
-      return true;
-    };
-
-    if (exportStatus === 'PAID') {
-      const paid = lichSuList.filter(r => {
-        if (!exportFrom && !exportTo) return true;
-        return inRange(r.ngayNop);
-      });
-      return paid.filter(item => {
-        if (!exportSearchTerm) return true;
-        const searchableText = makeSearchableText(item);
-        return searchableText.includes(exportSearchTerm.toLowerCase());
-      }).map(r => ({
-        hoTen: r.hoKhau.chuHo?.hoTen || '',
-        diaChi: r.hoKhau.diaChi || '',
-        ngayNop: r.ngayNop || '',
-        soTien: r.soTien || 0,
-      }));
-    }
-
-    const hoDaNopIds = new Set(lichSuList.map(r => r.hoKhau.id));
-
-    if (exportStatus === 'UNPAID') {
-      return allHouseholds
-        .filter(h => !hoDaNopIds.has(h.id))
-        .map(h => ({
-          hoTen: h.chuHo?.hoTen || '',
-          diaChi: h.diaChi || '',
-          ngayNop: '',
-          soTien: 0,
-        }));
-    }
-
-    // ALL
-    const rowsPaid = lichSuList.filter(r => {
-      if (!exportFrom && !exportTo) return true;
-      return inRange(r.ngayNop);
-    }).map(r => ({
-      hoTen: r.hoKhau.chuHo?.hoTen || '',
-      diaChi: r.hoKhau.diaChi || '',
-      ngayNop: r.ngayNop || '',
-      soTien: r.soTien || 0,
-    }));
-
-    const rowsUnpaid = allHouseholds
-      .filter(h => !hoDaNopIds.has(h.id))
-      .map(h => ({
-        hoTen: h.chuHo?.hoTen || '',
-        diaChi: h.diaChi || '',
-        ngayNop: '',
-        soTien: 0,
-      }));
-
-    return [...rowsPaid, ...rowsUnpaid];
-  };
-
   if (loading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>;
   }
@@ -394,94 +229,18 @@ export default function KhoanThuDetailPage() {
         </Box>
       </Box>
 
-      {/* Export options dialog */}
-      <Dialog open={exportOpen} onClose={() => setExportOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Tùy chọn xuất {exportType === 'excel' ? 'Excel' : 'PDF'}</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <FormControl fullWidth>
-              <InputLabel>Đối tượng</InputLabel>
-              <Select
-                label="Đối tượng"
-                value={exportStatus}
-                onChange={(e) => setExportStatus(e.target.value as any)}
-              >
-                <MenuItem value="PAID">Chỉ hộ đã nộp</MenuItem>
-                <MenuItem value="UNPAID">Chỉ hộ chưa nộp</MenuItem>
-                <MenuItem value="ALL">Tất cả</MenuItem>
-              </Select>
-            </FormControl>
-            <TextField
-              fullWidth
-              variant="outlined"
-              placeholder="Lọc theo họ tên, địa chỉ..."
-              value={exportSearchTerm}
-              onChange={(e) => setExportSearchTerm(e.target.value)}
-            />
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                type="date"
-                label="Từ ngày"
-                InputLabelProps={{ shrink: true }}
-                value={exportFrom}
-                onChange={(e) => setExportFrom(e.target.value)}
-                fullWidth
-              />
-              <TextField
-                type="date"
-                label="Đến ngày"
-                InputLabelProps={{ shrink: true }}
-                value={exportTo}
-                onChange={(e) => setExportTo(e.target.value)}
-                fullWidth
-              />
-            </Stack>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setExportOpen(false)}>Hủy</Button>
-          <Button variant="contained" onClick={() => {
-            // validate date range is required per request
-            if (!exportFrom || !exportTo) {
-              setToastSeverity('error');
-              setToastMsg(`Xuất ${exportType === 'excel' ? 'Excel' : 'PDF'} thất bại: vui lòng chọn Từ ngày và Đến ngày`);
-              setToastOpen(true);
-              return;
-            }
-            try {
-              const rows = buildExportRows();
-              if (exportType === 'excel') {
-                exportToExcel(rows);
-                setToastSeverity('success');
-                setToastMsg('Xuất Excel thành công');
-              } else {
-                exportToPDF(rows, khoanThu!);
-                setToastSeverity('success');
-                setToastMsg('Xuất PDF thành công');
-              }
-              setToastOpen(true);
-              setExportOpen(false);
-            } catch (e) {
-              console.error('Export failed', e);
-              setToastSeverity('error');
-              setToastMsg(`Xuất ${exportType === 'excel' ? 'Excel' : 'PDF'} thất bại`);
-              setToastOpen(true);
-            }
-          }}>Xuất</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Snackbar notifications */}
-      <Snackbar
-        open={toastOpen}
-        autoHideDuration={3500}
-        onClose={() => setToastOpen(false)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
-        <Alert elevation={6} variant="filled" onClose={() => setToastOpen(false)} severity={toastSeverity} sx={{ width: '100%' }}>
-          {toastMsg}
-        </Alert>
-      </Snackbar>
+      {/* Export Dialog */}
+      {khoanThu && (
+        <KhoanThuExportDialog
+          open={exportOpen}
+          onClose={() => setExportOpen(false)}
+          exportType={exportType}
+          khoanThu={khoanThu}
+          lichSuList={lichSuList}
+          allHouseholds={allHouseholds}
+          makeSearchableText={makeSearchableText}
+        />
+      )}
 
       {/* <<<< SỬA LỖI Ở ĐÂY: Dùng Box với CSS Grid thay cho component Grid >>>> */}
       <Box 
@@ -610,6 +369,7 @@ export default function KhoanThuDetailPage() {
           </TableContainer>
         </Paper>
       )}
+
     </Box>
   );
 }

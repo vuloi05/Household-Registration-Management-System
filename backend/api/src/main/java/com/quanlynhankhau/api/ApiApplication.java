@@ -16,9 +16,7 @@ public class ApiApplication {
 				.load();
 		
 		// Set system properties from .env file
-		dotenv.entries().forEach(entry -> {
-			System.setProperty(entry.getKey(), entry.getValue());
-		});
+		dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
 		
 		SpringApplication.run(ApiApplication.class, args);
 	}

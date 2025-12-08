@@ -1,5 +1,6 @@
 // src/api/nhanKhauApi.ts
 import type { NhanKhauFormValues } from '../types/nhanKhau';
+import type { AxiosError } from 'axios';
 import axiosClient from './axiosClient';
 
 // Kiểu dữ liệu cho nhân khẩu, có thể mở rộng sau
@@ -99,10 +100,13 @@ export const searchNhanKhauByCmndCccd = async (cmndCccd: string): Promise<NhanKh
     try {
         const response = await axiosClient.get(`/nhankhau/search?cmndCccd=${cmndCccd}`);
         return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
         // Nếu không tìm thấy (404), trả về null
-        if (error.response?.status === 404) {
-            return null;
+        if (error && typeof error === 'object' && 'response' in error) {
+            const axiosError = error as AxiosError;
+            if (axiosError.response?.status === 404) {
+                return null;
+            }
         }
         throw error;
     }
@@ -131,10 +135,13 @@ export const checkHouseholdInfo = async (cmndCccd: string): Promise<HouseholdChe
     try {
         const response = await axiosClient.get(`/nhankhau/check-household?cmndCccd=${cmndCccd}`);
         return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
         // Nếu không tìm thấy (404), trả về null
-        if (error.response?.status === 404) {
-            return null;
+        if (error && typeof error === 'object' && 'response' in error) {
+            const axiosError = error as AxiosError;
+            if (axiosError.response?.status === 404) {
+                return null;
+            }
         }
         throw error;
     }

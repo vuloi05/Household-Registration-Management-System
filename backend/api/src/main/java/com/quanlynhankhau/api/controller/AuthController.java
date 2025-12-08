@@ -1,7 +1,5 @@
-// src/main/java/com/quanlynhankhau/api/controller/AuthController.java
 package com.quanlynhankhau.api.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -19,20 +17,22 @@ import com.quanlynhankhau.api.service.AuthService;
 @CrossOrigin(origins = {"http://localhost:5173", "*"})  // Cho phép CORS từ mobile app
 public class AuthController {
 
-    @Autowired
-    private AuthService authService;
+    private final AuthService authService;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    public AuthController(AuthService authService, PasswordEncoder passwordEncoder) {
+        this.authService = authService;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @PostMapping("/login")
-    public ResponseEntity<?> createAuthenticationToken(@RequestBody AuthRequest authRequest) throws Exception {
+    public ResponseEntity<?> createAuthenticationToken(@RequestBody AuthRequest authRequest) {
         final String jwt = authService.authenticate(authRequest);
         return ResponseEntity.ok(new AuthResponse(jwt));
     }
     
     @PostMapping("/login-with-refresh")
-    public ResponseEntity<?> createAuthenticationTokenWithRefresh(@RequestBody AuthRequest authRequest) throws Exception {
+    public ResponseEntity<?> createAuthenticationTokenWithRefresh(@RequestBody AuthRequest authRequest) {
         Map<String, String> tokens = authService.authenticateWithRefreshToken(authRequest);
         return ResponseEntity.ok(tokens);
     }

@@ -31,7 +31,7 @@ export default function NotificationButton() {
   const [notifications, setNotifications] = useState<PaymentNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const open = Boolean(anchorEl);
 

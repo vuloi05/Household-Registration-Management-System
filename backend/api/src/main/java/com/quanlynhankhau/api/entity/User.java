@@ -1,5 +1,3 @@
-// src/main/java/com/quanlynhankhau/api/entity/User.java
-
 package com.quanlynhankhau.api.entity;
 
 import java.util.Collection;

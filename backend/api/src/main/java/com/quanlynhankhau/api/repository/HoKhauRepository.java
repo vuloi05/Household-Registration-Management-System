@@ -1,5 +1,3 @@
-// src/main/java/com/quanlynhankhau/api/repository/HoKhauRepository.java
-
 package com.quanlynhankhau.api.repository;
 
 import com.quanlynhankhau.api.entity.HoKhau;

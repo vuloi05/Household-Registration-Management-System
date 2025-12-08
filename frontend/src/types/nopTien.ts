@@ -5,7 +5,11 @@ import type { HoKhau } from '../api/hoKhauApi';
 export const nopTienSchema = z.object({
  // hoKhau giờ là một object, không phải là number
   hoKhau: z.custom<HoKhau>(
-    (val) => val != null && typeof (val as any).id === 'number', 
+    (val): val is HoKhau => {
+      if (val == null || typeof val !== 'object') return false;
+      const obj = val as Record<string, unknown>;
+      return typeof obj.id === 'number';
+    }, 
     { message: 'Vui lòng chọn một hộ khẩu' }
   ),
 

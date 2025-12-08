@@ -1,10 +1,7 @@
-// src/main/java/com/quanlynhankhau/api/controller/NhanKhauController.java
-
 package com.quanlynhankhau.api.controller;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*; //import tất cả
@@ -22,8 +19,11 @@ import com.quanlynhankhau.api.service.NhanKhauService;
 
 public class NhanKhauController {
 
-    @Autowired
-    private NhanKhauService nhanKhauService;
+    private final NhanKhauService nhanKhauService;
+
+    public NhanKhauController(NhanKhauService nhanKhauService) {
+        this.nhanKhauService = nhanKhauService;
+    }
 
     // API 1: Lấy danh sách nhân khẩu theo ID hộ khẩu
     // - Method: GET
@@ -45,15 +45,18 @@ public class NhanKhauController {
         return new ResponseEntity<>(savedNhanKhau, HttpStatus.CREATED);
     }
 
-        /**
+    /**
      * API cập nhật một nhân khẩu đã tồn tại.
      */
     @PutMapping("/{nhanKhauId}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<NhanKhau> updateNhanKhau(
-            @PathVariable Long hoKhauId, // Biến này vẫn cần để khớp với URL của RequestMapping
+            @PathVariable Long hoKhauId,
             @PathVariable Long nhanKhauId, 
             @RequestBody NhanKhau nhanKhauDetails) {
+        
+        // Validate that the nhân khẩu belongs to the specified hộ khẩu
+        nhanKhauService.validateNhanKhauBelongsToHoKhau(nhanKhauId, hoKhauId);
         
         NhanKhau updatedNhanKhau = nhanKhauService.updateNhanKhau(nhanKhauId, nhanKhauDetails);
         return new ResponseEntity<>(updatedNhanKhau, HttpStatus.OK);
@@ -65,8 +68,11 @@ public class NhanKhauController {
     @DeleteMapping("/{nhanKhauId}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<Void> deleteNhanKhau(
-            @PathVariable Long hoKhauId, // Biến này vẫn cần để khớp với URL của RequestMapping
+            @PathVariable Long hoKhauId,
             @PathVariable Long nhanKhauId) {
+        
+        // Validate that the nhân khẩu belongs to the specified hộ khẩu
+        nhanKhauService.validateNhanKhauBelongsToHoKhau(nhanKhauId, hoKhauId);
             
         nhanKhauService.deleteNhanKhau(nhanKhauId);
         return ResponseEntity.noContent().build();

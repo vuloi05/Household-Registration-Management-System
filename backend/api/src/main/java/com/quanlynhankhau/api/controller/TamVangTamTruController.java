@@ -1,5 +1,3 @@
-// src/main/java/com/quanlynhankhau/api/controller/TamVangTamTruController.java
-
 package com.quanlynhankhau.api.controller;
 
 import com.quanlynhankhau.api.dto.TamTruDTO;
