@@ -5,13 +5,11 @@ import type { Message } from './types';
 interface UseChatbotFeedbackParams {
   finalApiUrl: string;
   messages: Message[];
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
 }
 
 export function useChatbotFeedback({
   finalApiUrl,
   messages,
-  setMessages,
 }: UseChatbotFeedbackParams) {
   const { enqueueSnackbar } = useSnackbar();
   const [feedbackSending, setFeedbackSending] = useState(false);
@@ -41,7 +39,7 @@ export function useChatbotFeedback({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await resp.json().catch(() => ({}));
+      await resp.json().catch(() => ({}));
       if (resp.ok) {
         const successMsg =
           type === 'wrong'

@@ -94,8 +94,7 @@ public class NhanKhauManagementService {
     }
 
     /**
-     * Lọc theo tìm kiếm (tên, CCCD, nghề nghiệp, mã hộ khẩu, ngày sinh, địa chỉ hộ khẩu).
-     * Hỗ trợ tìm kiếm đa trường: "Nguyễn Văn A 023456789 HK001 Biệt thự The Vesta"
+     * Lọc theo tìm kiếm (chỉ tìm kiếm theo họ tên, CCCD, quê quán, ngày sinh).
      */
     private boolean applySearchFilter(NhanKhau nhanKhau, String search) {
         if (search == null || search.isEmpty()) {
@@ -104,22 +103,16 @@ public class NhanKhauManagementService {
         
         String searchLower = search.toLowerCase().trim();
         
-        // Chuẩn bị các trường để tìm kiếm
+        // Chuẩn bị các trường để tìm kiếm (chỉ 4 trường: họ tên, CCCD, quê quán, ngày sinh)
         String hoTenLower = nhanKhau.getHoTen() != null ? nhanKhau.getHoTen().toLowerCase() : "";
         String cmndCccdLower = nhanKhau.getCmndCccd() != null ? nhanKhau.getCmndCccd().toLowerCase() : "";
-        String ngheNghiepLower = nhanKhau.getNgheNghiep() != null ? nhanKhau.getNgheNghiep().toLowerCase() : "";
-        String maHoKhauLower = nhanKhau.getHoKhau() != null && nhanKhau.getHoKhau().getMaHoKhau() != null 
-            ? nhanKhau.getHoKhau().getMaHoKhau().toLowerCase() : "";
-        String diaChiHoKhauLower = nhanKhau.getHoKhau() != null && nhanKhau.getHoKhau().getDiaChi() != null 
-            ? nhanKhau.getHoKhau().getDiaChi().toLowerCase() : "";
+        String queQuanLower = nhanKhau.getQueQuan() != null ? nhanKhau.getQueQuan().toLowerCase() : "";
         String ngaySinhStr = nhanKhau.getNgaySinh() != null ? nhanKhau.getNgaySinh().toString() : "";
         
-        // Tìm kiếm đơn giản: kiểm tra trong tất cả các trường
+        // Tìm kiếm đơn giản: kiểm tra trong 4 trường
         if (hoTenLower.contains(searchLower) || 
             cmndCccdLower.contains(searchLower) ||
-            ngheNghiepLower.contains(searchLower) ||
-            maHoKhauLower.contains(searchLower) ||
-            diaChiHoKhauLower.contains(searchLower) ||
+            queQuanLower.contains(searchLower) ||
             ngaySinhStr.contains(searchLower)) {
             return true;
         }
@@ -132,9 +125,7 @@ public class NhanKhauManagementService {
             if (!word.isEmpty()) {
                 if (hoTenLower.contains(word) || 
                     cmndCccdLower.contains(word) ||
-                    ngheNghiepLower.contains(word) ||
-                    maHoKhauLower.contains(word) ||
-                    diaChiHoKhauLower.contains(word) ||
+                    queQuanLower.contains(word) ||
                     ngaySinhStr.contains(word)) {
                     matchCount++;
                 }

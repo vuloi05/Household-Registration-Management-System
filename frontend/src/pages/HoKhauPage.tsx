@@ -86,7 +86,7 @@ export default function HoKhauPage() {
 
   // Lắng nghe agent action từ router state
   useEffect(() => {
-    const s = location.state as any;
+    const s = location.state as { agentAction?: { type: string; target: string; params?: { q?: string }; statusId?: string } } | null;
     if (s && s.agentAction) {
       const act = s.agentAction;
       if (act.type === 'search' && act.target === 'household_list' && act.params?.q) {
@@ -101,7 +101,7 @@ export default function HoKhauPage() {
     // Clear location state after processing
     navigate(location.pathname, { replace: true });
     // eslint-disable-next-line
-  }, [location.state]);
+  }, [location.state, navigate, enqueueSnackbar]);
 
   // Xử lý kết quả tìm kiếm từ agent sau khi filter hoàn thành
   useEffect(() => {

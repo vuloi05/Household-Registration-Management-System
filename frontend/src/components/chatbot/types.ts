@@ -3,7 +3,7 @@ import { createContext, useContext } from 'react';
 export type AgentAction = {
   type: string;
   target: string;
-  params?: Record<string, any>;
+  params?: Record<string, unknown>;
   statusId?: string;
 };
 

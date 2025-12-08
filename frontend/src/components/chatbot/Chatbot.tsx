@@ -40,7 +40,6 @@ export default function Chatbot({ apiUrl }: ChatbotProps) {
   const { feedbackSending, sendFeedback } = useChatbotFeedback({
     finalApiUrl,
     messages,
-    setMessages,
   });
 
   // Scroll to bottom when messages change

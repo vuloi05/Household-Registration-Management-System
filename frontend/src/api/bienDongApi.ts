@@ -3,8 +3,9 @@
 import axiosClient from './axiosClient';
 import type { BienDongNhanKhauFormValues, BienDongNhanKhauDTO } from '../types/bienDong';
 
-export const getAllBienDong = (): Promise<BienDongNhanKhauDTO[]> => {
-  return axiosClient.get('/bien-dong');
+export const getAllBienDong = async (): Promise<BienDongNhanKhauDTO[]> => {
+  const response = await axiosClient.get('/bien-dong');
+  return response.data;
 };
 
 export const ghiNhanBienDong = (data: BienDongNhanKhauFormValues) => {

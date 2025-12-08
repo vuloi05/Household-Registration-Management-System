@@ -1,6 +1,6 @@
 // src/pages/TamVangTamTruPage.tsx
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -75,36 +75,36 @@ export default function TamVangTamTruPage() {
   const [pageTamTru, setPageTamTru] = useState(0);
   const [rowsPerPageTamTru, setRowsPerPageTamTru] = useState(10);
 
-  const fetchTamVang = async () => {
+  const fetchTamVang = useCallback(async () => {
     try {
       setLoadingTamVang(true);
       const response = await getAllTamVang();
       setTamVangList(response.data);
       setPageTamVang(0);
-    } catch (error) {
+    } catch {
       enqueueSnackbar('Không thể tải danh sách tạm vắng', { variant: 'error' });
     } finally {
       setLoadingTamVang(false);
     }
-  };
+  }, [enqueueSnackbar]);
 
-  const fetchTamTru = async () => {
+  const fetchTamTru = useCallback(async () => {
     try {
       setLoadingTamTru(true);
       const response = await getAllTamTru();
       setTamTruList(response.data);
       setPageTamTru(0);
-    } catch (error) {
+    } catch {
       enqueueSnackbar('Không thể tải danh sách tạm trú', { variant: 'error' });
     } finally {
       setLoadingTamTru(false);
     }
-  };
+  }, [enqueueSnackbar]);
 
   useEffect(() => {
     fetchTamVang();
     fetchTamTru();
-  }, []);
+  }, [fetchTamVang, fetchTamTru]);
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -116,7 +116,7 @@ export default function TamVangTamTruPage() {
       enqueueSnackbar('Thêm tạm vắng thành công', { variant: 'success' });
       setTamVangFormOpen(false);
       fetchTamVang();
-    } catch (error) {
+    } catch {
       enqueueSnackbar('Không thể thêm tạm vắng', { variant: 'error' });
     }
   };
@@ -127,7 +127,7 @@ export default function TamVangTamTruPage() {
       enqueueSnackbar('Thêm tạm trú thành công', { variant: 'success' });
       setTamTruFormOpen(false);
       fetchTamTru();
-    } catch (error) {
+    } catch {
       enqueueSnackbar('Không thể thêm tạm trú', { variant: 'error' });
     }
   };

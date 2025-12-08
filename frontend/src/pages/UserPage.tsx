@@ -39,7 +39,6 @@ import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import {
@@ -63,6 +62,20 @@ function useDebounce<T>(value: T, delay: number): T {
   }, [value, delay]);
 
   return debouncedValue;
+}
+
+// Helper function to extract error message from unknown error
+function getErrorMessage(error: unknown, defaultMessage: string): string {
+  if (error && typeof error === 'object' && 'response' in error) {
+    const response = error.response;
+    if (response && typeof response === 'object' && 'data' in response) {
+      const data = response.data;
+      if (data && typeof data === 'object' && 'message' in data && typeof data.message === 'string') {
+        return data.message;
+      }
+    }
+  }
+  return defaultMessage;
 }
 
 export default function UserPage() {
@@ -233,10 +246,10 @@ export default function UserPage() {
       }
       handleCloseDialog();
       loadUsers();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving user:', error);
-      const errorMessage = error?.response?.data?.message || 
-                          (editingUser ? 'Không thể cập nhật người dùng' : 'Không thể thêm người dùng');
+      const defaultMessage = editingUser ? 'Không thể cập nhật người dùng' : 'Không thể thêm người dùng';
+      const errorMessage = getErrorMessage(error, defaultMessage);
       enqueueSnackbar(errorMessage, { variant: 'error' });
     }
   };
@@ -262,9 +275,9 @@ export default function UserPage() {
       enqueueSnackbar('Xóa người dùng thành công', { variant: 'success' });
       handleCloseDeleteDialog();
       loadUsers();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting user:', error);
-      const errorMessage = error?.response?.data?.message || 'Không thể xóa người dùng';
+      const errorMessage = getErrorMessage(error, 'Không thể xóa người dùng');
       enqueueSnackbar(errorMessage, { variant: 'error' });
     }
   };

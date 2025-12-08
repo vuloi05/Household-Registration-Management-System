@@ -15,7 +15,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 // Import API
 import { getDanhSachHoKhau, getLichSuThayDoi } from '../api/hoKhauApi';
 import type { HoKhau, HoKhauLichSu } from '../api/hoKhauApi';
-import { getDanhSachNhanKhau, createNhanKhau, updateNhanKhau, deleteNhanKhau, getNhanKhauById } from '../api/nhanKhauApi';
+import { createNhanKhau, updateNhanKhau, deleteNhanKhau, getNhanKhauById } from '../api/nhanKhauApi';
 import type { NhanKhau } from '../api/nhanKhauApi';
 
 // Import Component & Type
@@ -137,7 +137,7 @@ export default function HoKhauDetailPage() {
     }
   }, [maHoKhau]);
   
-  const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: string) => {
     setTabValue(newValue);
   };
 
@@ -252,7 +252,11 @@ export default function HoKhauDetailPage() {
         open={openNhanKhauForm}
         onClose={handleCloseForm}
         onSubmit={handleNhanKhauFormSubmit}
-        initialData={editingNhanKhau ? { ...editingNhanKhau } : null}
+        initialData={editingNhanKhau ? {
+          ...editingNhanKhau,
+          ngayCap: editingNhanKhau.ngayCap || '',
+          noiCap: editingNhanKhau.noiCap || '',
+        } : null}
         showMaHoKhauField={false}
       />
       <ConfirmationDialog

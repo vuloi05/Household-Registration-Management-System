@@ -86,7 +86,7 @@ export default function LichSuBienDongPage() {
     setLoading(true);
     getAllBienDong()
       .then(response => {
-        setLichSuList(response.data);
+        setLichSuList(response);
       })
       .catch(error => {
         console.error('Error fetching lich su bien dong:', error);
@@ -288,7 +288,7 @@ export default function LichSuBienDongPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {paginatedList.map((item, index) => (
+                {paginatedList.map((item) => (
                   <TableRow key={item.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                     <TableCell sx={{ fontSize: '0.85rem' }}>
                       {new Date(item.ngayBienDong).toLocaleDateString('vi-VN')}

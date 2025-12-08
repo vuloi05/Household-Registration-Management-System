@@ -50,7 +50,7 @@ export function useChatbotStream({
         let allResult = '';
         let agentActions: AgentAction[] | undefined;
         setMessages((prev) => [...prev, { text: '', sender: 'bot' }]);
-        let decoder = new TextDecoder();
+        const decoder = new TextDecoder();
         let finished = false;
         let receivedAny = false;
         while (!finished) {
@@ -60,7 +60,7 @@ export function useChatbotStream({
           // tách các event stream
           chunk.split('\n\n').forEach((part) => {
             if (part.startsWith('data: ')) {
-              let content = part.replace('data: ', '');
+              const content = part.replace('data: ', '');
               if (content === '[END] ') finished = true;
               else if (content.trim().startsWith('{') && content.includes('"actions"')) {
                 try {
@@ -68,7 +68,7 @@ export function useChatbotStream({
                   if (parsed && Array.isArray(parsed.actions)) {
                     agentActions = parsed.actions;
                   }
-                } catch (e) {
+                } catch {
                   // Ignore parse errors
                 }
               } else {
@@ -79,7 +79,7 @@ export function useChatbotStream({
                       sessionIdRef.current = parsed.session_id;
                       return;
                     }
-                  } catch (e) {
+                  } catch {
                     // Nếu không phải JSON metadata thì xử lý như text bình thường
                   }
                 }
@@ -88,7 +88,7 @@ export function useChatbotStream({
                 setMessages((prev) => {
                   // cập nhật tin nhắn cuối (bot)
                   const newArr = [...prev];
-                  let contentNow = allResult;
+                  const contentNow = allResult;
                   if (newArr.length && newArr[newArr.length - 1].sender === 'bot') {
                     newArr[newArr.length - 1] = {
                       ...newArr[newArr.length - 1],
@@ -106,7 +106,7 @@ export function useChatbotStream({
                   sessionIdRef.current = parsedActions.session_id;
                 }
                 agentActions = parsedActions.actions ?? parsedActions;
-              } catch (e) {
+              } catch {
                 // Ignore parse errors
               }
             }
