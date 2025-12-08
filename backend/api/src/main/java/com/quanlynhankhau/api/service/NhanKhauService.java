@@ -165,6 +165,21 @@ public class NhanKhauService {
     }
 
     /**
+     * Validate that a nhân khẩu belongs to the specified hộ khẩu.
+     * @param nhanKhauId ID của nhân khẩu cần kiểm tra.
+     * @param hoKhauId ID của hộ khẩu.
+     * @throws RuntimeException if nhân khẩu doesn't exist or doesn't belong to the hộ khẩu.
+     */
+    public void validateNhanKhauBelongsToHoKhau(Long nhanKhauId, Long hoKhauId) {
+        NhanKhau nhanKhau = nhanKhauRepository.findById(nhanKhauId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu với id: " + nhanKhauId));
+        
+        if (nhanKhau.getHoKhau() == null || !nhanKhau.getHoKhau().getId().equals(hoKhauId)) {
+            throw new RuntimeException("Nhân khẩu không thuộc về hộ khẩu với id: " + hoKhauId);
+        }
+    }
+
+    /**
      * Tìm nhân khẩu theo số CCCD.
      * @param cmndCccd Số CCCD cần tìm.
      * @return Optional chứa nhân khẩu nếu tìm thấy, empty nếu không tìm thấy.

@@ -24,7 +24,7 @@ public class NhanKhauSearchController {
     /**
      * API tìm kiếm nhân khẩu theo số CCCD.
      * - Method: GET
-     * - URL: http://localhost:8080/api/nhankhau/search?cmndCccd={cmndCccd}
+     * - URL: <a href="http://localhost:8080/api/nhankhau/search?cmndCccd=">...</a>{cmndCccd}
      * - Cho phép ADMIN và RESIDENT (chỉ được tìm chính mình)
      */
     @GetMapping("/search")
@@ -52,7 +52,7 @@ public class NhanKhauSearchController {
     /**
      * API lấy thông tin nhân khẩu của chính mình (cho mobile app)
      * - Method: GET
-     * - URL: http://localhost:8080/api/nhankhau/my-info
+     * - URL: <a href="http://localhost:8080/api/nhankhau/my-info">...</a>
      */
     @GetMapping("/my-info")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_RESIDENT', 'ROLE_ACCOUNTANT')")
@@ -73,7 +73,7 @@ public class NhanKhauSearchController {
     /**
      * API kiểm tra thông tin hộ khẩu hiện tại của nhân khẩu theo CCCD.
      * - Method: GET
-     * - URL: http://localhost:8080/api/nhankhau/check-household?cmndCccd={cmndCccd}
+     * - URL: <a href="http://localhost:8080/api/nhankhau/check-household?cmndCccd=">...</a>{cmndCccd}
      */
     @GetMapping("/check-household")
     @PreAuthorize("hasRole('ROLE_ADMIN')")

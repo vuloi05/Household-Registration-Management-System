@@ -1,8 +1,5 @@
-// src/main/java/com/quanlynhankhau/api/controller/LichSuNopTienController.java
-
 package com.quanlynhankhau.api.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -22,8 +19,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 @CrossOrigin(origins = "http://localhost:5173")
 public class LichSuNopTienController {
 
-    @Autowired
-    private LichSuNopTienService lichSuNopTienService;
+    private final LichSuNopTienService lichSuNopTienService;
+
+    public LichSuNopTienController(LichSuNopTienService lichSuNopTienService) {
+        this.lichSuNopTienService = lichSuNopTienService;
+    }
 
     /**
      * API để ghi nhận một lần nộp tiền mới.

@@ -1,5 +1,3 @@
-// src/main/java/com/quanlynhankhau/api/service/UserService.java
-
 package com.quanlynhankhau.api.service;
 
 import java.util.List;
@@ -40,7 +38,7 @@ public class UserService {
                     .filter(user -> user.getUsername().toLowerCase().contains(lowerSearch)
                             || (user.getFullName() != null && user.getFullName().toLowerCase().contains(lowerSearch))
                             || user.getRole().toLowerCase().contains(lowerSearch))
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         // Manual pagination

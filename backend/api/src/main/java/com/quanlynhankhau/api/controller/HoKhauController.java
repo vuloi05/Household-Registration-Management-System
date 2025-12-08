@@ -1,12 +1,9 @@
-// src/main/java/com/quanlynhankhau/api/controller/HoKhauController.java
-
 package com.quanlynhankhau.api.controller;
 
 import com.quanlynhankhau.api.dto.HoKhauRequest;
 import com.quanlynhankhau.api.dto.HoKhauResponseDTO; // <<< THÊM 1: Import DTO Response
 import com.quanlynhankhau.api.entity.HoKhau;
 import com.quanlynhankhau.api.service.HoKhauService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,8 +17,11 @@ import java.util.List;
 @CrossOrigin(origins = "http://localhost:5173") // Cho phép frontend (chạy ở port 5173) gọi các API này
 public class HoKhauController {
 
-    @Autowired
-    private HoKhauService hoKhauService;
+    private final HoKhauService hoKhauService;
+
+    public HoKhauController(HoKhauService hoKhauService) {
+        this.hoKhauService = hoKhauService;
+    }
 
     // <<< CẬP NHẬT 2: Sửa kiểu trả về sang List<HoKhauResponseDTO> >>>
     // API 1: Lấy danh sách tất cả hộ khẩu

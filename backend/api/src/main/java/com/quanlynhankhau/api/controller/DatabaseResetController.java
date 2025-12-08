@@ -1,8 +1,5 @@
-// src/main/java/com/quanlynhankhau/api/controller/DatabaseResetController.java
-
 package com.quanlynhankhau.api.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,8 +24,11 @@ import java.util.Map;
 @CrossOrigin(origins = "http://localhost:5173")
 public class DatabaseResetController {
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate jdbcTemplate;
+
+    public DatabaseResetController(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     /**
      * Reset hoàn toàn database và đồng bộ sequence.

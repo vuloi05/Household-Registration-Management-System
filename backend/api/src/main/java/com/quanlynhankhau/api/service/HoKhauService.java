@@ -7,7 +7,6 @@ import com.quanlynhankhau.api.entity.LichSuThayDoiHoKhau;
 import com.quanlynhankhau.api.repository.LichSuBienDongRepository;
 import com.quanlynhankhau.api.repository.LichSuThayDoiHoKhauRepository;
 
-import java.util.ArrayList;
 import java.util.stream.Stream;
 
 import com.quanlynhankhau.api.dto.HoKhauRequest;

@@ -18,13 +18,13 @@ public class CorsConfig {
         
         // Cho phép tất cả origins (trong development)
         // Trong production, nên chỉ định cụ thể các origins được phép
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        configuration.setAllowedOriginPatterns(List.of("*"));
         
         // Cho phép tất cả các HTTP methods
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         
         // Cho phép tất cả các headers
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedHeaders(List.of("*"));
         
         // Cho phép gửi credentials (cookies, authorization headers)
         // Lưu ý: khi dùng setAllowedOriginPatterns("*"), không cần setAllowCredentials(true)
@@ -42,4 +42,3 @@ public class CorsConfig {
         return source;
     }
 }
-

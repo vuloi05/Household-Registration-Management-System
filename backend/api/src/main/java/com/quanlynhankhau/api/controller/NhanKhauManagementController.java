@@ -36,7 +36,7 @@ public class NhanKhauManagementController {
     /**
      * API lấy tất cả nhân khẩu với phân trang, tìm kiếm và lọc.
      * - Method: GET
-     * - URL: http://localhost:8080/api/nhankhau-management
+     * - URL: <a href="http://localhost:8080/api/nhankhau-management">...</a>
      * - Params:
      *   + page: Trang hiện tại (bắt đầu từ 0)
      *   + size: Số lượng bản ghi mỗi trang
@@ -78,7 +78,7 @@ public class NhanKhauManagementController {
     /**
      * API lấy chi tiết một nhân khẩu theo ID.
      * - Method: GET
-     * - URL: http://localhost:8080/api/nhankhau-management/{id}
+     * - URL: <a href="http://localhost:8080/api/nhankhau-management/">...</a>{id}
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
@@ -94,7 +94,7 @@ public class NhanKhauManagementController {
     /**
      * API tạo mới nhân khẩu (không cần thuộc hộ khẩu cụ thể).
      * - Method: POST
-     * - URL: http://localhost:8080/api/nhankhau-management
+     * - URL: <a href="http://localhost:8080/api/nhankhau-management">...</a>
      */
     @PostMapping
     @PreAuthorize("hasRole('ROLE_ADMIN')")
@@ -126,7 +126,7 @@ public class NhanKhauManagementController {
     /**
      * API cập nhật thông tin nhân khẩu.
      * - Method: PUT
-     * - URL: http://localhost:8080/api/nhankhau-management/{id}
+     * - URL: <a href="http://localhost:8080/api/nhankhau-management/">...</a>{id}
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
@@ -160,7 +160,7 @@ public class NhanKhauManagementController {
     /**
      * API xóa nhân khẩu.
      * - Method: DELETE
-     * - URL: http://localhost:8080/api/nhankhau-management/{id}
+     * - URL: <a href="http://localhost:8080/api/nhankhau-management/">...</a>{id}
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")

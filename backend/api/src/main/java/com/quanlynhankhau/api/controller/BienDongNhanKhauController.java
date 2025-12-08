@@ -1,5 +1,3 @@
-// src/main/java/com/quanlynhankhau/api/controller/BienDongNhanKhauController.java
-
 package com.quanlynhankhau.api.controller;
 
 import java.time.LocalDate;
@@ -7,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,8 +32,11 @@ import com.quanlynhankhau.api.service.BienDongNhanKhauService;
 @CrossOrigin(origins = "http://localhost:5173")
 public class BienDongNhanKhauController {
 
-    @Autowired
-    private BienDongNhanKhauService bienDongService;
+    private final BienDongNhanKhauService bienDongService;
+
+    public BienDongNhanKhauController(BienDongNhanKhauService bienDongService) {
+        this.bienDongService = bienDongService;
+    }
 
     /**
      * API ghi nhận biến động nhân khẩu (chuyển đi, qua đời, v.v.)
