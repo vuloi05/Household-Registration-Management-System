@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -30,8 +29,11 @@ import com.quanlynhankhau.api.service.NhanKhauManagementService;
 @CrossOrigin(origins = "http://localhost:5173")
 public class NhanKhauManagementController {
 
-    @Autowired
-    private NhanKhauManagementService nhanKhauManagementService;
+    private final NhanKhauManagementService nhanKhauManagementService;
+
+    public NhanKhauManagementController(NhanKhauManagementService nhanKhauManagementService) {
+        this.nhanKhauManagementService = nhanKhauManagementService;
+    }
 
     /**
      * API lấy tất cả nhân khẩu với phân trang, tìm kiếm và lọc.

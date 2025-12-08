@@ -2,7 +2,6 @@ package com.quanlynhankhau.api.controller;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*; //import tất cả
@@ -20,8 +19,11 @@ import com.quanlynhankhau.api.service.NhanKhauService;
 
 public class NhanKhauController {
 
-    @Autowired
-    private NhanKhauService nhanKhauService;
+    private final NhanKhauService nhanKhauService;
+
+    public NhanKhauController(NhanKhauService nhanKhauService) {
+        this.nhanKhauService = nhanKhauService;
+    }
 
     // API 1: Lấy danh sách nhân khẩu theo ID hộ khẩu
     // - Method: GET

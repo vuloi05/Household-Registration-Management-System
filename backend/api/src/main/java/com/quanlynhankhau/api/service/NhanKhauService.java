@@ -5,7 +5,6 @@ package com.quanlynhankhau.api.service;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -20,17 +19,20 @@ import com.quanlynhankhau.api.repository.UserRepository;
 @Service
 public class NhanKhauService {
 
-    @Autowired
-    private NhanKhauRepository nhanKhauRepository;
+    private final NhanKhauRepository nhanKhauRepository;
 
-    @Autowired
-    private HoKhauRepository hoKhauRepository; // Cần repo này để tìm hộ khẩu
+    private final HoKhauRepository hoKhauRepository; // Cần repo này để tìm hộ khẩu
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
+
+    public NhanKhauService(NhanKhauRepository nhanKhauRepository, HoKhauRepository hoKhauRepository, UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this.nhanKhauRepository = nhanKhauRepository;
+        this.hoKhauRepository = hoKhauRepository;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     // Lấy tất cả nhân khẩu của một hộ khẩu cụ thể
     public List<NhanKhauDTO> getAllNhanKhauByHoKhauId(Long hoKhauId) {
@@ -70,7 +72,7 @@ public class NhanKhauService {
             // Kiểm tra xem đã có user với username = CCCD chưa
             Optional<User> existingUser = userRepository.findByUsername(cccd);
             
-            if (!existingUser.isPresent()) {
+            if (existingUser.isEmpty()) {
                 // Tạo user mới
                 User newUser = new User();
                 newUser.setUsername(cccd);
@@ -104,7 +106,6 @@ public class NhanKhauService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu với id: " + nhanKhauId));
 
         // Lưu CCCD cũ để kiểm tra thay đổi
-        String oldCccd = existingNhanKhau.getCmndCccd();
 
         // 2. Cập nhật các trường thông tin
         existingNhanKhau.setHoTen(nhanKhauDetails.getHoTen());
@@ -136,17 +137,10 @@ public class NhanKhauService {
         // - Nếu CCCD thay đổi: tạo user mới với CCCD mới (nếu có)
         // - Nếu CCCD không đổi hoặc được thêm mới: cập nhật hoặc tạo user
         if (updatedNhanKhau.getCmndCccd() != null && !updatedNhanKhau.getCmndCccd().trim().isEmpty()) {
-            String newCccd = updatedNhanKhau.getCmndCccd().trim();
-            
+
             // Nếu CCCD thay đổi và có user cũ, không xóa user cũ (có thể đang được sử dụng)
             // Chỉ tạo user mới với CCCD mới nếu chưa có
-            if (!newCccd.equals(oldCccd) && oldCccd != null && !oldCccd.trim().isEmpty()) {
-                // CCCD đã thay đổi, tạo user mới với CCCD mới
-                createUserForNhanKhau(updatedNhanKhau);
-            } else {
-                // CCCD không đổi hoặc được thêm mới, cập nhật hoặc tạo user
-                createUserForNhanKhau(updatedNhanKhau);
-            }
+            createUserForNhanKhau(updatedNhanKhau);
         }
 
         return updatedNhanKhau;

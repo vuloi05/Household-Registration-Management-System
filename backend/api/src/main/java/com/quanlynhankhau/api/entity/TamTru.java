@@ -1,5 +1,3 @@
-// src/main/java/com/quanlynhankhau/api/entity/TamTru.java
-
 package com.quanlynhankhau.api.entity;
 
 import java.time.LocalDate;
