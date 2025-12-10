@@ -234,23 +234,7 @@ def extract_owner_name(text: str) -> Optional[str]:
     Ví dụ: 
     - 'xem hộ khẩu của chủ hộ Bùi Tiến Dũng' -> 'Bùi Tiến Dũng'
     - 'tìm hộ khẩu Bùi Tiến Dũng ở Đường Ao Sen' -> 'Bùi Tiến Dũng'
-    - 'tôi muốn tìm hộ khẩu có chủ hộ người tên Bùi Tiến Dũng' -> 'Bùi Tiến Dũng'
     """
-    # Pattern 0: Bắt cụm 'có chủ hộ người tên <tên>' hoặc 'có chủ hộ tên <tên>' - ưu tiên cao nhất
-    # Ví dụ: "tôi muốn tìm hộ khẩu có chủ hộ người tên Bùi Tiến Dũng"
-    pattern0 = r"có\s+ch(?:ủ|u)\s*h(?:ộ|o)\s+(?:người\s+)?tên\s+([A-ZÀÁÂÃÄÅĀĂĄÆÇÈÉÊËĒĔĖĘĚÌÍÎÏĪĮİÑÒÓÔÕÖØŌŎŐÙÚÛÜŪŬŮŰŲỲÝỶỸỴĐ][^\d\n,.;!?]+?)(?:\s+(?:ở|o|tại|tai|thuộc|thuoc)|\s*$|\s*[.!?]|$)"
-    m0 = re.search(pattern0, text, flags=re.IGNORECASE)
-    if m0:
-        name = m0.group(1).strip()
-        # Loại bỏ các từ thừa ở cuối như "này", "đó", "kia"
-        trailing_words = {"này", "nay", "đó", "do", "kia", "nào", "nao", "ở", "o", "tại", "tai", "thuộc", "thuoc", "người", "nguoi"}
-        tokens = name.split()
-        while tokens and tokens[-1].lower() in trailing_words:
-            tokens.pop()
-        # Chỉ trả về nếu có ít nhất 1 từ
-        if len(tokens) >= 1 and all(len(t) > 0 for t in tokens):
-            return " ".join(tokens).strip()
-    
     # Pattern 1: Bắt cụm 'của chủ hộ <tên>' - ưu tiên pattern này vì phổ biến nhất
     # Bắt tất cả các từ sau "của chủ hộ" cho đến cuối câu hoặc dấu câu
     # Sử dụng pattern đơn giản: bắt trực tiếp "chủ hộ" (không dùng character class vì có vấn đề với Unicode)
@@ -273,16 +257,14 @@ def extract_owner_name(text: str) -> Optional[str]:
     m = re.search(pattern2, text, flags=re.IGNORECASE)
     if m:
         name = m.group(1).strip()
-        # Loại bỏ các từ thừa ở cuối, bao gồm cả "người" nếu có
-        trailing_words = {"này", "nay", "đó", "do", "kia", "nào", "nao", "ở", "o", "tại", "tai", "thuộc", "thuoc", "người", "nguoi", "tên", "ten"}
+        # Loại bỏ các từ thừa ở cuối
+        trailing_words = {"này", "nay", "đó", "do", "kia", "nào", "nao", "ở", "o", "tại", "tai", "thuộc", "thuoc"}
         tokens = name.split()
         while tokens and tokens[-1].lower() in trailing_words:
             tokens.pop()
-        # Chỉ trả về nếu có ít nhất 1 từ và không phải là "người tên" hoặc "tên"
+        # Chỉ trả về nếu có ít nhất 1 từ
         if len(tokens) >= 1 and all(len(t) > 0 for t in tokens):
-            candidate = " ".join(tokens).strip()
-            if candidate.lower() not in {"người tên", "nguoi ten", "tên", "ten", "người", "nguoi"}:
-                return candidate
+            return " ".join(tokens).strip()
     
     # Pattern 3: Bắt tên sau 'hộ khẩu' (khi không có "chủ hộ")
     # Ví dụ: "tìm hộ khẩu Bùi Tiến Dũng ở Đường Ao Sen"

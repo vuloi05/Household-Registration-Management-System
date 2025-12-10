@@ -14,8 +14,6 @@ export function useChatbotActions({ setMessages }: UseChatbotActionsParams) {
   const { enqueueSnackbar } = useSnackbar();
   const agentActionQueue = useRef<AgentAction[]>([]);
   const statusTimeouts = useRef<Record<string, number>>({});
-  // Lưu lại truy vấn hộ khẩu gần nhất (thường là tên chủ hộ) để kết hợp với địa chỉ ở câu sau
-  const lastHouseholdQueryRef = useRef<string>('');
 
   const generateMessageId = () => crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
 
@@ -179,28 +177,12 @@ export function useChatbotActions({ setMessages }: UseChatbotActionsParams) {
         enqueueSnackbar('Agent: Đang tìm kiếm nhân khẩu: ' + act.params.q, { variant: 'info' });
       }
       if (act.type === 'search' && act.target === 'household_list' && act.params?.q) {
-        const rawQuery = String(act.params.q).trim();
-        const addressKeywords = ['đường', 'duong', 'phố', 'pho', 'ngõ', 'ngo', 'ngách', 'ngach', 'xã', 'xa', 'phường', 'phuong', 'quận', 'quan', 'huyện', 'huyen', 'tỉnh', 'tinh', 'thành', 'thanh', 'vesta', 'biệt thự', 'biet thu'];
-        const isAddressQuery = addressKeywords.some((kw) => rawQuery.toLowerCase().includes(kw));
-
-        // Nếu là địa chỉ và đã có truy vấn hộ khẩu trước đó (thường là tên), ghép lại để tìm chính xác hơn
-        let finalQuery = rawQuery;
-        if (isAddressQuery && lastHouseholdQueryRef.current && !rawQuery.toLowerCase().includes(lastHouseholdQueryRef.current.toLowerCase())) {
-          finalQuery = `${lastHouseholdQueryRef.current} ${rawQuery}`.trim();
-        }
-
-        // Cập nhật bộ nhớ truy vấn hộ khẩu: lưu lại nếu không chỉ là địa chỉ đơn thuần
-        if (!isAddressQuery) {
-          lastHouseholdQueryRef.current = rawQuery;
-        }
-
         const statusId = pushStatusMessage('Đang tìm kiếm hộ khẩu, vui lòng chờ...', 'pending');
         act.statusId = statusId;
-        act.params.q = finalQuery;
         // Giảm delay xuống 500ms vì filter là client-side và hoàn thành ngay
-        scheduleStatusAutoComplete(statusId, `🔎 Đã tìm kiếm hộ khẩu: ${finalQuery}`, 500);
+        scheduleStatusAutoComplete(statusId, `🔎 Đã tìm kiếm hộ khẩu: ${act.params.q}`, 500);
         navigate('/ho-khau', { state: { agentAction: act } });
-        enqueueSnackbar('Agent: Đang tìm kiếm hộ khẩu: ' + finalQuery, { variant: 'info' });
+        enqueueSnackbar('Agent: Đang tìm kiếm hộ khẩu: ' + act.params.q, { variant: 'info' });
       }
     });
     // Chuyển action vào queue cho page sử dụng nếu cần
