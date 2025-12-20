@@ -17,6 +17,7 @@ import { getDanhSachHoKhau, getLichSuThayDoi } from '../api/hoKhauApi';
 import type { HoKhau, HoKhauLichSu } from '../api/hoKhauApi';
 import { createNhanKhau, updateNhanKhau, deleteNhanKhau, getNhanKhauById } from '../api/nhanKhauApi';
 import type { NhanKhau } from '../api/nhanKhauApi';
+import { formatDate } from '../utils/formatUtils';
 
 // Import Component & Type
 import NhanKhauForm from '../components/forms/NhanKhauForm';
@@ -44,7 +45,7 @@ function NhanKhauTable({ data, onDetail, onEdit, onDelete }: { data: NhanKhau[],
                 {data.map(nk => (
                     <TableRow key={nk.id} hover>
                         <TableCell>{nk.hoTen}</TableCell>
-                        <TableCell>{nk.ngaySinh}</TableCell>
+                        <TableCell>{formatDate(nk.ngaySinh)}</TableCell>
                         <TableCell>{nk.quanHeVoiChuHo}</TableCell>
                         <TableCell align="right">
                             <IconButton title="Xem chi tiết" size="small" color="primary" onClick={() => onDetail(nk)}><VisibilityIcon fontSize="small" /></IconButton>
