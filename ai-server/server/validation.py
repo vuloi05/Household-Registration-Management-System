@@ -137,4 +137,3 @@ def sanitize_response(response: str) -> str:
             break
     
     return result
-

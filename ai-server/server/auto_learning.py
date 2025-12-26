@@ -387,4 +387,3 @@ def get_auto_learning_status() -> Dict:
         'last_processed_timestamp': last_processed_timestamp,
         'aws_configured': bool(settings.boto3 and (settings.s3_client or settings.ddb_client))
     }
-

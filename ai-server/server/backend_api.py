@@ -93,4 +93,3 @@ def search_nhan_khau_by_name_and_address(
         if settings.DEBUG:
             print(f"[BackendAPI] Exception searching nhan khau: {e}")
         return []
-

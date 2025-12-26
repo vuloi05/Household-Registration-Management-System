@@ -46,6 +46,14 @@ Server sẽ chạy tại: http://localhost:5000
 PORT=5000
 DEBUG=True
 
+# CORS Configuration (tùy chọn)
+# Nếu không set, mặc định cho phép localhost
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080,https://yourdomain.com
+
+# Environment (development hoặc production)
+# Production sẽ kích hoạt các cài đặt bảo mật nghiêm ngặt hơn
+ENVIRONMENT=development
+
 # Ghi dữ liệu chat lên AWS (tùy chọn, để trống nếu không dùng)
 AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=your_aws_access_key_id
@@ -81,6 +89,14 @@ SESSION_TIMEOUT_HOURS=24  # Session timeout (giờ), mặc định 24h
 ENABLE_RESPONSE_VALIDATION=true  # Bật/tắt response validation
 API_RETRY_MAX_ATTEMPTS=3  # Số lần retry tối đa, mặc định 3
 API_RETRY_DELAY_SECONDS=1.0  # Delay giữa các lần retry (giây), mặc định 1s
+
+# Rate limiting (bảo vệ khỏi abuse và DoS)
+RATE_LIMITING_ENABLED=true  # Bật/tắt rate limiting, mặc định true
+RATE_LIMIT_STORAGE_URL=  # Optional: Redis URL cho distributed rate limiting (ví dụ: redis://localhost:6379)
+RATE_LIMIT_DEFAULT=200 per day, 50 per hour  # Giới hạn mặc định cho tất cả endpoints
+RATE_LIMIT_CHAT=30 per minute, 200 per hour  # Giới hạn cho endpoint /chat
+RATE_LIMIT_KB_RELOAD=10 per hour  # Giới hạn cho endpoint /kb/reload
+RATE_LIMIT_AUTO_LEARN=5 per hour  # Giới hạn cho endpoint /kb/auto-learn
 ```
 **Lưu ý:**
 - KHÔNG upload file `.env` chứa key thực lên repository/public.

@@ -170,5 +170,3 @@ def call_gemini(message: str, context: str = "", history: list = None, retry_att
         return "Kết nối đến dịch vụ AI quá thời gian chờ. Vui lòng thử lại sau!"
     except Exception as e:
         return f"Gemini API call error: {str(e)}"
-
-

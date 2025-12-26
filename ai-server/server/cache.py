@@ -109,4 +109,3 @@ def get_cache_stats() -> Dict:
             'max_size': CACHE_MAX_SIZE,
             'ttl_seconds': CACHE_TTL_SECONDS
         }
-

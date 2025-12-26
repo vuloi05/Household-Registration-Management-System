@@ -1,7 +1,8 @@
 import json
+import os
 from flask import jsonify, request, Response, stream_with_context
 
-from .app import app
+from .app import app, limiter
 from . import settings
 from .kb import find_best_local_answer, trigger_reload, get_kb_status
 from .logic import process_message, process_message_stream, get_logic_metrics
@@ -12,16 +13,29 @@ SESSION_COOKIE_NAME = "ai_session_id"
 SESSION_COOKIE_MAX_AGE = settings.SESSION_TIMEOUT_HOURS * 3600
 
 
+def apply_rate_limit(limit_string: str):
+    """
+    Helper function to apply rate limiting decorator safely.
+    Returns a no-op decorator if limiter is not available.
+    """
+    if limiter:
+        return limiter.limit(limit_string)
+    return lambda f: f  # No-op decorator if limiter is not available
+
+
 def attach_session_cookie(resp: Response, session_id: str | None):
     """Gắn session cookie vào response để client không cần tự lưu session_id."""
     if settings.ENABLE_CONVERSATION_MEMORY and session_id:
+        # Determine if we're in production environment
+        is_production = os.getenv('ENVIRONMENT', 'development').lower() == 'production'
+        
         resp.set_cookie(
             SESSION_COOKIE_NAME,
             session_id,
             max_age=SESSION_COOKIE_MAX_AGE,
-            httponly=False,  # cho phép JS đọc nếu cần (không chứa thông tin nhạy cảm)
-            secure=False,
-            samesite='Lax'
+            httponly=True,  # Bảo vệ khỏi XSS attacks
+            secure=is_production,  # HTTPS only trong production
+            samesite='Lax' if not is_production else 'Strict'  # Strict trong production
         )
     return resp
 from .cache import get_cache_stats, clear_cache
@@ -53,6 +67,7 @@ def health_aws():
 
 
 @app.route('/chat', methods=['POST'])
+@apply_rate_limit(settings.RATE_LIMIT_CHAT)
 def chat():
     stream_mode = str(request.args.get('stream', 'false')).lower() == 'true'
     try:
@@ -352,6 +367,7 @@ def qa_feedback():
 
 
 @app.route('/kb/reload', methods=['POST'])
+@apply_rate_limit(settings.RATE_LIMIT_KB_RELOAD)
 def kb_reload():
     """Endpoint để trigger reload knowledge base thủ công."""
     try:
@@ -394,6 +410,7 @@ def kb_status():
 
 
 @app.route('/kb/auto-learn', methods=['POST'])
+@apply_rate_limit(settings.RATE_LIMIT_AUTO_LEARN)
 def kb_auto_learn():
     """Endpoint để trigger tự học chủ động ngay lập tức."""
     if not AUTO_LEARNING_AVAILABLE:
@@ -498,3 +515,12 @@ def cache_clear():
         return jsonify({"error": str(e)}), 500
 
 
+# Rate limit error handler
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    """Custom error handler for rate limit exceeded."""
+    return jsonify({
+        "error": "Rate limit exceeded",
+        "message": "Bạn đã gửi quá nhiều requests. Vui lòng thử lại sau.",
+        "retry_after": getattr(e, "retry_after", None)
+    }), 429

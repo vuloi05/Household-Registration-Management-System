@@ -237,6 +237,3 @@ def infer_actions(message: str, history: Optional[List[Dict]] = None) -> list[di
             unique.append(act)
             seen.add(key)
     return unique
-
-
-

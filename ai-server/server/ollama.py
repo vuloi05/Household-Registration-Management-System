@@ -184,5 +184,3 @@ def call_ollama(message: str, context: str = "", history: list = None, retry_att
         return ""
     except Exception:
         return ""
-
-

@@ -296,5 +296,3 @@ if settings.boto3 and (settings.s3_client or settings.ddb_client):
         start_auto_learning_background_thread()
     except Exception as e:
         print(f"[WARN] Failed to start auto-learning: {e}")
-
-

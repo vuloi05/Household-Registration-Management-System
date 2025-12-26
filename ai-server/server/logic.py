@@ -265,5 +265,3 @@ def process_message_stream(
         chunk_size = 20
         for i in range(0, len(response_text), chunk_size):
             yield response_text[i:i+chunk_size]
-
-

@@ -97,6 +97,15 @@ API_RETRY_DELAY_SECONDS = float(os.getenv('API_RETRY_DELAY_SECONDS', '1.0'))
 BACKEND_API_URL = os.getenv('BACKEND_API_URL', 'http://localhost:8080/api')
 BACKEND_API_TOKEN = os.getenv('BACKEND_API_TOKEN', '')  # Optional: JWT token if needed
 
+# Rate limiting config
+RATE_LIMITING_ENABLED = os.getenv('RATE_LIMITING_ENABLED', 'true').lower() == 'true'
+RATE_LIMIT_STORAGE_URL = os.getenv('RATE_LIMIT_STORAGE_URL', '')  # Optional: Redis URL for distributed rate limiting
+# Default rate limits (per IP address)
+RATE_LIMIT_DEFAULT = os.getenv('RATE_LIMIT_DEFAULT', '200 per day, 50 per hour')
+RATE_LIMIT_CHAT = os.getenv('RATE_LIMIT_CHAT', '30 per minute, 200 per hour')  # For /chat endpoint
+RATE_LIMIT_KB_RELOAD = os.getenv('RATE_LIMIT_KB_RELOAD', '10 per hour')  # For /kb/reload endpoint
+RATE_LIMIT_AUTO_LEARN = os.getenv('RATE_LIMIT_AUTO_LEARN', '5 per hour')  # For /kb/auto-learn endpoint
+
 
 # Initialize AWS clients if configured
 s3_client = None
@@ -157,5 +166,3 @@ def aws_summary() -> str:
             "",
         )
     )
-
-
