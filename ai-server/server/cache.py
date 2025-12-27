@@ -44,10 +44,24 @@ def get_cached_response(message: str, context: str = "") -> Optional[str]:
             if datetime.now() - cached_item['timestamp'] < timedelta(seconds=CACHE_TTL_SECONDS):
                 # Move to end (LRU)
                 response_cache.move_to_end(cache_key)
+                # Update metrics
+                try:
+                    from .metrics import update_cache_metrics
+                    update_cache_metrics(size=len(response_cache), is_hit=True)
+                except ImportError:
+                    pass
                 return cached_item['response']
             else:
                 # Expired, remove
                 del response_cache[cache_key]
+    
+    # Cache miss
+    try:
+        from .metrics import update_cache_metrics
+        with cache_lock:
+            update_cache_metrics(size=len(response_cache), is_hit=False)
+    except ImportError:
+        pass
     
     return None
 
@@ -77,6 +91,13 @@ def cache_response(message: str, context: str, response: str) -> None:
         # LRU: Xóa oldest nếu quá max size
         while len(response_cache) > CACHE_MAX_SIZE:
             response_cache.popitem(last=False)  # Remove oldest
+        
+        # Update metrics
+        try:
+            from .metrics import update_cache_metrics
+            update_cache_metrics(size=len(response_cache), is_hit=None)
+        except ImportError:
+            pass
 
 
 def clear_cache() -> int:

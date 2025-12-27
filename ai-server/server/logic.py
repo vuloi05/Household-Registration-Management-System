@@ -7,6 +7,10 @@ from .prompts import enrich_context, get_system_context
 from .cache import get_cached_response, cache_response
 from .validation import validate_response, sanitize_response
 from . import settings
+from .logger import get_logger
+from .exceptions import AIProviderError, CircuitBreakerOpenError
+
+logger = get_logger(__name__)
 
 # Simple metrics
 _metrics = {
@@ -58,9 +62,22 @@ def process_message(
 
     # 2. Kiểm tra knowledge base
     if not bypass_kb:
+        try:
+            from .kb import qa_knowledge_base
+            kb_size = len(qa_knowledge_base)
+            from .metrics import update_kb_metrics
+            update_kb_metrics(size=kb_size, is_query=True)
+        except (ImportError, AttributeError):
+            pass
         kb_ans = find_best_local_answer(message)
         if kb_ans:
             _metrics['kb_hits'] += 1
+            try:
+                from .metrics import update_kb_metrics
+                from .kb import qa_knowledge_base
+                update_kb_metrics(size=len(qa_knowledge_base), is_hit=True, is_query=False)
+            except (ImportError, AttributeError):
+                pass
             # Cache KB answer
             if settings.ENABLE_RESPONSE_CACHE:
                 cache_response(message, context, kb_ans)
@@ -106,17 +123,71 @@ def process_message(
     
     # Prefer local Ollama first if configured
     if settings.OLLAMA_HOST and settings.OLLAMA_MODEL:
-        response_text = call_ollama(message, enriched_context, history)
-        if response_text:
-            _metrics['ollama_calls'] += 1
-            source = "ollama"
+        try:
+            import time
+            call_start = time.time()
+            response_text = call_ollama(message, enriched_context, history)
+            call_latency = time.time() - call_start
+            if response_text:
+                _metrics['ollama_calls'] += 1
+                source = "ollama"
+                # Track Prometheus metrics
+                try:
+                    from .metrics import update_ai_provider_metrics
+                    update_ai_provider_metrics(provider='ollama', latency=call_latency)
+                except ImportError:
+                    pass
+                logger.debug(f"Ollama response received (length: {len(response_text)})")
+        except (AIProviderError, CircuitBreakerOpenError) as e:
+            try:
+                from .metrics import update_ai_provider_metrics
+                update_ai_provider_metrics(provider='ollama', error=e)
+            except ImportError:
+                pass
+            logger.warning(f"Ollama API error: {e.message if hasattr(e, 'message') else str(e)}, falling back to Gemini")
+            # Fallback to Gemini
+        except Exception as e:
+            try:
+                from .metrics import update_ai_provider_metrics
+                update_ai_provider_metrics(provider='ollama', error=e)
+            except ImportError:
+                pass
+            logger.error(f"Unexpected error calling Ollama: {e}", exc_info=True)
+            # Fallback to Gemini
     
     # Fallback to Gemini
     if not response_text and settings.GOOGLE_GEMINI_API_KEY:
-        response_text = call_gemini(message, enriched_context, history)
-        if response_text:
-            _metrics['gemini_calls'] += 1
-            source = "gemini"
+        try:
+            import time
+            call_start = time.time()
+            response_text = call_gemini(message, enriched_context, history)
+            call_latency = time.time() - call_start
+            if response_text:
+                _metrics['gemini_calls'] += 1
+                source = "gemini"
+                # Track Prometheus metrics
+                try:
+                    from .metrics import update_ai_provider_metrics
+                    update_ai_provider_metrics(provider='gemini', latency=call_latency)
+                except ImportError:
+                    pass
+                logger.debug(f"Gemini response received (length: {len(response_text)})")
+        except (AIProviderError, CircuitBreakerOpenError) as e:
+            try:
+                from .metrics import update_ai_provider_metrics
+                update_ai_provider_metrics(provider='gemini', error=e)
+            except ImportError:
+                pass
+            logger.error(f"Gemini API error: {e.message if hasattr(e, 'message') else str(e)}")
+            # Will use fallback message below
+        except Exception as e:
+            try:
+                from .metrics import update_ai_provider_metrics
+                update_ai_provider_metrics(provider='gemini', error=e)
+            except ImportError:
+                pass
+            logger.error(f"Unexpected error calling Gemini: {e}", exc_info=True)
+            # Will use fallback message below
 
     # 6. Sanitize và validate response
     if response_text:
@@ -126,6 +197,15 @@ def process_message(
     validation = {'valid': True, 'score': 1.0}
     if settings.ENABLE_RESPONSE_VALIDATION and response_text:
         validation = validate_response(response_text, message)
+        # Track validation metrics
+        try:
+            from .metrics import update_validation_metrics
+            update_validation_metrics(
+                is_valid=validation.get('valid', True),
+                score=validation.get('score', 1.0)
+            )
+        except ImportError:
+            pass
         if not validation['valid']:
             # Nếu response không hợp lệ, trả về fallback message
             response_text = "Xin lỗi, tôi gặp khó khăn trong việc trả lời câu hỏi này. Vui lòng thử lại hoặc hỏi câu hỏi khác."
@@ -233,8 +313,13 @@ def process_message_stream(
             stream_generator = call_ollama_stream(message, enriched_context, history)
             source = "ollama"
             _metrics['ollama_calls'] += 1
-        except Exception:
-            pass
+            logger.debug("Ollama stream generator created")
+        except (AIProviderError, CircuitBreakerOpenError) as e:
+            logger.warning(f"Ollama stream error: {e.message if hasattr(e, 'message') else str(e)}, falling back to Gemini")
+            # Fallback to Gemini
+        except Exception as e:
+            logger.error(f"Unexpected error creating Ollama stream: {e}", exc_info=True)
+            # Fallback to Gemini
     
     # Fallback to Gemini
     if not stream_generator and settings.GOOGLE_GEMINI_API_KEY:
@@ -242,8 +327,13 @@ def process_message_stream(
             stream_generator = call_gemini_stream(message, enriched_context, history)
             source = "gemini"
             _metrics['gemini_calls'] += 1
-        except Exception:
-            pass
+            logger.debug("Gemini stream generator created")
+        except (AIProviderError, CircuitBreakerOpenError) as e:
+            logger.error(f"Gemini stream error: {e.message if hasattr(e, 'message') else str(e)}")
+            # Will use fallback message below
+        except Exception as e:
+            logger.error(f"Unexpected error creating Gemini stream: {e}", exc_info=True)
+            # Will use fallback message below
     
     # Stream từ generator nếu có
     if stream_generator:

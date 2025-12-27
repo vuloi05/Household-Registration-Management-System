@@ -25,10 +25,21 @@ def get_or_create_session(session_id: Optional[str] = None) -> str:
         # Tạo session ID mới dựa trên timestamp
         session_id = f"session_{int(time.time() * 1000)}"
     
+    is_new_session = False
     with memory_lock:
         if session_id not in session_last_activity:
             conversation_sessions[session_id] = []
+            is_new_session = True
         session_last_activity[session_id] = datetime.now()
+    
+    # Update metrics nếu session mới được tạo
+    if is_new_session:
+        try:
+            from .metrics import update_session_metrics
+            active_count = get_active_sessions_count()
+            update_session_metrics(active_count)
+        except ImportError:
+            pass  # Metrics module chưa available
     
     return session_id
 
@@ -88,6 +99,12 @@ def clear_session(session_id: str) -> None:
             del session_last_activity[session_id]
 
 
+def get_active_sessions_count() -> int:
+    """Lấy số lượng active sessions."""
+    with memory_lock:
+        return len(session_last_activity)
+
+
 def cleanup_expired_sessions() -> None:
     """Xóa các session đã hết hạn."""
     now = datetime.now()
@@ -103,6 +120,14 @@ def cleanup_expired_sessions() -> None:
                 del conversation_sessions[session_id]
             if session_id in session_last_activity:
                 del session_last_activity[session_id]
+    
+    # Update metrics với số active sessions sau cleanup
+    try:
+        from .metrics import update_session_metrics
+        active_count = get_active_sessions_count()
+        update_session_metrics(active_count)
+    except ImportError:
+        pass  # Metrics module chưa available
     
     if expired_sessions:
         print(f"[Memory] Cleaned up {len(expired_sessions)} expired sessions")

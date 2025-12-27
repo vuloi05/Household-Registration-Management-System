@@ -1,6 +1,9 @@
 import os
-from flask import Flask
+import uuid
+from flask import Flask, request, g
 from flask_cors import CORS
+from .logger import setup_logging, get_logger
+import logging
 
 # Rate limiting (optional import)
 try:
@@ -21,6 +24,14 @@ except ImportError:
 # Create Flask application
 app = Flask(__name__)
 
+# Setup logging
+logger = setup_logging(
+    app_name='ai-server',
+    log_level=os.getenv('LOG_LEVEL', 'INFO'),
+    log_dir=os.getenv('LOG_DIR', 'logs'),
+    use_json=os.getenv('ENVIRONMENT', 'development').lower() == 'production'
+)
+
 # CORS Configuration - Improved security
 # Allow specific origins instead of all origins
 allowed_origins_env = os.getenv('ALLOWED_ORIGINS', '')
@@ -37,9 +48,9 @@ CORS(
     app,
     supports_credentials=True,
     origins=allowed_origins,
-    allow_headers=['Content-Type', 'Authorization', 'X-Requested-With'],
+    allow_headers=['Content-Type', 'Authorization', 'X-Requested-With', 'X-Correlation-ID', 'X-Request-ID'],
     methods=['GET', 'POST', 'OPTIONS'],
-    expose_headers=['Content-Type']
+    expose_headers=['Content-Type', 'X-Correlation-ID']
 )
 
 # Rate Limiting Configuration
@@ -93,3 +104,26 @@ else:
             "[Rate Limiting] flask-limiter not installed. "
             "Install with: pip install flask-limiter"
         )
+
+
+# Correlation ID support - Generate và attach correlation ID cho mỗi request
+@app.before_request
+def add_correlation_id():
+    """Generate correlation ID cho mỗi request để track logs."""
+    # Check nếu client đã gửi correlation ID trong header
+    correlation_id = request.headers.get('X-Correlation-ID') or request.headers.get('X-Request-ID')
+    
+    if not correlation_id:
+        # Generate UUID nếu không có
+        correlation_id = str(uuid.uuid4())
+    
+    # Store trong Flask g để access trong request context
+    g.correlation_id = correlation_id
+
+
+@app.after_request
+def add_correlation_id_header(response):
+    """Add correlation ID vào response header."""
+    if hasattr(g, 'correlation_id'):
+        response.headers['X-Correlation-ID'] = g.correlation_id
+    return response

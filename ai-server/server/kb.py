@@ -160,6 +160,14 @@ def load_qa_knowledge_base(force_reload: bool = False) -> dict:
         
         print(f"[KB] Reloaded: {old_count} -> {len(final_items)} QA items from AWS (reload #{kb_reload_count})")
         
+        # Update metrics
+        try:
+            from .metrics import kb_reloads_total, update_kb_metrics
+            kb_reloads_total.labels(status='success').inc()
+            update_kb_metrics(size=len(final_items), is_hit=None, is_query=False)
+        except ImportError:
+            pass
+        
         return {
             'success': True,
             'items_count': len(final_items),
@@ -171,6 +179,12 @@ def load_qa_knowledge_base(force_reload: bool = False) -> dict:
     except Exception as e:
         error_msg = str(e)
         print(f"[WARN][KB-load] {error_msg}")
+        # Update metrics for error
+        try:
+            from .metrics import kb_reloads_total
+            kb_reloads_total.labels(status='error').inc()
+        except ImportError:
+            pass
         return {
             'success': False,
             'items_count': previous_count,
@@ -263,8 +277,15 @@ def start_auto_reload_background_thread():
 def get_kb_status() -> dict:
     """Lấy thông tin trạng thái của knowledge base."""
     with kb_lock:
+        kb_size_count = len(qa_knowledge_base)
+        # Update metrics
+        try:
+            from .metrics import update_kb_metrics
+            update_kb_metrics(size=kb_size_count, is_hit=None, is_query=False)
+        except ImportError:
+            pass
         return {
-            'items_count': len(qa_knowledge_base),
+            'items_count': kb_size_count,
             'last_reload_time': kb_last_reload_time.strftime("%Y-%m-%d %H:%M:%S") if kb_last_reload_time else None,
             'reload_count': kb_reload_count,
             'auto_reload_enabled': settings.LEARNING_AUTO_RELOAD_ENABLED,

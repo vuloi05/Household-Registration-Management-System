@@ -8,5 +8,6 @@ from .app import app  # noqa: F401
 
 # Ensure routes are registered on import of package
 from . import routes  # noqa: F401
+from . import routes_auxiliary  # noqa: F401
 
 
