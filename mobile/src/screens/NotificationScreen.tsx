@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Image, FlatList, Text, TouchableOpacity } from 'react-native';
-import { List, Divider, Chip } from 'react-native-paper';
+import { List, Divider } from 'react-native-paper';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
 import { appTheme as theme } from '../theme';
+import type { RootStackParamList, Notification } from '../navigation/types';
+
 
 // TODO: Replace with real data from a backend API
-const staticNotifications = [
+const staticNotifications: Notification[] = [
   {
     id: '1',
     type: 'payment_success',
     title: 'Thanh toán thành công',
-    description: 'Bạn đã thanh toán thành công khoản phí Vệ sinh môi trường tháng 12.',
+    description: 'Bạn đã thanh toán thành công khoản phí Vệ sinh môi trường tháng 12. Số tiền: 30,000 VNĐ. Cảm ơn bạn đã hoàn thành nghĩa vụ.',
     time: '2 giờ trước',
     read: false,
   },
@@ -17,7 +21,7 @@ const staticNotifications = [
     id: '2',
     type: 'new_fee',
     title: 'Thông báo khoản thu mới',
-    description: 'Đã có khoản thu mới: Quỹ khuyến học năm 2025. Vui lòng kiểm tra và thanh toán.',
+    description: 'Đã có khoản thu mới: Quỹ khuyến học năm 2025. Vui lòng kiểm tra và thanh toán trước ngày 15/01/2026.',
     time: '1 ngày trước',
     read: false,
   },
@@ -25,7 +29,7 @@ const staticNotifications = [
     id: '3',
     type: 'reminder',
     title: 'Nhắc nhở thanh toán',
-    description: 'Khoản thu "Ủng hộ đồng bào lũ lụt" sắp hết hạn. Vui lòng thanh toán trước ngày 30/12/2025.',
+    description: 'Khoản thu "Ủng hộ đồng bào lũ lụt" sắp hết hạn. Vui lòng thanh toán trước ngày 30/12/2025 để tránh phát sinh phí.',
     time: '3 ngày trước',
     read: true,
   },
@@ -33,7 +37,7 @@ const staticNotifications = [
     id: '4',
     type: 'system',
     title: 'Cập nhật hệ thống',
-    description: 'Ứng dụng sẽ được bảo trì vào 02:00 sáng ngày 29/12/2025.',
+    description: 'Ứng dụng sẽ được bảo trì vào 02:00 sáng ngày 29/12/2025 để nâng cao chất lượng dịch vụ. Mọi hoạt động sẽ tạm ngưng trong khoảng 15 phút. Xin cảm ơn.',
     time: '4 ngày trước',
     read: true,
   },
@@ -41,7 +45,7 @@ const staticNotifications = [
     id: '5',
     type: 'info',
     title: 'Thông báo họp tổ dân phố',
-    description: 'Kính mời các hộ gia đình tham dự buổi họp tổng kết năm 2025 vào 19:00 ngày 31/12/2025.',
+    description: 'Kính mời các hộ gia đình tham dự buổi họp tổng kết năm 2025 vào 19:00 ngày 31/12/2025 tại nhà văn hóa khu dân cư. Nội dung: Báo cáo tổng kết và kế hoạch năm mới.',
     time: '1 tuần trước',
     read: true,
   },
@@ -79,14 +83,28 @@ const getColorForType = (type: string) => {
     }
   };
 
+type NotificationScreenNavigationProp = StackNavigationProp<RootStackParamList, 'MainTabs'>;
+
 export default function NotificationScreen() {
     const [notifications, setNotifications] = useState(staticNotifications);
+    const navigation = useNavigation<NotificationScreenNavigationProp>();
+
+    const handlePressNotification = (item: Notification) => {
+        // Mark notification as read
+        const newNotifications = notifications.map(n => 
+            n.id === item.id ? { ...n, read: true } : n
+        );
+        setNotifications(newNotifications);
+
+        // Navigate to detail screen
+        navigation.navigate('NotificationDetail', { notification: item });
+    };
 
     const markAllAsRead = () => {
         setNotifications(notifications.map(n => ({ ...n, read: true })));
     };
 
-  const renderItem = ({ item }: { item: typeof staticNotifications[0] }) => (
+  const renderItem = ({ item }: { item: Notification }) => (
     <List.Item
       title={item.title}
       description={item.description}
@@ -102,6 +120,7 @@ export default function NotificationScreen() {
             {!item.read && <View style={styles.unreadDot} />}
           </View>
       )}
+      onPress={() => handlePressNotification(item)}
     />
   );
 
