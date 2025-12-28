@@ -48,6 +48,9 @@ public class PayOSService {
     @Autowired
     private KhoanThuRepository khoanThuRepository;
 
+    @Autowired
+    private LichSuNopTienService lichSuNopTienService;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     /**
@@ -258,26 +261,40 @@ public class PayOSService {
             String code = webhookDTO.getData().getCode();
 
             // Tìm payment theo transactionId (orderCode)
-            Payment payment = paymentRepository.findAll().stream()
-                    .filter(p -> p.getTransactionId() != null && p.getTransactionId().equals(String.valueOf(orderCode)))
-                    .findFirst()
-                    .orElse(null);
+            Optional<Payment> paymentOpt = paymentRepository.findByTransactionId(String.valueOf(orderCode));
 
-            if (payment == null) {
+            if (paymentOpt.isEmpty()) {
+                System.out.println("⚠️ Payment not found for orderCode: " + orderCode);
                 return;
             }
+
+            Payment payment = paymentOpt.get();
 
             // Cập nhật trạng thái payment
             if ("00".equals(code)) {
                 // Payment thành công
+                if ("PAID".equalsIgnoreCase(payment.getStatus())) {
+                    System.out.println("✅ Payment " + payment.getTransactionId() + " was already marked as PAID.");
+                    return;
+                }
                 payment.setStatus("PAID");
                 payment.setPaidAt(LocalDateTime.now());
                 payment.setPayerName(webhookDTO.getData().getAccountName());
                 payment.setPayerAccount(webhookDTO.getData().getAccountNumber());
-                paymentRepository.save(payment);
+                Payment savedPayment = paymentRepository.save(payment);
+
+                // Ghi nhận vào lịch sử nộp tiền
+                try {
+                    lichSuNopTienService.ghiNhanNopTienTuPayment(savedPayment);
+                    System.out.println("📝 Payment recorded in history for orderCode: " + orderCode);
+                } catch (Exception e) {
+                    System.err.println("❌ Failed to record payment in history for orderCode: " + orderCode);
+                    e.printStackTrace();
+                    // Don't re-throw, as the main payment update succeeded
+                }
 
                 // Tạo notification
-                createPaymentNotification(payment);
+                createPaymentNotification(savedPayment);
             } else {
                 // Payment thất bại hoặc bị hủy
                 payment.setStatus("CANCELLED");

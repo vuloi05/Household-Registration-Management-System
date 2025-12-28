@@ -17,9 +17,12 @@ import com.quanlynhankhau.api.dto.ThongKeKhoanThuDTO;
 import com.quanlynhankhau.api.entity.HoKhau;
 import com.quanlynhankhau.api.entity.KhoanThu;
 import com.quanlynhankhau.api.entity.LichSuNopTien;
+import com.quanlynhankhau.api.entity.Payment;
 import com.quanlynhankhau.api.repository.HoKhauRepository;
 import com.quanlynhankhau.api.repository.KhoanThuRepository;
 import com.quanlynhankhau.api.repository.LichSuNopTienRepository;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class LichSuNopTienService {
@@ -38,6 +41,7 @@ public class LichSuNopTienService {
      * @param request DTO chứa thông tin về lần nộp tiền.
      * @return Bản ghi Lịch sử nộp tiền đã được lưu.
      */
+    @Transactional
     public LichSuNopTien ghiNhanNopTien(NopTienRequestDTO request) {
         // 1. Tìm Hộ khẩu trong CSDL bằng id. Nếu không tìm thấy, ném ra một ngoại lệ.
         HoKhau hoKhau = hoKhauRepository.findById(request.getHoKhauId())
@@ -56,6 +60,34 @@ public class LichSuNopTienService {
         newRecord.setNguoiThu(request.getNguoiThu());
 
         // 4. Lưu đối tượng mới vào CSDL và trả về.
+        return lichSuNopTienRepository.save(newRecord);
+    }
+
+    /**
+     * Ghi nhận một lần nộp tiền từ một giao dịch Payment đã thành công.
+     * @param payment Giao dịch Payment đã được xác nhận là 'PAID'.
+     * @return Bản ghi Lịch sử nộp tiền đã được lưu.
+     */
+    @Transactional
+    public LichSuNopTien ghiNhanNopTienTuPayment(Payment payment) {
+        if (!"PAID".equalsIgnoreCase(payment.getStatus())) {
+            // Chỉ ghi nhận nếu payment đã PAID, nếu không thì không làm gì cả
+            return null;
+        }
+
+        HoKhau hoKhau = hoKhauRepository.findById(payment.getHoKhauId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy hộ khẩu với ID: " + payment.getHoKhauId()));
+        KhoanThu khoanThu = khoanThuRepository.findById(payment.getKhoanThuId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy khoản thu với ID: " + payment.getKhoanThuId()));
+
+        // Tạo một bản ghi mới trong lịch sử nộp tiền
+        LichSuNopTien newRecord = new LichSuNopTien();
+        newRecord.setHoKhau(hoKhau);
+        newRecord.setKhoanThu(khoanThu);
+        newRecord.setNgayNop(payment.getPaidAt().toLocalDate());
+        newRecord.setSoTien(payment.getAmount());
+        newRecord.setNguoiThu("PayOS Webhook"); // Đánh dấu là thanh toán qua PayOS
+
         return lichSuNopTienRepository.save(newRecord);
     }
     
