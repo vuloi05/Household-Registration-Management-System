@@ -8,6 +8,7 @@ import java.util.Optional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.quanlynhankhau.api.controller.NhanKhauSearchController.NhanKhauFormValues;
 import com.quanlynhankhau.api.dto.NhanKhauDTO;
 import com.quanlynhankhau.api.entity.HoKhau;
 import com.quanlynhankhau.api.entity.NhanKhau;
@@ -144,6 +145,27 @@ public class NhanKhauService {
         }
 
         return updatedNhanKhau;
+    }
+
+    /**
+     * Cập nhật thông tin profile cho người dùng đang đăng nhập (mobile).
+     * @param cccd CCCD của người dùng (lấy từ Authentication Principal).
+     * @param formValues DTO chứa các trường có thể chỉnh sửa.
+     * @return Nhân khẩu sau khi đã được cập nhật.
+     */
+    public NhanKhau updateMyProfile(String cccd, NhanKhauFormValues formValues) {
+        NhanKhau existingNhanKhau = nhanKhauRepository.findByCmndCccd(cccd)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu với cccd: " + cccd));
+
+        // Chỉ cập nhật các trường cho phép
+        if (formValues.getNgheNghiep() != null) {
+            existingNhanKhau.setNgheNghiep(formValues.getNgheNghiep());
+        }
+        if (formValues.getNoiLamViec() != null) {
+            existingNhanKhau.setNoiLamViec(formValues.getNoiLamViec());
+        }
+
+        return nhanKhauRepository.save(existingNhanKhau);
     }
 
     /**
