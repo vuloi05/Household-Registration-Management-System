@@ -9,6 +9,7 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { type KhoanThu } from '../api/khoanThuApi';
@@ -31,9 +32,12 @@ const FeeCard: React.FC<FeeCardProps> = ({ khoanThu, index, onPress }) => {
     scale.value = withSpring(1);
   };
 
+  const isPaid = khoanThu.trangThaiThanhToan === 'DA_NOP';
+
   const animatedCardStyle = useAnimatedStyle(() => {
     return {
       transform: [{ scale: scale.value }],
+      opacity: withTiming(isPaid ? 0.6 : 1),
     };
   });
 
@@ -71,9 +75,10 @@ const FeeCard: React.FC<FeeCardProps> = ({ khoanThu, index, onPress }) => {
         onPressOut={handlePressOut}
         onPress={onPress}
         style={styles.cardTouchable}
+        disabled={isPaid}
       >
         <View style={styles.iconContainer}>
-          <MaterialCommunityIcons name={iconName} size={28} color={iconColor} />
+          <MaterialCommunityIcons name={isPaid ? "check-circle" : iconName} size={28} color={isPaid ? theme.colors.success : iconColor} />
         </View>
 
         <View style={styles.contentContainer}>
@@ -81,25 +86,32 @@ const FeeCard: React.FC<FeeCardProps> = ({ khoanThu, index, onPress }) => {
                 <Text style={styles.cardTitle} numberOfLines={2}>
                     {khoanThu.tenKhoanThu}
                 </Text>
-                <View style={[styles.tag, { backgroundColor: `${iconColor}20` }]}>
-                    <Text style={[styles.tagText, { color: iconColor }]}>{tagText}</Text>
+                <View style={styles.tagsContainer}>
+                    <View style={[styles.tag, { backgroundColor: `${iconColor}20` }]}>
+                        <Text style={[styles.tagText, { color: iconColor }]}>{tagText}</Text>
+                    </View>
+                    <View style={[styles.tag, isPaid ? styles.paidTag : styles.unpaidTag]}>
+                        <Text style={[styles.tagText, isPaid ? styles.paidTagText : styles.unpaidTagText]}>
+                            {isPaid ? 'Đã nộp' : 'Chưa nộp'}
+                        </Text>
+                    </View>
                 </View>
             </View>
           
             <View style={styles.footer}>
                 <View style={styles.detailItem}>
                     <MaterialCommunityIcons name="cash" size={16} color={theme.colors.text.secondary} />
-                    <Text style={styles.detailText}>{formatCurrency(khoanThu.soTienTrenMotNhanKhau)}</Text>
+                    <Text style={[styles.detailText, isPaid && styles.paidText]}>{formatCurrency(khoanThu.soTienTrenMotNhanKhau)}</Text>
                 </View>
                 <View style={styles.detailItem}>
                     <MaterialCommunityIcons name="calendar-range" size={16} color={theme.colors.text.secondary} />
-                    <Text style={styles.detailText}>Ngày tạo: {formatDate(khoanThu.ngayTao)}</Text>
+                    <Text style={[styles.detailText, isPaid && styles.paidText]}>Ngày tạo: {formatDate(khoanThu.ngayTao)}</Text>
                 </View>
             </View>
         </View>
 
         <View style={styles.chevronContainer}>
-            <MaterialCommunityIcons name="chevron-right" size={28} color={theme.colors.text.disabled} />
+            {!isPaid && <MaterialCommunityIcons name="chevron-right" size={28} color={theme.colors.text.disabled} />}
         </View>
       </TouchableOpacity>
     </Animated.View>
@@ -137,17 +149,35 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
         color: theme.colors.text.primary,
-        marginBottom: theme.spacing.xs,
+        marginBottom: 8,
+    },
+    tagsContainer: {
+        flexDirection: 'row',
+        gap: 8,
     },
     tag: {
         alignSelf: 'flex-start',
         borderRadius: theme.borderRadius.small,
         paddingHorizontal: theme.spacing.sm,
-        paddingVertical: theme.spacing.xs,
+        paddingVertical: 4,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     tagText: {
         fontSize: 12,
         fontWeight: 'bold',
+    },
+    paidTag: {
+        backgroundColor: `${theme.colors.success}20`,
+    },
+    unpaidTag: {
+        backgroundColor: `${theme.colors.warning}20`,
+    },
+    paidTagText: {
+        color: theme.colors.success,
+    },
+    unpaidTagText: {
+        color: theme.colors.warning,
     },
     footer: {
         borderTopWidth: 1,
@@ -163,6 +193,10 @@ const styles = StyleSheet.create({
         marginLeft: theme.spacing.sm,
         fontSize: 14,
         color: theme.colors.text.secondary,
+    },
+    paidText: {
+        color: theme.colors.text.disabled,
+        textDecorationLine: 'line-through',
     },
     chevronContainer: {
         marginLeft: theme.spacing.sm,

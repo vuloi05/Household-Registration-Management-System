@@ -4,6 +4,7 @@ import axiosClient from './axiosClient';
 // Interface cho Payment Request
 export interface PaymentRequest {
   khoanThuId: number;
+  nhanKhauId?: number;
   amount: number;
   description?: string;
   returnUrl?: string;

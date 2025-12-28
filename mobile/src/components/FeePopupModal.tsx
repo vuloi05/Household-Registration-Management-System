@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   View,
   StyleSheet,
@@ -22,6 +23,7 @@ import Animated, {
 import { WebView } from 'react-native-webview';
 import QRCode from 'react-native-qrcode-svg';
 import { type KhoanThu } from '../api/khoanThuApi';
+import { getMyNhanKhau } from '../api/nhanKhauApi';
 import { createPayment, getPaymentStatus, type PaymentResponse } from '../api/paymentApi';
 import { appTheme as theme } from '../theme';
 
@@ -84,8 +86,10 @@ const FeePopupModal: React.FC<FeePopupModalProps> = ({
     }
     setStep('loading');
     try {
+      const myNhanKhau = await getMyNhanKhau();
       const response = await createPayment({
         khoanThuId: khoanThu.id,
+        nhanKhauId: myNhanKhau.id,
         amount: khoanThu.soTienTrenMotNhanKhau,
         description: `Thanh toán ${khoanThu.tenKhoanThu}`,
         returnUrl: 'quanlynhankhau://payment-success',
@@ -132,8 +136,7 @@ const FeePopupModal: React.FC<FeePopupModalProps> = ({
     }
   };
   
-  const isBatBuoc = khoanThu?.loaiKhoanThu === 'BAT_BUOC';
-  const headerColor = isBatBuoc ? theme.colors.error : theme.colors.primary;
+  const isPaid = khoanThu?.trangThaiThanhToan === 'DA_NOP';
 
   const renderDetails = () => (
     <>
@@ -141,12 +144,22 @@ const FeePopupModal: React.FC<FeePopupModalProps> = ({
         <Text style={styles.amountText}>
             {khoanThu?.soTienTrenMotNhanKhau?.toLocaleString('vi-VN')} VNĐ
         </Text>
-        <Text style={styles.description}>
-            Vui lòng xác nhận để tiến hành thanh toán cho khoản thu này.
-        </Text>
-        <Button mode="contained" onPress={handleCreatePayment} style={styles.button} labelStyle={styles.buttonText}>
-            Xác nhận và thanh toán
-        </Button>
+        
+        {isPaid ? (
+            <View style={styles.paidContainer}>
+                <MaterialCommunityIcons name="check-circle" size={32} color={theme.colors.success} />
+                <Text style={styles.paidText}>Khoản thu này đã được thanh toán</Text>
+            </View>
+        ) : (
+            <>
+                <Text style={styles.description}>
+                    Vui lòng xác nhận để tiến hành thanh toán cho khoản thu này.
+                </Text>
+                <Button mode="contained" onPress={handleCreatePayment} style={styles.button} labelStyle={styles.buttonText}>
+                    Xác nhận và thanh toán
+                </Button>
+            </>
+        )}
     </>
   );
 
@@ -228,6 +241,16 @@ const styles = StyleSheet.create({
         padding: theme.spacing.lg,
         paddingBottom: 40, // For home indicator
         alignItems: 'center',
+    },
+    paidContainer: {
+        alignItems: 'center',
+        marginVertical: theme.spacing.lg,
+    },
+    paidText: {
+        marginTop: theme.spacing.sm,
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: theme.colors.success,
     },
     handleBar: {
         width: 40,
