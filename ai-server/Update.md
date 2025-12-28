@@ -8,183 +8,13 @@ Tài liệu này mô tả chi tiết các cải thiện, nâng cấp và bổ su
 
 ## 🔴 ƯU TIÊN CAO (High Priority)
 
-### 1. **Cải Thiện Bảo Mật**
-
-#### Vấn đề hiện tại:
-- API keys được lưu trong .env (OK) nhưng không có rotation mechanism
-- Thiếu input sanitization cho một số trường hợp
-- Rate limiting có thể bypass nếu không có Redis
-
-#### Đề xuất:
-- **Thêm API key rotation mechanism:**
-```python
-# Hỗ trợ multiple API keys và tự động rotate
-GEMINI_API_KEYS = os.getenv('GEMINI_API_KEYS', '').split(',')
-current_key_index = 0
-
-def get_next_api_key():
-    global current_key_index
-    if GEMINI_API_KEYS:
-        key = GEMINI_API_KEYS[current_key_index % len(GEMINI_API_KEYS)]
-        current_key_index += 1
-        return key
-    return None
-```
-
-- **Thêm request signing/verification cho internal APIs**
-- **Thêm IP whitelist cho admin endpoints**
-- **Cải thiện CORS configuration với validation**
-
-**File cần sửa:** `server/settings.py`, `server/app.py`
-
----
-
-### 2. **Cải Thiện Knowledge Base Matching**
-
-#### Vấn đề hiện tại:
-- Matching algorithm đơn giản (chỉ dùng SequenceMatcher và Jaccard)
-- Không có semantic similarity
-- Không có ranking theo relevance score
-
-#### Đề xuất:
-- **Thêm embedding-based similarity (tùy chọn):**
-```python
-# Sử dụng sentence-transformers cho semantic similarity
-from sentence_transformers import SentenceTransformer
-
-# Lazy load model
-_similarity_model = None
-
-def get_similarity_model():
-    global _similarity_model
-    if _similarity_model is None:
-        _similarity_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-    return _similarity_model
-
-def find_best_local_answer_semantic(q: str, threshold: float = 0.7):
-    model = get_similarity_model()
-    q_embedding = model.encode([q])[0]
-    
-    best_score = 0.0
-    best_ans = None
-    
-    with kb_lock:
-        for item in qa_knowledge_base:
-            kb_embedding = model.encode([item['q']])[0]
-            similarity = cosine_similarity([q_embedding], [kb_embedding])[0][0]
-            
-            if similarity > best_score and similarity >= threshold:
-                best_score = similarity
-                best_ans = item['a']
-    
-    return best_ans
-```
-
-- **Hybrid approach: kết hợp keyword matching + semantic similarity**
-- **Thêm caching cho embeddings**
-
-**File cần sửa:** `server/kb.py`
-**Dependencies:** `sentence-transformers>=2.2.0` (optional)
+_(Hiện tại không có mục nào trong mức ưu tiên cao)_
 
 ---
 
 ## 🟡 ƯU TIÊN TRUNG BÌNH (Medium Priority)
 
-### 3. **Cải Thiện Conversation Memory**
-
-#### Vấn đề hiện tại:
-- Memory chỉ lưu trong-memory, mất khi restart
-- Không có persistence layer
-- Không có memory compression cho long conversations
-
-#### Đề xuất:
-- **Thêm Redis backend cho conversation memory:**
-```python
-# Thêm vào requirements.txt
-redis>=5.0.0
-
-# Sửa server/memory.py
-import redis
-
-redis_client = None
-if os.getenv('REDIS_URL'):
-    redis_client = redis.from_url(os.getenv('REDIS_URL'))
-
-def get_conversation_history_redis(session_id: str, max_messages: int = 10):
-    if not redis_client:
-        return get_conversation_history_memory(session_id, max_messages)
-    
-    key = f"session:{session_id}:messages"
-    messages = redis_client.lrange(key, -max_messages, -1)
-    return [json.loads(msg) for msg in messages]
-```
-
-- **Thêm memory summarization cho conversations dài**
-- **Thêm memory search (tìm kiếm trong conversation history)**
-
-**File cần sửa:** `server/memory.py`
-
----
-
-### 4. **Cải Thiện Action Inference**
-
-#### Vấn đề hiện tại:
-- Logic inference dựa trên keyword matching đơn giản
-- Không có confidence score cho actions
-- Không có validation cho action parameters
-
-#### Đề xuất:
-- **Thêm confidence scoring:**
-```python
-def infer_actions_with_confidence(message: str, history: list = None) -> list[dict]:
-    actions = infer_actions(message, history)
-    
-    # Tính confidence score cho mỗi action
-    for action in actions:
-        confidence = calculate_action_confidence(message, action)
-        action['confidence'] = confidence
-    
-    # Filter actions với confidence thấp
-    return [a for a in actions if a.get('confidence', 0) >= 0.5]
-```
-
-- **Sử dụng LLM để extract entities chính xác hơn (optional)**
-- **Thêm action validation và error handling**
-
-**File cần sửa:** `server/actions.py`
-
----
-
-### 5. **Cải Thiện Response Caching**
-
-#### Vấn đề hiện tại:
-- Cache chỉ lưu trong-memory, không persistent
-- Cache key không tính đến conversation context đầy đủ
-- Không có cache invalidation strategy
-
-#### Đề xuất:
-- **Thêm Redis backend cho cache:**
-```python
-# Sửa server/cache.py
-def get_cached_response_redis(message: str, context: str = ""):
-    if not redis_client:
-        return get_cached_response_memory(message, context)
-    
-    cache_key = f"response:{_generate_cache_key(message, context)}"
-    cached = redis_client.get(cache_key)
-    if cached:
-        return json.loads(cached)
-    return None
-```
-
-- **Thêm cache warming cho popular queries**
-- **Thêm cache versioning để invalidate khi KB update**
-
-**File cần sửa:** `server/cache.py`
-
----
-
-### 6. **Thêm Unit Tests và Integration Tests**
+### 1. **Thêm Unit Tests và Integration Tests**
 
 #### Vấn đề hiện tại:
 - Không có test coverage
@@ -221,7 +51,7 @@ httpx>=0.25.0  # For testing async endpoints
 
 ---
 
-### 7. **Thêm Health Checks Chi Tiết**
+### 3. **Thêm Health Checks Chi Tiết**
 
 #### Vấn đề hiện tại:
 - Health check endpoint quá đơn giản
@@ -257,7 +87,7 @@ def detailed_health_check():
 
 ## 🟢 ƯU TIÊN THẤP (Low Priority - Nice to Have)
 
-### 8. **Thêm Multi-Language Support**
+### 6. **Thêm Multi-Language Support**
 
 #### Đề xuất:
 - **Detect language và respond bằng ngôn ngữ tương ứng:**
@@ -281,7 +111,7 @@ else:
 
 ---
 
-### 9. **Thêm Sentiment Analysis**
+### 7. **Thêm Sentiment Analysis**
 
 #### Đề xuất:
 - **Phân tích sentiment của user message:**
@@ -306,7 +136,7 @@ def analyze_sentiment(text: str) -> dict:
 
 ---
 
-### 10. **Thêm Conversation Analytics**
+### 8. **Thêm Conversation Analytics**
 
 #### Đề xuất:
 - **Track metrics về conversations:**
@@ -322,7 +152,7 @@ def analyze_sentiment(text: str) -> dict:
 
 ---
 
-### 11. **Thêm A/B Testing Framework**
+### 9. **Thêm A/B Testing Framework**
 
 #### Đề xuất:
 - **Test different prompts/models:**
@@ -345,7 +175,7 @@ prompt_test = ABTest([
 
 ---
 
-### 12. **Thêm WebSocket Support**
+### 10. **Thêm WebSocket Support**
 
 #### Đề xuất:
 - **Real-time bidirectional communication:**
@@ -377,9 +207,6 @@ def handle_chat_message(data):
 
 ### Core Dependencies (High Priority):
 ```txt
-# Caching & Memory
-redis>=5.0.0
-
 # Testing
 pytest>=7.4.0
 pytest-cov>=4.1.0
@@ -389,10 +216,6 @@ httpx>=0.25.0
 
 ### Optional Dependencies (Medium/Low Priority):
 ```txt
-# Semantic similarity (optional)
-sentence-transformers>=2.2.0
-torch>=2.0.0  # Required by sentence-transformers
-
 # Language detection
 langdetect>=1.0.9
 
@@ -407,7 +230,7 @@ flask-socketio>=5.3.0
 
 ## 🏗️ Kiến Trúc và Cấu Trúc Code
 
-### 13. **Refactor Code Structure**
+### 11. **Refactor Code Structure**
 
 #### Đề xuất:
 - **Tách business logic ra khỏi routes:**
@@ -439,7 +262,7 @@ class AIService:
 
 ## 🔧 Configuration Improvements
 
-### 14. **Cải Thiện Configuration Management**
+### 12. **Cải Thiện Configuration Management**
 
 #### Đề xuất:
 - **Sử dụng Pydantic cho config validation:**
@@ -464,7 +287,7 @@ settings = Settings()
 
 ## 📊 Performance Optimizations
 
-### 15. **Async/Await Support**
+### 13. **Async/Await Support**
 
 #### Đề xuất:
 - **Chuyển sang async/await cho I/O operations:**
@@ -482,7 +305,7 @@ async def call_gemini_async(message: str, context: str = ""):
 
 ---
 
-### 16. **Connection Pooling**
+### 14. **Connection Pooling**
 
 #### Đề xuất:
 - **Sử dụng connection pooling cho HTTP requests:**
@@ -505,7 +328,7 @@ session.mount("https://", adapter)
 
 ## 🚀 Deployment Improvements
 
-### 17. **Docker Compose với Tất Cả Services**
+### 15. **Docker Compose với Tất Cả Services**
 
 #### Đề xuất:
 ```yaml
@@ -538,7 +361,7 @@ services:
 
 ## 📝 Documentation Improvements
 
-### 18. **API Documentation với OpenAPI/Swagger**
+### 16. **API Documentation với OpenAPI/Swagger**
 
 #### Đề xuất:
 - **Thêm Swagger UI:**
@@ -564,26 +387,21 @@ app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 ## 🎯 Roadmap Ưu Tiên
 
 ### Phase 1 (1-2 tuần):
-1. Cải thiện bảo mật
-6. Thêm unit tests cơ bản
+1. Thêm unit tests cơ bản
 
 ### Phase 2 (2-3 tuần):
-3. Cải thiện conversation memory với Redis
-4. Cải thiện action inference
-5. Cải thiện response caching
+3. Thêm health checks chi tiết
 
 ### Phase 3 (3-4 tuần):
-2. Thêm semantic similarity cho KB
-13. Refactor code structure
-7. Thêm health checks chi tiết
-18. API documentation
+11. Refactor code structure
+16. API documentation
 
 ### Phase 4 (Tùy chọn):
-8. Multi-language support
-9. Sentiment analysis
-12. WebSocket support
-11. A/B testing
-10. Conversation analytics
+6. Multi-language support
+7. Sentiment analysis
+10. WebSocket support
+9. A/B testing
+8. Conversation analytics
 
 ---
 
@@ -603,11 +421,5 @@ app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 - [Prometheus Metrics](https://prometheus.io/docs/instrumenting/clientlibs/)
 - [Circuit Breaker Pattern](https://martinfowler.com/bliki/CircuitBreaker.html)
 - [Redis Best Practices](https://redis.io/docs/manual/patterns/)
-- [Semantic Similarity](https://www.sbert.net/)
 
 ---
-
-**Ngày cập nhật:** 2025-01-20
-**Phiên bản:** 1.0
-**Tác giả:** AI Assistant
-

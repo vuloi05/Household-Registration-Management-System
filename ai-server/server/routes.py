@@ -7,9 +7,10 @@ from .app import app, limiter, logger
 from . import settings
 from .kb import find_best_local_answer, trigger_reload
 from .logic import process_message, process_message_stream
-from .actions import infer_actions
+from .actions import infer_actions, infer_actions_with_confidence
 from .utils import get_timestamp, persist_chat_event
 from .memory import get_or_create_session, add_message, get_conversation_history
+from .security import sanitize_string, sanitize_json
 from .metrics import (
     get_metrics, get_metrics_content_type,
     update_session_metrics, update_validation_metrics,
@@ -142,11 +143,18 @@ def chat():
             raise ValidationError("Request must be JSON", field='content-type')
         
         data = request.json or {}
-        user_message = data.get('message', '').strip()
-        context = data.get('context', '').strip()
+        # Sanitize input data
+        data = sanitize_json(data)
+        
+        user_message = sanitize_string(data.get('message', '').strip(), max_length=10000)
+        context = sanitize_string(data.get('context', '').strip(), max_length=50000) if data.get('context') else ''
         incoming_session_id = data.get('session_id') or request.cookies.get(SESSION_COOKIE_NAME)
+        if incoming_session_id:
+            incoming_session_id = sanitize_string(str(incoming_session_id), max_length=200)
         session_id = incoming_session_id
         system_info = data.get('system_info')  # Optional: stats, metadata
+        if system_info and isinstance(system_info, dict):
+            system_info = sanitize_json(system_info)
         
         # Validate input length để tránh DoS
         if len(user_message) > 10000:
@@ -173,7 +181,7 @@ def chat():
             session_id = get_or_create_session(session_id)
             # Update session metrics
             try:
-                from .memory import get_active_sessions_count
+                from .memory_advanced import get_active_sessions_count
                 active_count = get_active_sessions_count()
                 update_session_metrics(active_count)
             except (ImportError, AttributeError):
@@ -184,7 +192,8 @@ def chat():
             history = None
 
         # Thử suy luận hành động trước để tránh gọi AI không cần thiết
-        actions = infer_actions(user_message, history=history)
+        # Sử dụng infer_actions_with_confidence để có confidence scoring và validation
+        actions = infer_actions_with_confidence(user_message, history=history)
 
         # Nếu có actions hoặc không phải stream mode, xử lý bình thường
         if actions or not stream_mode:
@@ -307,7 +316,9 @@ def chat():
                 
                 # Xác định source từ full response (đơn giản hóa)
                 # Trong thực tế, bạn có thể thêm metadata vào stream
-                stream_source = 'ollama' if settings.OLLAMA_HOST and settings.OLLAMA_MODEL else 'gemini' if settings.GOOGLE_GEMINI_API_KEY else 'fallback'
+                from .gemini import get_gemini_key_rotator
+                has_gemini_keys = get_gemini_key_rotator().get_key_count() > 0
+                stream_source = 'ollama' if settings.OLLAMA_HOST and settings.OLLAMA_MODEL else 'gemini' if has_gemini_keys else 'fallback'
                 
                 # Lưu vào conversation memory sau khi stream xong
                 if settings.ENABLE_CONVERSATION_MEMORY and session_id:
@@ -409,7 +420,10 @@ def agent_plan():
             raise ValidationError("Request must be JSON", field='content-type')
         
         data = request.json or {}
-        user_message = data.get('message', '').strip()
+        # Sanitize input data
+        data = sanitize_json(data)
+        
+        user_message = sanitize_string(data.get('message', '').strip(), max_length=10000)
         
         if not user_message:
             raise ValidationError("Message is required", field='message')
@@ -418,7 +432,8 @@ def agent_plan():
             raise ValidationError("Message quá dài (tối đa 10000 ký tự)", field='message')
         
         logger.debug(f"Agent plan request: {user_message[:100]}")
-        actions = infer_actions(user_message)
+        # Sử dụng infer_actions_with_confidence để có confidence scoring và validation
+        actions = infer_actions_with_confidence(user_message)
         
         return jsonify({
             "success": True,
@@ -440,10 +455,13 @@ def qa_feedback():
             raise ValidationError("Request must be JSON", field='content-type')
         
         data = request.json or {}
-        question = (data.get('question') or '').strip()
-        answer = (data.get('answer') or '').strip()
-        feedback_type = (data.get('feedback_type') or 'confirm').strip()
-        context = (data.get('context') or '').strip()
+        # Sanitize input data
+        data = sanitize_json(data)
+        
+        question = sanitize_string((data.get('question') or '').strip(), max_length=5000)
+        answer = sanitize_string((data.get('answer') or '').strip(), max_length=10000) if data.get('answer') else ''
+        feedback_type = sanitize_string((data.get('feedback_type') or 'confirm').strip(), max_length=20)
+        context = sanitize_string((data.get('context') or '').strip(), max_length=50000) if data.get('context') else ''
         
         if not question:
             raise ValidationError("question is required", field='question')

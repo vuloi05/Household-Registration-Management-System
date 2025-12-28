@@ -6,8 +6,36 @@ from . import settings
 from .logger import get_logger
 from .exceptions import AIProviderError, CircuitBreakerOpenError
 from .circuit_breaker import get_gemini_circuit_breaker
+from .security import APIKeyRotator
 
 logger = get_logger(__name__)
+
+# Initialize API key rotator
+_gemini_key_rotator = None
+
+def get_gemini_key_rotator() -> APIKeyRotator:
+    """Get or create Gemini API key rotator."""
+    global _gemini_key_rotator
+    if _gemini_key_rotator is None:
+        _gemini_key_rotator = APIKeyRotator(settings.GEMINI_API_KEYS)
+        if _gemini_key_rotator.get_key_count() > 0:
+            logger.info(f"Initialized Gemini API key rotator with {_gemini_key_rotator.get_key_count()} key(s)")
+        else:
+            logger.warning("No Gemini API keys configured")
+    return _gemini_key_rotator
+
+def get_next_gemini_api_key() -> str:
+    """
+    Get next Gemini API key from rotation.
+    
+    Returns:
+        API key string or empty string if no keys available
+    """
+    rotator = get_gemini_key_rotator()
+    key = rotator.get_next_key()
+    if not key:
+        logger.warning("No Gemini API keys available")
+    return key or ""
 
 
 def call_gemini_stream(message: str, context: str = "", history: list = None) -> Generator[str, None, None]:
@@ -22,7 +50,8 @@ def call_gemini_stream(message: str, context: str = "", history: list = None) ->
     Yields:
         str: Chunks of text as they come from the model
     """
-    if not settings.GOOGLE_GEMINI_API_KEY:
+    api_key = get_next_gemini_api_key()
+    if not api_key:
         logger.debug("Gemini API key not configured, skipping stream call")
         return
     
@@ -51,7 +80,7 @@ def call_gemini_stream(message: str, context: str = "", history: list = None) ->
         contents.append({"role": "user", "parts": [{"text": message}]})
         
         # Use streaming endpoint (v1beta with streamGenerateContent)
-        url = f"{settings.GOOGLE_GEMINI_API_URL.replace('generateContent', 'streamGenerateContent')}?key={settings.GOOGLE_GEMINI_API_KEY}"
+        url = f"{settings.GOOGLE_GEMINI_API_URL.replace('generateContent', 'streamGenerateContent')}?key={api_key}"
         headers = {"Content-Type": "application/json"}
         payload = {"contents": contents}
         
@@ -118,7 +147,8 @@ def _call_gemini_internal(message: str, context: str = "", history: list = None,
     """
     Internal function để gọi Gemini API (không có circuit breaker).
     """
-    if not settings.GOOGLE_GEMINI_API_KEY:
+    api_key = get_next_gemini_api_key()
+    if not api_key:
         logger.debug("Gemini API key not configured")
         return ""
     
@@ -150,10 +180,23 @@ def _call_gemini_internal(message: str, context: str = "", history: list = None,
         
         payload = {"contents": contents}
         
-        url = f"{settings.GOOGLE_GEMINI_API_URL}?key={settings.GOOGLE_GEMINI_API_KEY}"
+        url = f"{settings.GOOGLE_GEMINI_API_URL}?key={api_key}"
         headers = {"Content-Type": "application/json"}
         
         response = requests.post(url, headers=headers, json=payload, timeout=45)
+        
+        # Check for rate limit or quota errors and mark key as failed if needed
+        if response.status_code == 429:
+            rotator = get_gemini_key_rotator()
+            rotator.mark_key_failed(api_key)
+            logger.warning(f"Gemini API rate limit hit, marked key as failed")
+        elif response.status_code == 403:
+            # Check if it's a quota/API key error
+            error_text = response.text.lower()
+            if 'quota' in error_text or 'api key' in error_text or 'permission' in error_text:
+                rotator = get_gemini_key_rotator()
+                rotator.mark_key_failed(api_key)
+                logger.warning(f"Gemini API key error (403), marked key as failed")
         
         if response.ok:
             result = response.json()
@@ -244,7 +287,7 @@ def call_gemini(message: str, context: str = "", history: list = None, retry_att
         AIProviderError: Nếu có lỗi từ Gemini API
         CircuitBreakerOpenError: Nếu circuit breaker đang mở
     """
-    if not settings.GOOGLE_GEMINI_API_KEY:
+    if not get_gemini_key_rotator().get_key_count():
         logger.debug("Gemini API key not configured")
         return ""
     

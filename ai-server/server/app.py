@@ -32,7 +32,7 @@ logger = setup_logging(
     use_json=os.getenv('ENVIRONMENT', 'development').lower() == 'production'
 )
 
-# CORS Configuration - Improved security
+# CORS Configuration - Improved security with validation
 # Allow specific origins instead of all origins
 allowed_origins_env = os.getenv('ALLOWED_ORIGINS', '')
 if allowed_origins_env:
@@ -42,15 +42,35 @@ else:
     # Default: allow localhost for development
     allowed_origins = ['http://localhost:3000', 'http://localhost:8080', 'http://127.0.0.1:3000', 'http://127.0.0.1:8080']
 
+# Validate origins format
+def validate_origin(origin: str) -> bool:
+    """Validate origin format (basic validation)."""
+    if not origin:
+        return False
+    # Must start with http:// or https://
+    if not (origin.startswith('http://') or origin.startswith('https://')):
+        return False
+    # Basic format check
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(origin)
+        return bool(parsed.scheme and parsed.netloc)
+    except Exception:
+        return False
+
+# Filter out invalid origins
+allowed_origins = [origin for origin in allowed_origins if validate_origin(origin)]
+
 # QUAN TRỌNG: Cho phép credentials để cookie có thể được gửi/nhận
 # Cấu hình CORS với allowed origins cụ thể để tăng bảo mật
 CORS(
     app,
     supports_credentials=True,
-    origins=allowed_origins,
-    allow_headers=['Content-Type', 'Authorization', 'X-Requested-With', 'X-Correlation-ID', 'X-Request-ID'],
+    origins=allowed_origins if allowed_origins else None,  # None means no CORS (more secure)
+    allow_headers=['Content-Type', 'Authorization', 'X-Requested-With', 'X-Correlation-ID', 'X-Request-ID', 'X-Request-Signature', 'X-Request-Timestamp'],
     methods=['GET', 'POST', 'OPTIONS'],
-    expose_headers=['Content-Type', 'X-Correlation-ID']
+    expose_headers=['Content-Type', 'X-Correlation-ID'],
+    max_age=3600  # Cache preflight requests for 1 hour
 )
 
 # Rate Limiting Configuration
@@ -63,8 +83,25 @@ if RATE_LIMITING_AVAILABLE:
         # If Redis client lib is missing or config is invalid, we gracefully
         # fall back to in-memory storage instead of crashing the app.
         storage_uri = settings.RATE_LIMIT_STORAGE_URL or None
+        use_redis = bool(storage_uri)
 
         try:
+            # Try to initialize with Redis if configured
+            if use_redis:
+                # Test Redis connection before using it
+                try:
+                    from limits.storage import storage_from_string
+                    test_storage = storage_from_string(storage_uri)
+                    # Try a simple operation to verify connection
+                    test_storage.hit("test_key")
+                    logger.info(f"Redis connection verified for rate limiting: {storage_uri}")
+                except Exception as redis_test_error:
+                    logger.warning(
+                        f"Redis connection test failed, falling back to in-memory storage: {redis_test_error}"
+                    )
+                    use_redis = False
+                    storage_uri = None
+
             limiter = Limiter(
                 app=app,
                 key_func=get_remote_address,
@@ -72,38 +109,56 @@ if RATE_LIMITING_AVAILABLE:
                 storage_uri=storage_uri,
                 headers_enabled=True,  # Include rate limit headers in response
                 strategy="fixed-window",  # Use fixed window strategy
-            )
-            if os.getenv("DEBUG", "False").lower() == "true":
-                print(
-                    "[Rate Limiting] Enabled with default limits:",
-                    settings.RATE_LIMIT_DEFAULT,
-                    "| storage:",
-                    storage_uri or "in-memory",
+                on_breach=lambda request, endpoint: logger.warning(
+                    f"Rate limit breached: {endpoint} from {get_remote_address()}",
+                    extra={'endpoint': endpoint, 'ip': get_remote_address()}
                 )
+            )
+            
+            storage_type = "Redis" if use_redis else "in-memory"
+            logger.info(
+                f"Rate limiting enabled with default limits: {settings.RATE_LIMIT_DEFAULT} | storage: {storage_type}"
+            )
+            
+            if not use_redis:
+                logger.warning(
+                    "Rate limiting using in-memory storage. "
+                    "This means rate limits are per-process and won't work across multiple instances. "
+                    "Consider configuring Redis for distributed rate limiting."
+                )
+                
         except ConfigurationError as e:  # e.g. Redis library not installed
             # Fall back to in-memory storage
-            limiter = Limiter(
-                app=app,
-                key_func=get_remote_address,
-                default_limits=[settings.RATE_LIMIT_DEFAULT],
-                headers_enabled=True,
-                strategy="fixed-window",
-            )
-            if os.getenv("DEBUG", "False").lower() == "true":
-                print(
-                    "[Rate Limiting] Redis storage unavailable, "
-                    "falling back to in-memory. Error:",
-                    e,
+            logger.warning(f"Rate limiting configuration error, using in-memory fallback: {e}")
+            try:
+                limiter = Limiter(
+                    app=app,
+                    key_func=get_remote_address,
+                    default_limits=[settings.RATE_LIMIT_DEFAULT],
+                    headers_enabled=True,
+                    strategy="fixed-window",
+                    on_breach=lambda request, endpoint: logger.warning(
+                        f"Rate limit breached: {endpoint} from {get_remote_address()}",
+                        extra={'endpoint': endpoint, 'ip': get_remote_address()}
+                    )
                 )
+                logger.info(
+                    f"Rate limiting enabled with in-memory storage (fallback mode). "
+                    f"Default limits: {settings.RATE_LIMIT_DEFAULT}"
+                )
+            except Exception as fallback_error:
+                logger.error(f"Failed to initialize rate limiting even with fallback: {fallback_error}")
+                limiter = None
+        except Exception as e:
+            logger.error(f"Unexpected error initializing rate limiting: {e}", exc_info=True)
+            limiter = None
     else:
-        if os.getenv("DEBUG", "False").lower() == "true":
-            print("[Rate Limiting] Disabled (RATE_LIMITING_ENABLED=false)")
+        logger.info("[Rate Limiting] Disabled (RATE_LIMITING_ENABLED=false)")
 else:
-    if os.getenv("DEBUG", "False").lower() == "true":
-        print(
-            "[Rate Limiting] flask-limiter not installed. "
-            "Install with: pip install flask-limiter"
-        )
+    logger.warning(
+        "[Rate Limiting] flask-limiter not installed. "
+        "Install with: pip install flask-limiter"
+    )
 
 
 # Correlation ID support - Generate và attach correlation ID cho mỗi request
@@ -123,7 +178,23 @@ def add_correlation_id():
 
 @app.after_request
 def add_correlation_id_header(response):
-    """Add correlation ID vào response header."""
+    """Add correlation ID và security headers vào response."""
     if hasattr(g, 'correlation_id'):
         response.headers['X-Correlation-ID'] = g.correlation_id
+    
+    # Add security headers
+    is_production = os.getenv('ENVIRONMENT', 'development').lower() == 'production'
+    if is_production:
+        # Prevent clickjacking
+        response.headers['X-Frame-Options'] = 'DENY'
+        # Prevent MIME type sniffing
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        # Enable XSS protection
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        # Strict Transport Security (only if HTTPS)
+        if request.is_secure:
+            response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        # Content Security Policy (basic)
+        response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'"
+    
     return response

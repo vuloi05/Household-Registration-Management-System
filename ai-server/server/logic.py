@@ -50,7 +50,7 @@ def process_message(
 
     # 1. Kiểm tra cache trước
     if settings.ENABLE_RESPONSE_CACHE and not bypass_kb:
-        cached = get_cached_response(message, context)
+        cached = get_cached_response(message, context, history, system_info)
         if cached:
             _metrics['cache_hits'] += 1
             return {
@@ -80,7 +80,7 @@ def process_message(
                 pass
             # Cache KB answer
             if settings.ENABLE_RESPONSE_CACHE:
-                cache_response(message, context, kb_ans)
+                cache_response(message, context, kb_ans, history, system_info)
             return {
                 'response': kb_ans,
                 'from_cache': False,
@@ -156,7 +156,9 @@ def process_message(
             # Fallback to Gemini
     
     # Fallback to Gemini
-    if not response_text and settings.GOOGLE_GEMINI_API_KEY:
+    from .gemini import get_gemini_key_rotator
+    has_gemini_keys = get_gemini_key_rotator().get_key_count() > 0
+    if not response_text and has_gemini_keys:
         try:
             import time
             call_start = time.time()
@@ -218,7 +220,7 @@ def process_message(
 
     # 7. Cache response nếu hợp lệ
     if settings.ENABLE_RESPONSE_CACHE and validation.get('valid', False) and source in ['ollama', 'gemini']:
-        cache_response(message, context, response_text)
+        cache_response(message, context, response_text, history, system_info)
 
     return {
         'response': response_text,
@@ -255,7 +257,7 @@ def process_message_stream(
     
     # 1. Kiểm tra cache (không stream cache, trả về ngay)
     if settings.ENABLE_RESPONSE_CACHE and not bypass_kb:
-        cached = get_cached_response(message, context)
+        cached = get_cached_response(message, context, history, system_info)
         if cached:
             _metrics['cache_hits'] += 1
             # Yield cached response in chunks to maintain streaming behavior
@@ -275,7 +277,7 @@ def process_message_stream(
                 yield kb_ans[i:i+chunk_size]
             # Cache KB answer
             if settings.ENABLE_RESPONSE_CACHE:
-                cache_response(message, context, kb_ans)
+                cache_response(message, context, kb_ans, history, system_info)
             return
     
     # 3. Xử lý các pattern chung chung (fallback patterns)
@@ -322,7 +324,9 @@ def process_message_stream(
             # Fallback to Gemini
     
     # Fallback to Gemini
-    if not stream_generator and settings.GOOGLE_GEMINI_API_KEY:
+    from .gemini import get_gemini_key_rotator
+    has_gemini_keys = get_gemini_key_rotator().get_key_count() > 0
+    if not stream_generator and has_gemini_keys:
         try:
             stream_generator = call_gemini_stream(message, enriched_context, history)
             source = "gemini"
@@ -347,7 +351,7 @@ def process_message_stream(
             sanitized = sanitize_response(full_response)
             # Nếu sanitized khác với full_response, cần validate
             if settings.ENABLE_RESPONSE_CACHE and source in ['ollama', 'gemini']:
-                cache_response(message, context, sanitized)
+                cache_response(message, context, sanitized, history, system_info)
     else:
         # Fallback message nếu không có AI nào available
         response_text = "Cảm ơn bạn đã liên hệ! Tôi là trợ lý AI của hệ thống Quản lý Nhân khẩu. Bạn có thể hỏi tôi về bất kỳ tính năng nào của hệ thống."

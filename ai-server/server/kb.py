@@ -1,11 +1,30 @@
+from __future__ import annotations
+
 import json
 import threading
 import time
 from datetime import datetime, timedelta
 from difflib import SequenceMatcher
+from typing import Optional, TYPE_CHECKING
 from .utils import normalize_text, tokenize_keywords
 
 from . import settings
+
+# Optional: sentence-transformers for semantic similarity
+# Import type for type checking only
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer
+    import numpy as np
+
+# Runtime import
+try:
+    from sentence_transformers import SentenceTransformer
+    import numpy as np
+    _sentence_transformers_available = True
+except ImportError:
+    _sentence_transformers_available = False
+    SentenceTransformer = None  # type: ignore[assignment,misc]
+    np = None  # type: ignore
 
 
 qa_knowledge_base: list[dict] = []  # List[{"q": str, "a": str}]
@@ -17,6 +36,12 @@ auto_reload_thread: threading.Thread = None  # Background thread cho auto-reload
 # Metrics
 kb_queries: int = 0
 kb_hits: int = 0
+
+# Semantic similarity model (lazy loaded)
+_similarity_model: Optional["SentenceTransformer"] = None  # type: ignore[assignment]
+_embedding_cache: dict = {}  # Cache embeddings by question text
+_embedding_cache_lock = threading.Lock()
+_embedding_cache_generation: int = 0  # Increment when KB reloads to invalidate cache
 
 
 def load_qa_knowledge_base(force_reload: bool = False) -> dict:
@@ -158,6 +183,17 @@ def load_qa_knowledge_base(force_reload: bool = False) -> dict:
             kb_last_reload_time = datetime.now()
             kb_reload_count += 1
         
+        # Clear embedding cache when KB reloads
+        _clear_embedding_cache()
+        
+        # Invalidate response cache when KB updates
+        try:
+            from .cache import invalidate_cache_by_version
+            new_version = invalidate_cache_by_version()
+            print(f"[KB] Cache invalidated (version: {new_version})")
+        except ImportError:
+            pass
+        
         print(f"[KB] Reloaded: {old_count} -> {len(final_items)} QA items from AWS (reload #{kb_reload_count})")
         
         # Update metrics
@@ -202,34 +238,193 @@ def _jaccard(a: set[str], b: set[str]) -> float:
     return inter / max(union, 1)
 
 
+def get_similarity_model() -> Optional["SentenceTransformer"]: # type: ignore
+    """
+    Lazy load sentence-transformers model for semantic similarity.
+    Returns None if sentence-transformers is not available or semantic similarity is disabled.
+    """
+    global _similarity_model
+    
+    if not settings.KB_USE_SEMANTIC_SIMILARITY:
+        return None
+    
+    if not _sentence_transformers_available:
+        if kb_reload_count == 0:  # Only warn once at startup
+            print("[KB][WARN] sentence-transformers not available. Install with: pip install sentence-transformers")
+        return None
+    
+    if _similarity_model is None:
+        try:
+            model_name = settings.KB_SEMANTIC_MODEL
+            print(f"[KB] Loading semantic similarity model: {model_name}")
+            _similarity_model = SentenceTransformer(model_name)
+            print(f"[KB] Semantic similarity model loaded successfully")
+        except Exception as e:
+            print(f"[KB][WARN] Failed to load semantic similarity model: {e}")
+            return None
+    
+    return _similarity_model
+
+
+def _get_embedding_cached(text: str, cache_generation: int):
+    """
+    Get embedding for text with caching.
+    Returns None if model is not available.
+    """
+    model = get_similarity_model()
+    if model is None or np is None:
+        return None
+    
+    # Check cache first
+    cache_key = text.lower().strip()
+    with _embedding_cache_lock:
+        if cache_key in _embedding_cache and _embedding_cache_generation == cache_generation:
+            return _embedding_cache[cache_key]
+    
+    # Compute embedding
+    try:
+        embedding = model.encode([text], show_progress_bar=False)[0]
+        
+        # Store in cache
+        with _embedding_cache_lock:
+            # Only cache if generation matches (cache not invalidated)
+            if _embedding_cache_generation == cache_generation:
+                _embedding_cache[cache_key] = embedding
+        
+        return embedding
+    except Exception as e:
+        print(f"[KB][WARN] Failed to compute embedding: {e}")
+        return None
+
+
+def _clear_embedding_cache():
+    """Clear embedding cache (called when KB reloads)."""
+    global _embedding_cache_generation
+    with _embedding_cache_lock:
+        _embedding_cache.clear()
+        _embedding_cache_generation += 1
+
+
+def _calculate_keyword_score(q: str, kb_q: str) -> float:
+    """
+    Calculate keyword-based similarity score using SequenceMatcher and Jaccard.
+    Returns a score between 0.0 and 1.0.
+    """
+    norm_q = normalize_text(q)
+    norm_kb_q = normalize_text(kb_q)
+    q_tokens = set(tokenize_keywords(q))
+    kb_tokens = set(tokenize_keywords(kb_q))
+    
+    seq_score = SequenceMatcher(None, norm_q, norm_kb_q).ratio()
+    jacc = _jaccard(q_tokens, kb_tokens)
+    # Use maximum of both signals
+    return max(seq_score, jacc)
+
+
+def _calculate_semantic_score(q: str, kb_q: str, cache_generation: int) -> Optional[float]:
+    """
+    Calculate semantic similarity score using embeddings.
+    Returns a score between 0.0 and 1.0, or None if semantic similarity is not available.
+    Uses cosine similarity: cos(θ) = (A · B) / (||A|| * ||B||)
+    """
+    q_embedding = _get_embedding_cached(q, cache_generation)
+    kb_embedding = _get_embedding_cached(kb_q, cache_generation)
+    
+    if q_embedding is None or kb_embedding is None or np is None:
+        return None
+    
+    try:
+        # Calculate cosine similarity manually: (A · B) / (||A|| * ||B||)
+        dot_product = np.dot(q_embedding, kb_embedding)
+        norm_q = np.linalg.norm(q_embedding)
+        norm_kb = np.linalg.norm(kb_embedding)
+        
+        if norm_q == 0 or norm_kb == 0:
+            return 0.0
+        
+        similarity = dot_product / (norm_q * norm_kb)
+        # Cosine similarity returns values between -1 and 1, but embeddings usually give 0-1
+        # Clamp to [0, 1] for safety
+        return max(0.0, min(1.0, float(similarity)))
+    except Exception as e:
+        print(f"[KB][WARN] Failed to calculate semantic similarity: {e}")
+        return None
+
+
 def find_best_local_answer(q: str, threshold: float = None):
+    """
+    Find best matching answer from knowledge base using hybrid approach:
+    - Keyword matching (SequenceMatcher + Jaccard)
+    - Semantic similarity (optional, if enabled and available)
+    
+    Args:
+        q: Query question
+        threshold: Optional custom threshold (overrides settings)
+        
+    Returns:
+        Best matching answer string, or None if no match found
+    """
     # Configurable thresholds
     similarity_threshold = threshold if threshold is not None else settings.KB_SIMILARITY_THRESHOLD
     jaccard_threshold = settings.KB_JACCARD_THRESHOLD
-
+    semantic_threshold = settings.KB_SEMANTIC_THRESHOLD
+    
     global kb_queries, kb_hits
     kb_queries += 1
-
-    norm_q = normalize_text(q)
-    q_tokens = set(tokenize_keywords(q))
+    
+    # Get current cache generation to ensure cache consistency
+    with _embedding_cache_lock:
+        cache_generation = _embedding_cache_generation
+    
     best_score = 0.0
     best_ans = None
-
+    use_semantic = settings.KB_USE_SEMANTIC_SIMILARITY and get_similarity_model() is not None
+    
     with kb_lock:
         for item in qa_knowledge_base:
             qkb_raw = item['q']
             a_raw = item['a']
-            norm_kb_q = normalize_text(qkb_raw)
-            kb_tokens = set(tokenize_keywords(qkb_raw))
-            # Two signals
-            seq_score = SequenceMatcher(None, norm_q, norm_kb_q).ratio()
-            jacc = _jaccard(q_tokens, kb_tokens)
-            combined = max(seq_score, jacc)
-            # Accept if either signal clears its threshold
-            if (seq_score >= similarity_threshold) or (jacc >= jaccard_threshold):
-                if combined > best_score:
-                    best_score = combined
-                    best_ans = a_raw
+            
+            # Calculate keyword-based score
+            keyword_score = _calculate_keyword_score(q, qkb_raw)
+            
+            # Calculate semantic score (if enabled)
+            semantic_score = None
+            if use_semantic:
+                semantic_score = _calculate_semantic_score(q, qkb_raw, cache_generation)
+            
+            # Hybrid approach: combine keyword and semantic scores
+            if use_semantic and semantic_score is not None:
+                # Weighted combination
+                keyword_weight = settings.KB_HYBRID_WEIGHT_KEYWORD
+                semantic_weight = settings.KB_HYBRID_WEIGHT_SEMANTIC
+                # Normalize weights to sum to 1.0
+                total_weight = keyword_weight + semantic_weight
+                if total_weight > 0:
+                    keyword_weight = keyword_weight / total_weight
+                    semantic_weight = semantic_weight / total_weight
+                else:
+                    keyword_weight = 0.5
+                    semantic_weight = 0.5
+                
+                hybrid_score = (keyword_weight * keyword_score) + (semantic_weight * semantic_score)
+                
+                # Accept if hybrid score meets threshold OR either individual score meets its threshold
+                if (hybrid_score >= similarity_threshold or 
+                    keyword_score >= similarity_threshold or 
+                    keyword_score >= jaccard_threshold or
+                    (semantic_score is not None and semantic_score >= semantic_threshold)):
+                    if hybrid_score > best_score:
+                        best_score = hybrid_score
+                        best_ans = a_raw
+            else:
+                # Fallback to keyword-only matching
+                combined = keyword_score
+                # Accept if either signal clears its threshold
+                if (keyword_score >= similarity_threshold) or (keyword_score >= jaccard_threshold):
+                    if combined > best_score:
+                        best_score = combined
+                        best_ans = a_raw
 
     if best_ans is not None:
         kb_hits += 1
@@ -284,6 +479,15 @@ def get_kb_status() -> dict:
             update_kb_metrics(size=kb_size_count, is_hit=None, is_query=False)
         except ImportError:
             pass
+        
+        # Check semantic similarity status
+        semantic_enabled = settings.KB_USE_SEMANTIC_SIMILARITY
+        semantic_available = _sentence_transformers_available
+        semantic_model_loaded = _similarity_model is not None
+        
+        with _embedding_cache_lock:
+            embedding_cache_size = len(_embedding_cache)
+        
         return {
             'items_count': kb_size_count,
             'last_reload_time': kb_last_reload_time.strftime("%Y-%m-%d %H:%M:%S") if kb_last_reload_time else None,
@@ -291,6 +495,13 @@ def get_kb_status() -> dict:
             'auto_reload_enabled': settings.LEARNING_AUTO_RELOAD_ENABLED,
             'auto_reload_interval': settings.LEARNING_AUTO_RELOAD_INTERVAL,
             'aws_configured': bool(settings.boto3 and (settings.s3_client or settings.ddb_client)),
+            'semantic_similarity': {
+                'enabled': semantic_enabled,
+                'available': semantic_available,
+                'model_loaded': semantic_model_loaded,
+                'model_name': settings.KB_SEMANTIC_MODEL if semantic_enabled else None,
+                'embedding_cache_size': embedding_cache_size
+            },
             'metrics': {
                 'kb_queries': kb_queries,
                 'kb_hits': kb_hits,

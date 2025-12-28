@@ -14,9 +14,17 @@ from .kb import trigger_reload, get_kb_status
 from .logic import get_logic_metrics
 from .utils import get_timestamp
 from .memory import get_conversation_history, clear_session
+from .memory_advanced import search_conversation_history
 from .metrics import update_cache_metrics
-from .cache import get_cache_stats, clear_cache
+from .cache import (
+    get_cache_stats, 
+    clear_cache, 
+    invalidate_cache_by_version,
+    get_popular_queries,
+    warm_cache
+)
 from .exceptions import AIServerException, ValidationError
+from .security import require_ip_whitelist
 
 # Helper function for rate limiting
 def apply_rate_limit(limit_string: str):
@@ -38,6 +46,7 @@ except Exception:
 
 @app.route('/kb/reload', methods=['POST'])
 @apply_rate_limit(settings.RATE_LIMIT_KB_RELOAD)
+@require_ip_whitelist(allowed_ips=settings.ADMIN_IP_WHITELIST if settings.ENABLE_IP_WHITELIST else None)
 def kb_reload():
     """Endpoint để trigger reload knowledge base thủ công."""
     try:
@@ -94,6 +103,7 @@ def kb_status():
 
 @app.route('/kb/auto-learn', methods=['POST'])
 @apply_rate_limit(settings.RATE_LIMIT_AUTO_LEARN)
+@require_ip_whitelist(allowed_ips=settings.ADMIN_IP_WHITELIST if settings.ENABLE_IP_WHITELIST else None)
 def kb_auto_learn():
     """Endpoint để trigger tự học chủ động ngay lập tức."""
     if not AUTO_LEARNING_AVAILABLE:
@@ -210,6 +220,43 @@ def get_session_history(session_id: str):
         raise
 
 
+@app.route('/session/<session_id>/search', methods=['GET'])
+def search_session_history(session_id: str):
+    """Tìm kiếm trong conversation history của session."""
+    try:
+        if not session_id or len(session_id) > 200:
+            raise ValidationError("Invalid session_id", field='session_id')
+        
+        query = request.args.get('q', '').strip()
+        if not query:
+            raise ValidationError("Query parameter 'q' is required", field='q')
+        
+        if len(query) > 200:
+            raise ValidationError("Query too long (max 200 characters)", field='q')
+        
+        try:
+            max_results = int(request.args.get('max', 5))
+            if max_results < 1 or max_results > 20:
+                raise ValidationError("max must be between 1 and 20", field='max')
+        except ValueError:
+            raise ValidationError("max must be a valid integer", field='max')
+        
+        logger.debug(f"Searching history for session: {session_id}, query: {query}, max: {max_results}")
+        results = search_conversation_history(session_id, query, max_results)
+        return jsonify({
+            "success": True,
+            "session_id": session_id,
+            "query": query,
+            "results": results,
+            "count": len(results)
+        })
+    except ValidationError:
+        raise
+    except Exception as e:
+        logger.error(f"Error in search_session_history: {str(e)}", exc_info=True, extra={'session_id': session_id})
+        raise
+
+
 @app.route('/cache/stats', methods=['GET'])
 def cache_stats():
     """Xem thống kê cache."""
@@ -230,6 +277,7 @@ def cache_stats():
 
 
 @app.route('/cache/clear', methods=['POST'])
+@require_ip_whitelist(allowed_ips=settings.ADMIN_IP_WHITELIST if settings.ENABLE_IP_WHITELIST else None)
 def cache_clear():
     """Xóa toàn bộ cache."""
     try:
@@ -242,6 +290,87 @@ def cache_clear():
         })
     except Exception as e:
         logger.error(f"Error in cache_clear: {str(e)}", exc_info=True)
+        raise
+
+
+@app.route('/cache/invalidate', methods=['POST'])
+@require_ip_whitelist(allowed_ips=settings.ADMIN_IP_WHITELIST if settings.ENABLE_IP_WHITELIST else None)
+def cache_invalidate():
+    """Invalidate cache bằng cách tăng version (cache cũ sẽ tự động bị ignore)."""
+    try:
+        logger.info("Cache invalidation requested")
+        new_version = invalidate_cache_by_version()
+        logger.info(f"Cache invalidated (new version: {new_version})")
+        return jsonify({
+            "success": True,
+            "message": f"Cache invalidated",
+            "new_version": new_version
+        })
+    except Exception as e:
+        logger.error(f"Error in cache_invalidate: {str(e)}", exc_info=True)
+        raise
+
+
+@app.route('/cache/popular', methods=['GET'])
+def cache_popular():
+    """Lấy danh sách popular queries."""
+    try:
+        limit = request.args.get('limit', 10, type=int)
+        queries = get_popular_queries(limit=limit)
+        return jsonify({
+            "success": True,
+            "queries": queries,
+            "count": len(queries)
+        })
+    except Exception as e:
+        logger.error(f"Error in cache_popular: {str(e)}", exc_info=True)
+        raise
+
+
+@app.route('/cache/warm', methods=['POST'])
+@require_ip_whitelist(allowed_ips=settings.ADMIN_IP_WHITELIST if settings.ENABLE_IP_WHITELIST else None)
+def cache_warm():
+    """
+    Warm cache với danh sách queries.
+    
+    Body JSON:
+    {
+        "queries": [
+            {
+                "message": "string",
+                "context": "string",
+                "response": "string",
+                "history": [{"role": "user", "content": "..."}],  # optional
+                "system_info": {"user_id": "...", "session_id": "..."}  # optional
+            }
+        ]
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data or 'queries' not in data:
+            return jsonify({
+                "success": False,
+                "error": "Missing 'queries' in request body"
+            }), 400
+        
+        queries = data['queries']
+        if not isinstance(queries, list):
+            return jsonify({
+                "success": False,
+                "error": "'queries' must be a list"
+            }), 400
+        
+        count = warm_cache(queries)
+        logger.info(f"Cache warmed: {count}/{len(queries)} queries")
+        return jsonify({
+            "success": True,
+            "message": f"Warmed {count}/{len(queries)} queries",
+            "cached_count": count,
+            "total_count": len(queries)
+        })
+    except Exception as e:
+        logger.error(f"Error in cache_warm: {str(e)}", exc_info=True)
         raise
 
 
@@ -391,4 +520,3 @@ def generic_exception_handler(error: Exception):
         response["exception_type"] = type(error).__name__
     
     return jsonify(response), 500
-
