@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Image, TouchableOpacity, Text, Alert, ScrollView } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../context/AuthContext';
+import type { SettingsStackParamList } from '../navigation/SettingsStackNavigator';
 
 interface SettingsItemProps {
   title: string;
@@ -11,6 +14,9 @@ interface SettingsItemProps {
   isBold?: boolean;
   reducedPadding?: boolean;
 }
+
+// Define navigation prop type
+type SettingsScreenNavigationProp = StackNavigationProp<SettingsStackParamList, 'SettingsMain'>;
 
 function SettingsItem({ title, icon, onPress, showIcon = true, isBold = false, reducedPadding = false }: SettingsItemProps) {
   return (
@@ -24,9 +30,9 @@ function SettingsItem({ title, icon, onPress, showIcon = true, isBold = false, r
       </Text>
       {showIcon && icon && (
         <MaterialCommunityIcons 
-          name={icon} 
-          size={20} 
-          color="#616161" 
+          name="chevron-right" // Use chevron for navigation items
+          size={24} 
+          color="#BDBDBD" 
         />
       )}
     </TouchableOpacity>
@@ -35,33 +41,40 @@ function SettingsItem({ title, icon, onPress, showIcon = true, isBold = false, r
 
 export default function SettingsScreen() {
   const { logout } = useAuth();
+  const navigation = useNavigation<SettingsScreenNavigationProp>();
   const [headerHeight, setHeaderHeight] = useState(0);
 
   const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout failed:', error);
-      Alert.alert('Đăng xuất thất bại', 'Vui lòng thử lại sau.');
-    }
+    Alert.alert(
+      "Xác nhận đăng xuất",
+      "Bạn có chắc chắn muốn đăng xuất?",
+      [
+        { text: "Hủy", style: "cancel" },
+        { text: "Đăng xuất", style: "destructive", onPress: async () => {
+            try {
+              await logout();
+            } catch (error) {
+              console.error('Logout failed:', error);
+              Alert.alert('Đăng xuất thất bại', 'Vui lòng thử lại sau.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleAccountPress = () => {
-    // TODO: Navigate to account screen
+    navigation.navigate('Account');
   };
 
   const handleLoginSettingsPress = () => {
-    // TODO: Navigate to login settings screen
+    navigation.navigate('ChangePassword');
   };
 
   const handleHeaderLayout = (event: any) => {
     const { height } = event.nativeEvent.layout;
-    // Header container có chiều cao thực tế sau khi image được render
-    // Với marginTop: -198, phần hiển thị thực tế của header
-    // Illustration thường kết thúc ở khoảng 40-45% chiều cao container
-    // Thêm khoảng cách nhỏ để settings list không quá sát header
-    const illustrationBottom = height * 0.42; // Điểm cuối của illustration
-    const spacing = 16; // Khoảng cách giữa header và settings list
+    const illustrationBottom = height * 0.42; 
+    const spacing = 16;
     setHeaderHeight(Math.max(illustrationBottom + spacing, spacing));
   };
 
@@ -87,14 +100,17 @@ export default function SettingsScreen() {
           <SettingsItem 
             title="Tài khoản" 
             onPress={handleAccountPress}
-            showIcon={false}
             isBold={true}
             reducedPadding={true}
+            showIcon={false}
           />
           
           <SettingsItem 
-            title="Cài đặt đăng nhập" 
-            icon="lock"
+            title="Thông tin cá nhân" 
+            onPress={handleAccountPress}
+          />
+          <SettingsItem 
+            title="Đổi mật khẩu" 
             onPress={handleLoginSettingsPress}
           />
         </View>
@@ -150,27 +166,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 16,
     paddingHorizontal: 0,
     minHeight: 44,
     zIndex: 3,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   settingsItemReducedPadding: {
-    paddingBottom: 4,
+    paddingBottom: 8,
+    borderBottomWidth: 0,
   },
   settingsItemText: {
     fontSize: 16,
-    fontWeight: '400',
+    fontWeight: '500',
     color: '#212121',
   },
   settingsItemTextBold: {
     fontWeight: '700',
-    color: '#616161',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#E0E0E0',
-    marginLeft: 0,
+    fontSize: 14,
+    color: '#757575',
+    textTransform: 'uppercase',
   },
   content: {
     marginTop: 32,
@@ -180,14 +196,16 @@ const styles = StyleSheet.create({
   logoutButton: {
     width: '90%',
     maxWidth: 380,
-    paddingVertical: 18,
-    backgroundColor: '#FFE5E8',
-    borderRadius: 28,
+    paddingVertical: 16,
+    backgroundColor: '#FFF1F1',
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#FFCDD2',
   },
   logoutText: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '700',
     color: '#D32F2F',
   },

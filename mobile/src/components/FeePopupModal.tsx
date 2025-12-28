@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -11,7 +11,7 @@ import {
   Alert,
   Linking,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Button } from 'react-native-paper';
 import { BlurView } from 'expo-blur';
 import Animated, {
   useSharedValue,
@@ -20,10 +20,14 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { WebView } from 'react-native-webview';
+import QRCode from 'react-native-qrcode-svg';
 import { type KhoanThu } from '../api/khoanThuApi';
 import { createPayment, getPaymentStatus, type PaymentResponse } from '../api/paymentApi';
+import { appTheme as theme } from '../theme';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+type PaymentStep = 'details' | 'qr' | 'webview' | 'loading';
 
 interface FeePopupModalProps {
   visible: boolean;
@@ -38,36 +42,32 @@ const FeePopupModal: React.FC<FeePopupModalProps> = ({
   onClose,
   onPaymentSuccess,
 }) => {
-  const scale = useSharedValue(0);
-  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(SCREEN_HEIGHT);
   const backdropOpacity = useSharedValue(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
-  const [paymentId, setPaymentId] = useState<string | null>(null);
-  const [showWebView, setShowWebView] = useState(false);
+
+  const [step, setStep] = useState<PaymentStep>('details');
+  const [paymentInfo, setPaymentInfo] = useState<PaymentResponse | null>(null);
 
   useEffect(() => {
     if (visible) {
       backdropOpacity.value = withTiming(1, { duration: 300 });
-      scale.value = withSpring(1, {
-        damping: 15,
-        stiffness: 150,
-      });
-      opacity.value = withTiming(1, { duration: 300 });
+      translateY.value = withSpring(0, { damping: 20, stiffness: 150 });
     } else {
-      backdropOpacity.value = withTiming(0, { duration: 200 });
-      scale.value = withSpring(0, {
-        damping: 15,
-        stiffness: 150,
-      });
-      opacity.value = withTiming(0, { duration: 200 });
+      backdropOpacity.value = withTiming(0, { duration: 300 });
+      translateY.value = withTiming(SCREEN_HEIGHT, { duration: 300 });
+    }
+    // Reset state on visibility change
+    if (!visible) {
+        setTimeout(() => {
+            setStep('details');
+            setPaymentInfo(null);
+        }, 300);
     }
   }, [visible]);
 
   const animatedModalStyle = useAnimatedStyle(() => {
     return {
-      transform: [{ scale: scale.value }],
-      opacity: opacity.value,
+      transform: [{ translateY: translateY.value }],
     };
   });
 
@@ -77,49 +77,35 @@ const FeePopupModal: React.FC<FeePopupModalProps> = ({
     };
   });
 
-  const handlePayment = async () => {
+  const handleCreatePayment = async () => {
     if (!khoanThu || !khoanThu.soTienTrenMotNhanKhau) {
       Alert.alert('Lỗi', 'Không thể lấy thông tin số tiền cần thanh toán');
       return;
     }
-
+    setStep('loading');
     try {
-      setIsLoading(true);
-      
-      // Tạo payment request
-      const paymentResponse: PaymentResponse = await createPayment({
+      const response = await createPayment({
         khoanThuId: khoanThu.id,
         amount: khoanThu.soTienTrenMotNhanKhau,
         description: `Thanh toán ${khoanThu.tenKhoanThu}`,
         returnUrl: 'quanlynhankhau://payment-success',
         cancelUrl: 'quanlynhankhau://payment-cancel',
       });
-
-      setPaymentId(paymentResponse.paymentId);
-      setPaymentUrl(paymentResponse.checkoutUrl);
-      setShowWebView(true);
+      setPaymentInfo(response);
+      setStep('qr');
     } catch (error: any) {
       console.error('Payment error:', error);
-      Alert.alert(
-        'Lỗi',
-        error?.response?.data?.message || error?.message || 'Không thể tạo thanh toán. Vui lòng thử lại.'
-      );
-    } finally {
-      setIsLoading(false);
+      Alert.alert('Lỗi thanh toán', error?.response?.data?.message || 'Không thể tạo thanh toán. Vui lòng thử lại.');
+      setStep('details');
     }
   };
 
   const handleWebViewNavigationStateChange = (navState: any) => {
     const { url } = navState;
-    
-    // Kiểm tra nếu URL là returnUrl hoặc cancelUrl
     if (url.includes('payment-success') || url.includes('payment-cancel')) {
-      setShowWebView(false);
-      setPaymentUrl(null);
-      
-      if (url.includes('payment-success')) {
-        // Kiểm tra trạng thái payment
-        checkPaymentStatus();
+      setStep('details'); // Close webview
+      if (url.includes('payment-success') && paymentInfo) {
+        checkPaymentStatus(paymentInfo.paymentId);
       } else {
         Alert.alert('Thông báo', 'Bạn đã hủy thanh toán');
         onClose();
@@ -127,356 +113,189 @@ const FeePopupModal: React.FC<FeePopupModalProps> = ({
     }
   };
 
-  const checkPaymentStatus = async () => {
-    if (!paymentId) return;
-
+  const checkPaymentStatus = async (paymentId: string) => {
     try {
       const status = await getPaymentStatus(paymentId);
-      
       if (status.status === 'paid') {
         Alert.alert('Thành công', 'Thanh toán thành công!', [
-          {
-            text: 'OK',
-            onPress: () => {
+          { text: 'OK', onPress: () => {
               onPaymentSuccess?.();
               onClose();
-            },
-          },
+          }},
         ]);
       } else {
-        // Poll lại sau 2 giây nếu chưa thanh toán
-        setTimeout(() => {
-          checkPaymentStatus();
-        }, 2000);
+        // Poll for status
+        setTimeout(() => checkPaymentStatus(paymentId), 2000);
       }
     } catch (error) {
       console.error('Error checking payment status:', error);
     }
   };
+  
+  const isBatBuoc = khoanThu?.loaiKhoanThu === 'BAT_BUOC';
+  const headerColor = isBatBuoc ? theme.colors.error : theme.colors.primary;
 
-  const handleCloseWebView = () => {
-    setShowWebView(false);
-    setPaymentUrl(null);
-    Alert.alert(
-      'Xác nhận',
-      'Bạn có chắc muốn đóng trang thanh toán?',
-      [
-        { text: 'Hủy', style: 'cancel' },
-        {
-          text: 'Đóng',
-          onPress: () => {
-            onClose();
-          },
-        },
-      ]
-    );
-  };
+  const renderDetails = () => (
+    <>
+        <Text style={styles.title}>{khoanThu?.tenKhoanThu}</Text>
+        <Text style={styles.amountText}>
+            {khoanThu?.soTienTrenMotNhanKhau?.toLocaleString('vi-VN')} VNĐ
+        </Text>
+        <Text style={styles.description}>
+            Vui lòng xác nhận để tiến hành thanh toán cho khoản thu này.
+        </Text>
+        <Button mode="contained" onPress={handleCreatePayment} style={styles.button} labelStyle={styles.buttonText}>
+            Xác nhận và thanh toán
+        </Button>
+    </>
+  );
+
+  const renderQR = () => (
+      <>
+        <Text style={styles.title}>Quét mã để thanh toán</Text>
+        <View style={styles.qrContainer}>
+            {paymentInfo?.qrCode && (
+                 <QRCode value={paymentInfo.qrCode} size={Dimensions.get('window').width * 0.6} />
+            )}
+        </View>
+        <Text style={styles.description}>Sử dụng ứng dụng ngân hàng hoặc ví điện tử để quét mã VietQR.</Text>
+        <Button mode="contained" onPress={() => setStep('webview')} style={styles.button} labelStyle={styles.buttonText}>
+            Mở qua WebView
+        </Button>
+        <Button mode="outlined" onPress={() => setStep('details')} style={[styles.button, {marginTop: 10}]}>
+            Quay lại
+        </Button>
+      </>
+  );
+
+  const renderWebView = () => (
+    <View style={styles.webViewContainer}>
+        <View style={styles.webViewHeader}>
+            <Text style={styles.webViewTitle}>Thanh toán qua PayOS</Text>
+            <TouchableOpacity onPress={() => setStep('qr')}>
+                <Text style={styles.webViewClose}>Đóng</Text>
+            </TouchableOpacity>
+        </View>
+        {paymentInfo?.checkoutUrl && (
+            <WebView
+                source={{ uri: paymentInfo.checkoutUrl }}
+                onNavigationStateChange={handleWebViewNavigationStateChange}
+            />
+        )}
+    </View>
+  );
+
+  const renderContent = () => {
+    switch(step) {
+        case 'details': return renderDetails();
+        case 'qr': return renderQR();
+        case 'webview': return renderWebView();
+        case 'loading': return <ActivityIndicator size="large" color={theme.colors.primary} style={{marginVertical: 60}}/>
+        default: return null;
+    }
+  }
 
   if (!khoanThu) return null;
 
-  const isBatBuoc = khoanThu.loaiKhoanThu === 'BAT_BUOC';
-  const gradientColors = isBatBuoc
-    ? (['#D32F2F', '#B71C1C'] as const)
-    : (['#1976D2', '#0D47A1'] as const);
-
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={onClose}
-    >
-      <View style={styles.modalContainer}>
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
-          <Animated.View style={[styles.backdrop, animatedBackdropStyle]}>
-            <BlurView intensity={20} style={StyleSheet.absoluteFill} />
-          </Animated.View>
+            <Animated.View style={[styles.backdrop, animatedBackdropStyle]}>
+                <BlurView intensity={10} tint="dark" style={StyleSheet.absoluteFill} />
+            </Animated.View>
         </Pressable>
 
-        <Animated.View style={[styles.modalContent, animatedModalStyle]}>
-          <View style={styles.modalGradient}>
-            {/* Close button - positioned absolutely to avoid event conflicts */}
-            <Pressable
-              onPress={onClose}
-              style={({ pressed }) => [
-                styles.closeButton,
-                styles.closeButtonAbsolute,
-                pressed && styles.closeButtonPressed,
-              ]}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Text style={styles.closeButtonText}>✕</Text>
-            </Pressable>
-
-            <Pressable onPress={(e) => e.stopPropagation()}>
-              {/* Header section */}
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalHeaderTitle}>Chi tiết thu phí</Text>
-              </View>
-
-              {/* Content section - Tên loại thu phí */}
-              <View style={styles.modalBody}>
-                <Text style={styles.modalFeeName}>{khoanThu.tenKhoanThu}</Text>
-                <View
-                  style={[
-                    styles.modalBadge,
-                    {
-                      backgroundColor: isBatBuoc
-                        ? 'rgba(211, 47, 47, 0.1)'
-                        : 'rgba(25, 118, 210, 0.1)',
-                      borderColor: isBatBuoc
-                        ? 'rgba(211, 47, 47, 0.3)'
-                        : 'rgba(25, 118, 210, 0.3)',
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.modalBadgeText,
-                      {
-                        color: isBatBuoc ? '#D32F2F' : '#1976D2',
-                      },
-                    ]}
-                  >
-                    {isBatBuoc ? 'BẮT BUỘC' : 'ĐÓNG GÓP'}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Footer section - Nút Thanh toán */}
-              <View style={styles.modalFooter}>
-                {khoanThu.soTienTrenMotNhanKhau && (
-                  <Text style={styles.amountText}>
-                    Số tiền: {khoanThu.soTienTrenMotNhanKhau.toLocaleString('vi-VN')} VNĐ
-                  </Text>
-                )}
-                <TouchableOpacity
-                  style={[styles.paymentButton, isLoading && styles.paymentButtonDisabled]}
-                  onPress={handlePayment}
-                  activeOpacity={0.8}
-                  disabled={isLoading || !khoanThu.soTienTrenMotNhanKhau}
-                >
-                  <LinearGradient
-                    colors={gradientColors}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.paymentButtonGradient}
-                  >
-                    {isLoading ? (
-                      <ActivityIndicator color="#FFFFFF" />
-                    ) : (
-                    <Text style={styles.paymentButtonText}>Thanh toán</Text>
-                    )}
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
-            </Pressable>
-          </View>
+        <Animated.View style={[styles.modalContainer, animatedModalStyle]}>
+            <View style={styles.handleBar} />
+            {renderContent()}
         </Animated.View>
-      </View>
-
-      {/* WebView Modal for Payment */}
-      {showWebView && paymentUrl && (
-        <Modal
-          visible={showWebView}
-          animationType="slide"
-          onRequestClose={handleCloseWebView}
-        >
-          <View style={styles.webViewContainer}>
-            <View style={styles.webViewHeader}>
-              <Text style={styles.webViewHeaderText}>Thanh toán PayOS</Text>
-              <TouchableOpacity onPress={handleCloseWebView} style={styles.webViewCloseButton}>
-                <Text style={styles.webViewCloseButtonText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <WebView
-              source={{ uri: paymentUrl }}
-              onNavigationStateChange={handleWebViewNavigationStateChange}
-              style={styles.webView}
-            />
-          </View>
-        </Modal>
-      )}
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    width: SCREEN_WIDTH - 40,
-    borderRadius: 24,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 20,
+    backdrop: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
     },
-    shadowOpacity: 0.4,
-    shadowRadius: 25,
-    elevation: 25,
-  },
-  modalGradient: {
-    width: '100%',
-    minHeight: 280,
-    borderRadius: 24,
-    position: 'relative',
-    backgroundColor: '#FFFFFF',
-  },
-  modalHeader: {
-    padding: 20,
-    paddingBottom: 16,
-    paddingRight: 60, // Add padding for the close button
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  modalHeaderTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#212121',
-  },
-  closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  closeButtonAbsolute: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    zIndex: 1000,
-    elevation: 1000,
-  },
-  closeButtonPressed: {
-    backgroundColor: 'rgba(0, 0, 0, 0.15)',
-    opacity: 0.8,
-  },
-  closeButtonText: {
-    fontSize: 20,
-    color: '#424242',
-    fontWeight: '600',
-    lineHeight: 20,
-  },
-  modalBody: {
-    padding: 20,
-    paddingVertical: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 120,
-  },
-  modalFeeName: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#212121',
-    textAlign: 'center',
-    marginBottom: 16,
-    lineHeight: 30,
-  },
-  modalBadge: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
-    borderWidth: 1,
-  },
-  modalBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  modalFooter: {
-    padding: 20,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  paymentButton: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
+    modalContainer: {
+        position: 'absolute',
+        bottom: 0,
+        width: '100%',
+        backgroundColor: 'white',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: theme.spacing.lg,
+        paddingBottom: 40, // For home indicator
+        alignItems: 'center',
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  paymentButtonGradient: {
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  paymentButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-    letterSpacing: 0.5,
-  },
-  paymentButtonDisabled: {
-    opacity: 0.6,
-  },
-  amountText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#212121',
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  webViewContainer: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  webViewHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    paddingTop: 50,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  webViewHeaderText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#212121',
-  },
-  webViewCloseButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  webViewCloseButtonText: {
-    fontSize: 20,
-    color: '#424242',
-    fontWeight: '600',
-  },
-  webView: {
-    flex: 1,
-  },
+    handleBar: {
+        width: 40,
+        height: 5,
+        borderRadius: 2.5,
+        backgroundColor: theme.colors.border,
+        marginBottom: theme.spacing.md,
+    },
+    title: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: theme.colors.text.primary,
+        marginBottom: theme.spacing.sm,
+        textAlign: 'center'
+    },
+    amountText: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        color: theme.colors.primary,
+        marginBottom: theme.spacing.md,
+    },
+    description: {
+        fontSize: 16,
+        color: theme.colors.text.secondary,
+        textAlign: 'center',
+        marginBottom: theme.spacing.xl,
+    },
+    button: {
+        width: '100%',
+        paddingVertical: 8,
+    },
+    buttonText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    qrContainer: {
+        marginVertical: theme.spacing.lg,
+        padding: theme.spacing.sm,
+        backgroundColor: 'white',
+        borderRadius: theme.borderRadius.small,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        shadowOffset: {width: 0, height: 4}
+    },
+    webViewContainer: {
+        width: '100%',
+        height: SCREEN_HEIGHT * 0.8,
+    },
+    webViewHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: theme.spacing.md,
+        borderBottomWidth: 1,
+        borderColor: theme.colors.border,
+    },
+    webViewTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    webViewClose: {
+        fontSize: 16,
+        color: theme.colors.primary,
+    }
 });
 
 export default FeePopupModal;
+
 
