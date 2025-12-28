@@ -12,7 +12,7 @@ import {
   Alert,
   Linking,
 } from 'react-native';
-import { Button } from 'react-native-paper';
+import { Button, TextInput } from 'react-native-paper';
 import { BlurView } from 'expo-blur';
 import Animated, {
   useSharedValue,
@@ -29,7 +29,7 @@ import { appTheme as theme } from '../theme';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-type PaymentStep = 'details' | 'qr' | 'webview' | 'loading';
+type PaymentStep = 'details' | 'qr' | 'webview' | 'loading' | 'verifying';
 
 interface FeePopupModalProps {
   visible: boolean;
@@ -49,6 +49,7 @@ const FeePopupModal: React.FC<FeePopupModalProps> = ({
 
   const [step, setStep] = useState<PaymentStep>('details');
   const [paymentInfo, setPaymentInfo] = useState<PaymentResponse | null>(null);
+  const [customAmount, setCustomAmount] = useState('');
 
   useEffect(() => {
     if (visible) {
@@ -63,6 +64,7 @@ const FeePopupModal: React.FC<FeePopupModalProps> = ({
         setTimeout(() => {
             setStep('details');
             setPaymentInfo(null);
+            setCustomAmount('');
         }, 300);
     }
   }, [visible]);
@@ -80,8 +82,11 @@ const FeePopupModal: React.FC<FeePopupModalProps> = ({
   });
 
   const handleCreatePayment = async () => {
-    if (!khoanThu || !khoanThu.soTienTrenMotNhanKhau) {
-      Alert.alert('Lỗi', 'Không thể lấy thông tin số tiền cần thanh toán');
+    const isVoluntary = khoanThu?.loaiKhoanThu === 'DONG_GOP';
+    const amountToPay = isVoluntary ? parseFloat(customAmount.replace(/,/g, '')) : khoanThu?.soTienTrenMotNhanKhau;
+
+    if (!khoanThu || !amountToPay || isNaN(amountToPay) || amountToPay <= 0) {
+      Alert.alert('Lỗi', 'Số tiền không hợp lệ. Vui lòng nhập một số tiền lớn hơn 0.');
       return;
     }
     setStep('loading');
@@ -90,8 +95,8 @@ const FeePopupModal: React.FC<FeePopupModalProps> = ({
       const response = await createPayment({
         khoanThuId: khoanThu.id,
         nhanKhauId: myNhanKhau.id,
-        amount: khoanThu.soTienTrenMotNhanKhau,
-        description: `Thanh toán ${khoanThu.tenKhoanThu}`,
+        amount: amountToPay,
+        description: `Thanh toan ${khoanThu.tenKhoanThu}`,
         returnUrl: 'quanlynhankhau://payment-success',
         cancelUrl: 'quanlynhankhau://payment-cancel',
       });
@@ -107,17 +112,25 @@ const FeePopupModal: React.FC<FeePopupModalProps> = ({
   const handleWebViewNavigationStateChange = (navState: any) => {
     const { url } = navState;
     if (url.includes('payment-success') || url.includes('payment-cancel')) {
-      setStep('details'); // Close webview
       if (url.includes('payment-success') && paymentInfo) {
-        checkPaymentStatus(paymentInfo.paymentId);
+        setStep('verifying');
+        checkPaymentStatus(paymentInfo.paymentId, 15); // Poll for 30 seconds (15 retries * 2s)
       } else {
+        setStep('details'); // Close webview on cancellation
         Alert.alert('Thông báo', 'Bạn đã hủy thanh toán');
         onClose();
       }
     }
   };
 
-  const checkPaymentStatus = async (paymentId: string) => {
+  const checkPaymentStatus = async (paymentId: string, retriesLeft: number) => {
+    if (retriesLeft <= 0) {
+      setStep('details');
+      Alert.alert('Lỗi', 'Không thể xác nhận thanh toán tại thời điểm này. Vui lòng kiểm tra lại trạng thái trong danh sách khoản thu sau.');
+      onClose();
+      return;
+    }
+
     try {
       const status = await getPaymentStatus(paymentId);
       if (status.status === 'paid') {
@@ -129,21 +142,42 @@ const FeePopupModal: React.FC<FeePopupModalProps> = ({
         ]);
       } else {
         // Poll for status
-        setTimeout(() => checkPaymentStatus(paymentId), 2000);
+        setTimeout(() => checkPaymentStatus(paymentId, retriesLeft - 1), 2000);
       }
     } catch (error) {
       console.error('Error checking payment status:', error);
+      setStep('details');
+      Alert.alert('Lỗi', 'Có lỗi xảy ra khi kiểm tra trạng thái thanh toán.');
+      onClose();
     }
   };
   
   const isPaid = khoanThu?.trangThaiThanhToan === 'DA_NOP';
+  const isVoluntary = khoanThu?.loaiKhoanThu === 'DONG_GOP';
 
   const renderDetails = () => (
     <>
         <Text style={styles.title}>{khoanThu?.tenKhoanThu}</Text>
-        <Text style={styles.amountText}>
-            {khoanThu?.soTienTrenMotNhanKhau?.toLocaleString('vi-VN')} VNĐ
-        </Text>
+
+        {isVoluntary ? (
+            <TextInput
+                label="Số tiền đóng góp"
+                value={customAmount}
+                onChangeText={(text) => {
+                    const cleanValue = text.replace(/[^0-9]/g, '');
+                    const formattedValue = cleanValue ? parseInt(cleanValue, 10).toLocaleString('vi-VN') : '';
+                    setCustomAmount(formattedValue);
+                }}
+                keyboardType="numeric"
+                style={styles.input}
+                mode="outlined"
+                right={<TextInput.Affix text="VNĐ" />}
+            />
+        ) : (
+            <Text style={styles.amountText}>
+                {khoanThu?.soTienTrenMotNhanKhau?.toLocaleString('vi-VN')} VNĐ
+            </Text>
+        )}
         
         {isPaid ? (
             <View style={styles.paidContainer}>
@@ -153,14 +187,31 @@ const FeePopupModal: React.FC<FeePopupModalProps> = ({
         ) : (
             <>
                 <Text style={styles.description}>
-                    Vui lòng xác nhận để tiến hành thanh toán cho khoản thu này.
+                    {isVoluntary
+                        ? 'Vui lòng nhập số tiền bạn muốn đóng góp và nhấn nút bên dưới.'
+                        : 'Vui lòng xác nhận để tiến hành thanh toán cho khoản thu này.'
+                    }
                 </Text>
-                <Button mode="contained" onPress={handleCreatePayment} style={styles.button} labelStyle={styles.buttonText}>
+                <Button 
+                    mode="contained" 
+                    onPress={handleCreatePayment} 
+                    style={styles.button} 
+                    labelStyle={styles.buttonText}
+                    disabled={isVoluntary && (!customAmount || parseFloat(customAmount.replace(/,/g, '')) <= 0)}
+                >
                     Xác nhận và thanh toán
                 </Button>
             </>
         )}
     </>
+  );
+
+  const renderVerifying = () => (
+    <View style={styles.verifyingContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={styles.verifyingText}>Đang xác nhận thanh toán...</Text>
+        <Text style={styles.verifyingSubText}>Vui lòng đợi trong giây lát.</Text>
+    </View>
   );
 
   const renderQR = () => (
@@ -204,6 +255,7 @@ const FeePopupModal: React.FC<FeePopupModalProps> = ({
         case 'qr': return renderQR();
         case 'webview': return renderWebView();
         case 'loading': return <ActivityIndicator size="large" color={theme.colors.primary} style={{marginVertical: 60}}/>
+        case 'verifying': return renderVerifying();
         default: return null;
     }
   }
@@ -252,6 +304,21 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: theme.colors.success,
     },
+    verifyingContainer: {
+        alignItems: 'center',
+        marginVertical: theme.spacing.xl,
+    },
+    verifyingText: {
+        marginTop: theme.spacing.md,
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: theme.colors.text.primary,
+    },
+    verifyingSubText: {
+        marginTop: theme.spacing.xs,
+        fontSize: 14,
+        color: theme.colors.text.secondary,
+    },
     handleBar: {
         width: 40,
         height: 5,
@@ -270,6 +337,10 @@ const styles = StyleSheet.create({
         fontSize: 32,
         fontWeight: 'bold',
         color: theme.colors.primary,
+        marginBottom: theme.spacing.md,
+    },
+    input: {
+        width: '100%',
         marginBottom: theme.spacing.md,
     },
     description: {
@@ -318,6 +389,7 @@ const styles = StyleSheet.create({
         color: theme.colors.primary,
     }
 });
+
 
 export default FeePopupModal;
 

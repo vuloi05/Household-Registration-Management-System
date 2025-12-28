@@ -14,4 +14,5 @@ public class KhoanThuResponseDTO {
     private LocalDate ngayTao;
     private String loaiKhoanThu;
     private BigDecimal soTienTrenMotNhanKhau;
+    private String trangThaiThanhToan;
 }
