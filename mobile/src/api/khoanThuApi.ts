@@ -1,6 +1,9 @@
 // src/api/khoanThuApi.ts
 import axiosClient from './axiosClient';
 
+// Kiểu dữ liệu cho trạng thái thanh toán
+export type PaymentStatusState = 'DA_NOP' | 'CHUA_NOP';
+
 // Kiểu dữ liệu KHOẢN THU mà API trả về
 export interface KhoanThu {
   id: number;
@@ -8,6 +11,7 @@ export interface KhoanThu {
   ngayTao: string;
   loaiKhoanThu: 'BAT_BUOC' | 'DONG_GOP';
   soTienTrenMotNhanKhau?: number | null;
+  trangThaiThanhToan?: PaymentStatusState;
 }
 
 // Hàm API lấy danh sách (cho ADMIN và ACCOUNTANT)
