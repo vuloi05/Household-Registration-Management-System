@@ -46,14 +46,6 @@ Server sẽ chạy tại: http://localhost:5000
 PORT=5000
 DEBUG=True
 
-# CORS Configuration (tùy chọn)
-# Nếu không set, mặc định cho phép localhost
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080,https://yourdomain.com
-
-# Environment (development hoặc production)
-# Production sẽ kích hoạt các cài đặt bảo mật nghiêm ngặt hơn
-ENVIRONMENT=development
-
 # Ghi dữ liệu chat lên AWS (tùy chọn, để trống nếu không dùng)
 AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=your_aws_access_key_id
@@ -85,29 +77,10 @@ RESPONSE_CACHE_TTL=3600  # Cache TTL (giây), mặc định 1 giờ
 ENABLE_CONVERSATION_MEMORY=true  # Bật/tắt conversation memory
 SESSION_TIMEOUT_HOURS=24  # Session timeout (giờ), mặc định 24h
 
-# Redis cho conversation memory persistence (tùy chọn)
-# Nếu không set, hệ thống sẽ dùng in-memory storage (mất dữ liệu khi restart)
-REDIS_URL=redis://localhost:6379/0  # Redis connection URL (ví dụ: redis://localhost:6379/0 hoặc redis://user:pass@host:port/db)
-
-# Memory compression (tự động nén conversation dài)
-MEMORY_COMPRESSION_ENABLED=true  # Bật/tắt memory compression, mặc định true
-MEMORY_COMPRESSION_THRESHOLD=30  # Số messages tối thiểu để kích hoạt compression, mặc định 30
-MEMORY_COMPRESSION_KEEP_RECENT=10  # Số messages gần nhất giữ lại sau khi nén, mặc định 10
-MAX_MESSAGES_PER_SESSION=50  # Giới hạn số messages trong 1 session, mặc định 50
-MEMORY_CLEANUP_INTERVAL=3600  # Interval cleanup expired sessions (giây), mặc định 1 giờ
-
 # Response validation và API retry
 ENABLE_RESPONSE_VALIDATION=true  # Bật/tắt response validation
 API_RETRY_MAX_ATTEMPTS=3  # Số lần retry tối đa, mặc định 3
 API_RETRY_DELAY_SECONDS=1.0  # Delay giữa các lần retry (giây), mặc định 1s
-
-# Rate limiting (bảo vệ khỏi abuse và DoS)
-RATE_LIMITING_ENABLED=true  # Bật/tắt rate limiting, mặc định true
-RATE_LIMIT_STORAGE_URL=  # Optional: Redis URL cho distributed rate limiting (ví dụ: redis://localhost:6379)
-RATE_LIMIT_DEFAULT=200 per day, 50 per hour  # Giới hạn mặc định cho tất cả endpoints
-RATE_LIMIT_CHAT=30 per minute, 200 per hour  # Giới hạn cho endpoint /chat
-RATE_LIMIT_KB_RELOAD=10 per hour  # Giới hạn cho endpoint /kb/reload
-RATE_LIMIT_AUTO_LEARN=5 per hour  # Giới hạn cho endpoint /kb/auto-learn
 ```
 **Lưu ý:**
 - KHÔNG upload file `.env` chứa key thực lên repository/public.
@@ -262,106 +235,6 @@ Gửi feedback về câu trả lời của AI (để AI tự học)
   "new_answer": "Câu trả lời mới (nếu feedback_type là wrong)"
 }
 ```
-
-### Session Management & Conversation Memory
-
-Hệ thống hỗ trợ quản lý session và lưu trữ conversation history với các tính năng nâng cao:
-
-#### GET /session/\<session_id\>/history
-Lấy conversation history của session
-
-**Query Parameters:**
-- `max` (optional): Số messages tối đa (1-100, mặc định 10)
-
-**Response:**
-```json
-{
-  "success": true,
-  "session_id": "session_1234567890",
-  "history": [
-    {
-      "role": "system",
-      "content": "[Previous conversation summary] User: Câu hỏi 1 | Assistant: Câu trả lời 1",
-      "timestamp": "2025-01-20T10:30:00",
-      "is_summary": true
-    },
-    {
-      "role": "user",
-      "content": "Xin chào",
-      "timestamp": "2025-01-20T10:31:00"
-    },
-    {
-      "role": "assistant",
-      "content": "Chào bạn! Tôi có thể giúp gì?",
-      "timestamp": "2025-01-20T10:31:05"
-    }
-  ],
-  "count": 3
-}
-```
-
-#### GET /session/\<session_id\>/search
-Tìm kiếm trong conversation history của session
-
-**Query Parameters:**
-- `q` (required): Từ khóa tìm kiếm (tối đa 200 ký tự)
-- `max` (optional): Số kết quả tối đa (1-20, mặc định 5)
-
-**Response:**
-```json
-{
-  "success": true,
-  "session_id": "session_1234567890",
-  "query": "đăng ký",
-  "results": [
-    {
-      "role": "user",
-      "content": "Làm sao để đăng ký hộ khẩu?",
-      "timestamp": "2025-01-20T10:30:00",
-      "score": 1.0
-    },
-    {
-      "role": "assistant",
-      "content": "Để đăng ký hộ khẩu, bạn cần...",
-      "timestamp": "2025-01-20T10:30:05",
-      "score": 0.8
-    }
-  ],
-  "count": 2
-}
-```
-
-#### DELETE /session/\<session_id\>
-Xóa conversation history của session
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Session session_1234567890 cleared"
-}
-```
-
-#### Tính năng Conversation Memory:
-
-1. **Redis Backend (Tùy chọn)**
-   - Hỗ trợ Redis để lưu trữ conversation history persistent
-   - Tự động fallback về in-memory nếu Redis không khả dụng
-   - Cấu hình qua biến môi trường `REDIS_URL`
-
-2. **Memory Compression (Tự động nén)**
-   - Tự động tóm tắt conversations dài để tiết kiệm bộ nhớ
-   - Giữ lại các messages gần nhất, tóm tắt các messages cũ
-   - Kích hoạt khi số messages >= `MEMORY_COMPRESSION_THRESHOLD`
-
-3. **Memory Search (Tìm kiếm)**
-   - Tìm kiếm trong toàn bộ conversation history
-   - Hỗ trợ tìm kiếm trong cả summary và messages
-   - Kết quả được sắp xếp theo relevance score
-
-4. **Auto Cleanup**
-   - Tự động xóa các session hết hạn
-   - Cleanup chạy định kỳ theo interval cấu hình
 
 ## Tự học liên tục (Continuous Learning)
 

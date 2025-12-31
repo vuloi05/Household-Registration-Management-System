@@ -1,24 +1,4 @@
-// Format ngày theo dd-MM-yyyy. Trả về chuỗi gốc nếu không parse được.
-export const formatDate = (value?: string | null): string => {
-  if (!value) return 'N/A';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  const dd = String(date.getDate()).padStart(2, '0');
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const yyyy = date.getFullYear();
-  return `${dd}-${mm}-${yyyy}`;
-};
-
-// Format ngày theo dd/mm/yyyy. Trả về chuỗi gốc nếu không parse được.
-export const formatDateSlash = (value?: string | null): string => {
-  if (!value) return 'N/A';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  const dd = String(date.getDate()).padStart(2, '0');
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const yyyy = date.getFullYear();
-  return `${dd}/${mm}/${yyyy}`;
-};
+// src/utils/formatUtils.ts
 
 // Format số tiền thành định dạng VNĐ
 export const formatCurrency = (value: number | null | undefined): string => {
@@ -28,3 +8,4 @@ export const formatCurrency = (value: number | null | undefined): string => {
     currency: 'VND',
   }).format(value);
 };
+
