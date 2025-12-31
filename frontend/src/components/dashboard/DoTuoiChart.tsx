@@ -4,18 +4,17 @@ import type { ThongKeDoTuoi } from '../../api/thongKeApi';
 
 interface DoTuoiChartProps {
   data: ThongKeDoTuoi;
-  colors?: string[];
 }
 
-export default function DoTuoiChart({ data, colors = [] }: DoTuoiChartProps) {
+export default function DoTuoiChart({ data }: DoTuoiChartProps) {
   // Chuyển đổi object Map thành mảng để Recharts có thể sử dụng
   const chartData = Object.entries(data).map(([name, value]) => ({ 
     name, 
     'Số người': value 
   }));
 
-  const defaultColors = ['#1976d2', '#2e7d32', '#ed6c02', '#00bcd4', '#d32f2f', '#7b1fa2'];
-  const finalColors = colors.length > 0 ? colors : defaultColors;
+  // Màu sắc cho từng cột
+  const colors = ['#1976d2', '#2e7d32', '#ed6c02', '#00bcd4'];
 
   return (
     <ResponsiveContainer width="100%" height={320}>
@@ -52,7 +51,7 @@ export default function DoTuoiChart({ data, colors = [] }: DoTuoiChartProps) {
           maxBarSize={60}
         >
           {chartData.map((_, index) => (
-            <Cell key={`cell-${index}`} fill={finalColors[index % finalColors.length]} />
+            <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
           ))}
         </Bar>
       </BarChart>
