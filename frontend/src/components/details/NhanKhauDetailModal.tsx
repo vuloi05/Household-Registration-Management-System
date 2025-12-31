@@ -1,10 +1,9 @@
-// src/components/details/NhanKhauDetailModal.tsx
-
 import {
   Dialog, DialogTitle, DialogContent, Typography,
   Divider, IconButton, Box, CircularProgress
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import { formatDate } from '../../utils/formatUtils';
 
 // Extended interface for detail view
 interface NhanKhau {
@@ -81,7 +80,7 @@ export default function NhanKhauDetailModal({ open, onClose, nhanKhau, loading }
             {/* === THÔNG TIN CÁ NHÂN === */}
             <InfoRow label="Họ và tên" value={nhanKhau.hoTen} />
             <InfoRow label="Bí danh" value={nhanKhau.biDanh} />
-            <InfoRow label="Ngày sinh" value={nhanKhau.ngaySinh} />
+            <InfoRow label="Ngày sinh" value={formatDate(nhanKhau.ngaySinh)} />
             <InfoRow label="Giới tính" value={nhanKhau.gioiTinh} />
             <InfoRow label="Nơi sinh" value={nhanKhau.noiSinh} />
             <InfoRow label="Quê quán" value={nhanKhau.queQuan} />
@@ -91,7 +90,7 @@ export default function NhanKhauDetailModal({ open, onClose, nhanKhau, loading }
 
             {/* === THÔNG TIN CĂN CƯỚC & NGHỀ NGHIỆP === */}
             <InfoRow label="Số CCCD" value={nhanKhau.cmndCccd} />
-            <InfoRow label="Ngày cấp" value={nhanKhau.ngayCap} />
+            <InfoRow label="Ngày cấp" value={formatDate(nhanKhau.ngayCap)} />
             <InfoRow label="Nơi cấp" value={nhanKhau.noiCap} />
             <InfoRow label="Nghề nghiệp" value={nhanKhau.ngheNghiep} />
             <InfoRow label="Nơi làm việc" value={nhanKhau.noiLamViec} />
@@ -100,7 +99,7 @@ export default function NhanKhauDetailModal({ open, onClose, nhanKhau, loading }
 
             {/* === THÔNG TIN CƯ TRÚ === */}
             <InfoRow label="Quan hệ với chủ hộ" value={nhanKhau.quanHeVoiChuHo} />
-            <InfoRow label="Ngày ĐK thường trú" value={nhanKhau.ngayDangKyThuongTru} />
+            <InfoRow label="Ngày ĐK thường trú" value={formatDate(nhanKhau.ngayDangKyThuongTru)} />
             <InfoRow label="Địa chỉ trước đây" value={nhanKhau.diaChiTruocKhiChuyenDen} />
             <InfoRow label="Mã hộ khẩu" value={nhanKhau.maHoKhau} />
             <InfoRow label="Địa chỉ hộ khẩu" value={nhanKhau.diaChiHoKhau} />

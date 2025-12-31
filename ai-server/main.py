@@ -12,4 +12,3 @@ if __name__ == '__main__':
     print(f"Debug mode: {settings.DEBUG}")
     print(settings.aws_summary())
     app.run(host='0.0.0.0', port=settings.PORT, debug=settings.DEBUG)
-

@@ -1,35 +1,69 @@
 import json
+import os
+import traceback
 from flask import jsonify, request, Response, stream_with_context
 
-from .app import app
+from .app import app, limiter, logger
 from . import settings
-from .kb import find_best_local_answer, trigger_reload, get_kb_status
-from .logic import process_message, process_message_stream, get_logic_metrics
-from .actions import infer_actions
+from .kb import find_best_local_answer, trigger_reload
+from .logic import process_message, process_message_stream
+from .actions import infer_actions, infer_actions_with_confidence
 from .utils import get_timestamp, persist_chat_event
-from .memory import get_or_create_session, add_message, get_conversation_history, clear_session
+from .memory import get_or_create_session, add_message, get_conversation_history
+from .security import sanitize_string, sanitize_json
+from .metrics import (
+    get_metrics, get_metrics_content_type,
+    update_session_metrics, update_validation_metrics,
+    chat_requests_total, chat_errors_total, chat_latency
+)
+import time
+from .exceptions import (
+    AIServerException,
+    ValidationError,
+    AIProviderError,
+    BackendAPIError,
+    NotFoundError,
+    RateLimitError
+)
 SESSION_COOKIE_NAME = "ai_session_id"
 SESSION_COOKIE_MAX_AGE = settings.SESSION_TIMEOUT_HOURS * 3600
+
+
+def apply_rate_limit(limit_string: str):
+    """
+    Helper function to apply rate limiting decorator safely.
+    Returns a no-op decorator if limiter is not available.
+    """
+    if limiter:
+        return limiter.limit(limit_string)
+    return lambda f: f  # No-op decorator if limiter is not available
 
 
 def attach_session_cookie(resp: Response, session_id: str | None):
     """Gắn session cookie vào response để client không cần tự lưu session_id."""
     if settings.ENABLE_CONVERSATION_MEMORY and session_id:
+        # Determine if we're in production environment
+        is_production = os.getenv('ENVIRONMENT', 'development').lower() == 'production'
+        
         resp.set_cookie(
             SESSION_COOKIE_NAME,
             session_id,
             max_age=SESSION_COOKIE_MAX_AGE,
-            httponly=False,  # cho phép JS đọc nếu cần (không chứa thông tin nhạy cảm)
-            secure=False,
-            samesite='Lax'
+            httponly=True,  # Bảo vệ khỏi XSS attacks
+            secure=is_production,  # HTTPS only trong production
+            samesite='Lax' if not is_production else 'Strict'  # Strict trong production
         )
     return resp
-from .cache import get_cache_stats, clear_cache
-try:
-    from .auto_learning import analyze_and_learn_from_conversations, get_auto_learning_status
-    AUTO_LEARNING_AVAILABLE = True
-except Exception:
-    AUTO_LEARNING_AVAILABLE = False
+
+
+@app.route('/metrics', methods=['GET'])
+def metrics():
+    """Prometheus metrics endpoint."""
+    from flask import Response
+    return Response(
+        get_metrics(),
+        mimetype=get_metrics_content_type()
+    )
 
 
 @app.route('/health', methods=['GET'])
@@ -52,30 +86,114 @@ def health_aws():
     })
 
 
+@app.route('/health/circuit-breakers', methods=['GET'])
+def health_circuit_breakers():
+    """Endpoint để xem trạng thái tất cả circuit breakers."""
+    try:
+        from .circuit_breaker import get_all_circuit_breakers
+        
+        breakers = get_all_circuit_breakers()
+        status = {}
+        
+        for name, breaker in breakers.items():
+            status[name] = breaker.get_state()
+        
+        return jsonify({
+            "success": True,
+            "circuit_breakers": status
+        })
+    except Exception as e:
+        logger.error(f"Error in health_circuit_breakers: {str(e)}", exc_info=True)
+        raise
+
+
+@app.route('/health/backend-api', methods=['GET'])
+def health_backend_api():
+    """Endpoint để xem health check của backend API."""
+    try:
+        from .backend_api import check_backend_api_health
+        
+        force_check = request.args.get('force', 'false').lower() == 'true'
+        health = check_backend_api_health(force_check=force_check)
+        
+        return jsonify({
+            "success": True,
+            "health": health
+        })
+    except Exception as e:
+        logger.error(f"Error in health_backend_api: {str(e)}", exc_info=True)
+        raise
+
+
 @app.route('/chat', methods=['POST'])
+@apply_rate_limit(settings.RATE_LIMIT_CHAT)
 def chat():
     stream_mode = str(request.args.get('stream', 'false')).lower() == 'true'
+    session_id = None
+    user_message = None
+    start_time = time.time()
+    
+    # Track request metrics
+    from .metrics import chat_requests_total, chat_latency, chat_errors_total
+    
     try:
+        chat_requests_total.labels(method='POST', endpoint='chat').inc()
+        # Validate request
+        if not request.is_json:
+            raise ValidationError("Request must be JSON", field='content-type')
+        
         data = request.json or {}
-        user_message = data.get('message', '').strip()
-        context = data.get('context', '').strip()
+        # Sanitize input data
+        data = sanitize_json(data)
+        
+        user_message = sanitize_string(data.get('message', '').strip(), max_length=10000)
+        context = sanitize_string(data.get('context', '').strip(), max_length=50000) if data.get('context') else ''
         incoming_session_id = data.get('session_id') or request.cookies.get(SESSION_COOKIE_NAME)
+        if incoming_session_id:
+            incoming_session_id = sanitize_string(str(incoming_session_id), max_length=200)
         session_id = incoming_session_id
         system_info = data.get('system_info')  # Optional: stats, metadata
+        if system_info and isinstance(system_info, dict):
+            system_info = sanitize_json(system_info)
+        
+        # Validate input length để tránh DoS
+        if len(user_message) > 10000:
+            raise ValidationError("Message quá dài (tối đa 10000 ký tự)", field='message')
+        
+        if context and len(context) > 50000:
+            raise ValidationError("Context quá dài (tối đa 50000 ký tự)", field='context')
         
         if not user_message:
-            return jsonify({"error": "Message is required"}), 400
+            raise ValidationError("Message is required", field='message')
+        
+        logger.info(
+            f"Chat request received",
+            extra={
+                'session_id': session_id,
+                'stream_mode': stream_mode,
+                'message_length': len(user_message),
+                'user_ip': request.remote_addr
+            }
+        )
 
         # Lấy hoặc tạo session
         if settings.ENABLE_CONVERSATION_MEMORY:
             session_id = get_or_create_session(session_id)
+            # Update session metrics
+            try:
+                from .memory_advanced import get_active_sessions_count
+                active_count = get_active_sessions_count()
+                update_session_metrics(active_count)
+            except (ImportError, AttributeError):
+                pass
             # Lấy conversation history (lấy nhiều hơn để đảm bảo có đủ context)
             history = get_conversation_history(session_id, max_messages=20)
         else:
             history = None
 
         # Thử suy luận hành động trước để tránh gọi AI không cần thiết
-        actions = infer_actions(user_message, history=history)
+        # Sử dụng infer_actions_with_confidence để có confidence scoring và validation
+        actions = infer_actions_with_confidence(user_message, history=history)
 
         # Nếu có actions hoặc không phải stream mode, xử lý bình thường
         if actions or not stream_mode:
@@ -132,6 +250,16 @@ def chat():
                 "validation_score": validation.get('score', 1.0)
             })
 
+            # Track validation metrics
+            update_validation_metrics(
+                is_valid=validation.get('valid', True),
+                score=validation.get('score', 1.0)
+            )
+            
+            # Track latency
+            latency = time.time() - start_time
+            chat_latency.labels(method='POST', endpoint='chat').observe(latency)
+            
             response = jsonify({
                 "success": True,
                 "response": response_text,
@@ -188,7 +316,9 @@ def chat():
                 
                 # Xác định source từ full response (đơn giản hóa)
                 # Trong thực tế, bạn có thể thêm metadata vào stream
-                stream_source = 'ollama' if settings.OLLAMA_HOST and settings.OLLAMA_MODEL else 'gemini' if settings.GOOGLE_GEMINI_API_KEY else 'fallback'
+                from .gemini import get_gemini_key_rotator
+                has_gemini_keys = get_gemini_key_rotator().get_key_count() > 0
+                stream_source = 'ollama' if settings.OLLAMA_HOST and settings.OLLAMA_MODEL else 'gemini' if has_gemini_keys else 'fallback'
                 
                 # Lưu vào conversation memory sau khi stream xong
                 if settings.ENABLE_CONVERSATION_MEMORY and session_id:
@@ -247,40 +377,103 @@ def chat():
                 })
 
         stream_response = Response(stream_with_context(generate_streamed_response()), mimetype='text/event-stream')
+        # Track latency for streaming (approximate)
+        latency = time.time() - start_time
+        chat_latency.labels(method='POST', endpoint='chat').observe(latency)
         return attach_session_cookie(stream_response, session_id)
 
+    except ValidationError as e:
+        chat_errors_total.labels(error_type='ValidationError', status_code='400').inc()
+        latency = time.time() - start_time
+        chat_latency.labels(method='POST', endpoint='chat').observe(latency)
+        logger.warning(
+            f"Validation error in /chat: {e.message}",
+            extra={'field': e.details.get('field'), 'session_id': session_id}
+        )
+        raise  # Sẽ được xử lý bởi error handler
+    except AIServerException as e:
+        chat_errors_total.labels(error_type=type(e).__name__, status_code=str(e.status_code)).inc()
+        latency = time.time() - start_time
+        chat_latency.labels(method='POST', endpoint='chat').observe(latency)
+        logger.error(
+            f"AIServerException in /chat: {e.message}",
+            extra={'error_code': e.error_code, 'session_id': session_id},
+            exc_info=True
+        )
+        raise  # Sẽ được xử lý bởi error handler
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        chat_errors_total.labels(error_type=type(e).__name__, status_code='500').inc()
+        latency = time.time() - start_time
+        chat_latency.labels(method='POST', endpoint='chat').observe(latency)
+        logger.error(
+            f"Unexpected error in /chat: {type(e).__name__}: {str(e)}",
+            extra={'session_id': session_id, 'user_message': user_message[:100] if user_message else None},
+            exc_info=True
+        )
+        raise  # Sẽ được xử lý bởi generic error handler
 
 
 @app.route('/agent/plan', methods=['POST'])
 def agent_plan():
     try:
+        if not request.is_json:
+            raise ValidationError("Request must be JSON", field='content-type')
+        
         data = request.json or {}
-        user_message = data.get('message', '')
+        # Sanitize input data
+        data = sanitize_json(data)
+        
+        user_message = sanitize_string(data.get('message', '').strip(), max_length=10000)
+        
         if not user_message:
-            return jsonify({"error": "Message is required"}), 400
-        actions = infer_actions(user_message)
+            raise ValidationError("Message is required", field='message')
+        
+        if len(user_message) > 10000:
+            raise ValidationError("Message quá dài (tối đa 10000 ký tự)", field='message')
+        
+        logger.debug(f"Agent plan request: {user_message[:100]}")
+        # Sử dụng infer_actions_with_confidence để có confidence scoring và validation
+        actions = infer_actions_with_confidence(user_message)
+        
         return jsonify({
             "success": True,
             "actions": actions,
             "timestamp": get_timestamp()
         })
+    except ValidationError:
+        raise
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Error in agent_plan: {str(e)}", exc_info=True)
+        raise
 
 
 @app.route('/qa-feedback', methods=['POST'])
 def qa_feedback():
     from .kb import qa_knowledge_base, kb_lock  # local import to avoid circular
     try:
+        if not request.is_json:
+            raise ValidationError("Request must be JSON", field='content-type')
+        
         data = request.json or {}
-        question = (data.get('question') or '').strip()
-        answer = (data.get('answer') or '').strip()
-        feedback_type = (data.get('feedback_type') or 'confirm').strip()
-        context = (data.get('context') or '').strip()
+        # Sanitize input data
+        data = sanitize_json(data)
+        
+        question = sanitize_string((data.get('question') or '').strip(), max_length=5000)
+        answer = sanitize_string((data.get('answer') or '').strip(), max_length=10000) if data.get('answer') else ''
+        feedback_type = sanitize_string((data.get('feedback_type') or 'confirm').strip(), max_length=20)
+        context = sanitize_string((data.get('context') or '').strip(), max_length=50000) if data.get('context') else ''
+        
         if not question:
-            return jsonify({"error": "question is required"}), 400
+            raise ValidationError("question is required", field='question')
+        
+        if len(question) > 5000:
+            raise ValidationError("Question quá dài (tối đa 5000 ký tự)", field='question')
+        
+        if answer and len(answer) > 10000:
+            raise ValidationError("Answer quá dài (tối đa 10000 ký tự)", field='answer')
+        
+        if feedback_type not in ('confirm', 'correct', 'wrong'):
+            raise ValidationError("feedback_type must be one of: confirm, correct, wrong", field='feedback_type')
 
         new_answer = None
 
@@ -316,7 +509,7 @@ def qa_feedback():
             threading.Thread(target=background_learn_wrong, args=(question, context), daemon=True).start()
         elif feedback_type in ('confirm', 'correct'):
             if not answer:
-                return jsonify({"error": "answer is required for confirm/correct"}), 400
+                raise ValidationError("answer is required for confirm/correct", field='answer')
             new_item = {'q': question, 'a': answer}
             with kb_lock:
                 found = False
@@ -343,158 +536,20 @@ def qa_feedback():
                 trigger_reload()
             threading.Thread(target=delayed_reload, daemon=True).start()
         else:
-            return jsonify({"error": "invalid feedback_type"}), 400
+            raise ValidationError("invalid feedback_type", field='feedback_type')
 
-        print(f"[KB][feedback] {feedback_type} - {question[:30]} => {(new_answer or answer)[:40] if (new_answer or answer) else ''}")
+        logger.info(
+            f"QA feedback received: {feedback_type}",
+            extra={
+                'feedback_type': feedback_type,
+                'question_length': len(question),
+                'has_answer': bool(new_answer or answer)
+            }
+        )
+        
         return jsonify({"success": True, "new_answer": new_answer})
+    except ValidationError:
+        raise
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/kb/reload', methods=['POST'])
-def kb_reload():
-    """Endpoint để trigger reload knowledge base thủ công."""
-    try:
-        result = trigger_reload()
-        if result['success']:
-            return jsonify({
-                "success": True,
-                "message": "Knowledge base reloaded successfully",
-                "items_count": result['items_count'],
-                "previous_count": result['previous_count'],
-                "timestamp": result['timestamp']
-            })
-        else:
-            return jsonify({
-                "success": False,
-                "error": result.get('error', 'Unknown error'),
-                "items_count": result['items_count']
-            }), 500
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/kb/status', methods=['GET'])
-def kb_status():
-    """Endpoint để xem trạng thái knowledge base."""
-    try:
-        status = get_kb_status()
-        # Thêm thông tin auto-learning nếu có
-        if AUTO_LEARNING_AVAILABLE:
-            auto_learning_status = get_auto_learning_status()
-            status['auto_learning'] = auto_learning_status
-        # Thêm logic metrics
-        status['logic_metrics'] = get_logic_metrics()
-        return jsonify({
-            "success": True,
-            "status": status
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/kb/auto-learn', methods=['POST'])
-def kb_auto_learn():
-    """Endpoint để trigger tự học chủ động ngay lập tức."""
-    if not AUTO_LEARNING_AVAILABLE:
-        return jsonify({
-            "success": False,
-            "error": "Auto-learning module not available"
-        }), 503
-    
-    try:
-        result = analyze_and_learn_from_conversations()
-        if result['success']:
-            return jsonify({
-                "success": True,
-                "message": "Auto-learning completed successfully",
-                "analyzed_count": result['analyzed_count'],
-                "learned_count": result['learned_count'],
-                "total_score": result['total_score'],
-                "timestamp": result['timestamp']
-            })
-        else:
-            return jsonify({
-                "success": False,
-                "error": result.get('error', 'Unknown error'),
-                "analyzed_count": result['analyzed_count'],
-                "learned_count": result['learned_count']
-            }), 500
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/kb/auto-learn/status', methods=['GET'])
-def kb_auto_learn_status():
-    """Endpoint để xem trạng thái auto-learning."""
-    if not AUTO_LEARNING_AVAILABLE:
-        return jsonify({
-            "success": False,
-            "error": "Auto-learning module not available"
-        }), 503
-    
-    try:
-        status = get_auto_learning_status()
-        return jsonify({
-            "success": True,
-            "status": status
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/session/<session_id>', methods=['DELETE'])
-def clear_session_route(session_id: str):
-    """Xóa conversation history của session."""
-    try:
-        clear_session(session_id)
-        return jsonify({
-            "success": True,
-            "message": f"Session {session_id} cleared"
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/session/<session_id>/history', methods=['GET'])
-def get_session_history(session_id: str):
-    """Lấy conversation history của session."""
-    try:
-        max_messages = int(request.args.get('max', 10))
-        history = get_conversation_history(session_id, max_messages)
-        return jsonify({
-            "success": True,
-            "session_id": session_id,
-            "history": history,
-            "count": len(history)
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/cache/stats', methods=['GET'])
-def cache_stats():
-    """Xem thống kê cache."""
-    try:
-        stats = get_cache_stats()
-        return jsonify({
-            "success": True,
-            "stats": stats
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/cache/clear', methods=['POST'])
-def cache_clear():
-    """Xóa toàn bộ cache."""
-    try:
-        count = clear_cache()
-        return jsonify({
-            "success": True,
-            "message": f"Cleared {count} cached items"
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
+        logger.error(f"Error in qa_feedback: {str(e)}", exc_info=True)
+        raise

@@ -1,12 +1,9 @@
-// src/main/java/com/quanlynhankhau/api/service/LichSuNopTienService.java
-
 package com.quanlynhankhau.api.service;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.quanlynhankhau.api.dto.HoKhauResponseDTO;
@@ -27,14 +24,17 @@ import jakarta.transaction.Transactional;
 @Service
 public class LichSuNopTienService {
 
-    @Autowired
-    private LichSuNopTienRepository lichSuNopTienRepository;
+    private final LichSuNopTienRepository lichSuNopTienRepository;
 
-    @Autowired
-    private HoKhauRepository hoKhauRepository;
+    private final HoKhauRepository hoKhauRepository;
 
-    @Autowired
-    private KhoanThuRepository khoanThuRepository;
+    private final KhoanThuRepository khoanThuRepository;
+
+    public LichSuNopTienService(LichSuNopTienRepository lichSuNopTienRepository, HoKhauRepository hoKhauRepository, KhoanThuRepository khoanThuRepository) {
+        this.lichSuNopTienRepository = lichSuNopTienRepository;
+        this.hoKhauRepository = hoKhauRepository;
+        this.khoanThuRepository = khoanThuRepository;
+    }
 
     /**
      * Ghi nhận một lần nộp tiền của hộ khẩu cho một khoản thu.
@@ -115,6 +115,7 @@ public class LichSuNopTienService {
                 NhanKhauBasicDTO chuHoDTO = new NhanKhauBasicDTO();
                 chuHoDTO.setId(entity.getHoKhau().getChuHo().getId());
                 chuHoDTO.setHoTen(entity.getHoKhau().getChuHo().getHoTen());
+                chuHoDTO.setNgaySinh(entity.getHoKhau().getChuHo().getNgaySinh());
                 hoKhauDTO.setChuHo(chuHoDTO);
             }
             dto.setHoKhau(hoKhauDTO);

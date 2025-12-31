@@ -116,4 +116,3 @@ def format_conversation_history(messages: list) -> str:
     if formatted:
         return "\n".join(formatted)
     return ""
-
