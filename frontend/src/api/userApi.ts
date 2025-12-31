@@ -7,7 +7,7 @@ export interface User {
   username: string;
   password?: string;
   fullName: string;
-  role: 'ROLE_ADMIN' | 'ROLE_ACCOUNTANT';
+  role: 'ROLE_ADMIN' | 'ROLE_ACCOUNTANT' | 'ROLE_RESIDENT';
 }
 
 // Interface for API response with pagination
