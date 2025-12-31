@@ -103,7 +103,7 @@ export default function UserPage() {
     username: '',
     password: '',
     fullName: '',
-    role: 'ROLE_ACCOUNTANT' as 'ROLE_ADMIN' | 'ROLE_ACCOUNTANT' | 'ROLE_RESIDENT',
+    role: 'ROLE_ACCOUNTANT' as 'ROLE_ADMIN' | 'ROLE_ACCOUNTANT',
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -284,28 +284,12 @@ export default function UserPage() {
 
   // Get role label
   const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'ROLE_ADMIN':
-        return 'Quản trị viên';
-      case 'ROLE_ACCOUNTANT':
-        return 'Kế toán';
-      case 'ROLE_RESIDENT':
-        return 'Cư dân';
-      default:
-        return role;
-    }
+    return role === 'ROLE_ADMIN' ? 'Quản trị viên' : 'Kế toán';
   };
 
   // Get role color
-  const getRoleColor = (role: string): 'error' | 'primary' | 'default' => {
-    switch (role) {
-      case 'ROLE_ADMIN':
-        return 'error';
-      case 'ROLE_ACCOUNTANT':
-        return 'primary';
-      default:
-        return 'default';
-    }
+  const getRoleColor = (role: string): 'error' | 'primary' => {
+    return role === 'ROLE_ADMIN' ? 'error' : 'primary';
   };
 
   // Memoized displayed data
@@ -562,7 +546,6 @@ export default function UserPage() {
               >
                 <MenuItem value="ROLE_ADMIN">Quản trị viên</MenuItem>
                 <MenuItem value="ROLE_ACCOUNTANT">Kế toán</MenuItem>
-                <MenuItem value="ROLE_RESIDENT">Cư dân</MenuItem>
               </Select>
               {formErrors.role && (
                 <FormHelperText>{formErrors.role}</FormHelperText>
