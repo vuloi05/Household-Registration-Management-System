@@ -62,6 +62,7 @@ export default function DashboardPage() {
   // Tính toán các chỉ số
   const soHoKhau = tongQuanData?.soHoKhau ?? 0;
   const soNhanKhau = tongQuanData?.soNhanKhau ?? 0;
+  const ageGroupColors = ['#1976d2', '#2e7d32', '#ed6c02', '#00bcd4', '#d32f2f', '#7b1fa2'];
 
   return (
     <Box sx={{ width: '100%', maxWidth: '100%', p: { xs: 2, md: 0 } }}>
@@ -155,7 +156,7 @@ export default function DashboardPage() {
             Phân bố theo độ tuổi
           </Typography>
           <Divider sx={{ mb: 3 }} />
-          {doTuoiData && <DoTuoiChart data={doTuoiData} />}
+          {doTuoiData && <DoTuoiChart data={doTuoiData} colors={ageGroupColors} />}
         </Paper>
 
         {/* Thống kê chi tiết */}
@@ -175,7 +176,6 @@ export default function DashboardPage() {
           
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
             {doTuoiData && Object.entries(doTuoiData).map(([nhom, soLuong], index) => {
-              const colors = ['#1976d2', '#2e7d32', '#ed6c02', '#00bcd4', '#d32f2f', '#7b1fa2'];
               const percent = soNhanKhau > 0 ? ((soLuong / soNhanKhau) * 100).toFixed(1) : 0;
               const labelMap: Record<string, string> = {
                 '0-5': 'Mầm non (0-5)',
@@ -209,7 +209,7 @@ export default function DashboardPage() {
                       sx={{ 
                         width: `${percent}%`, 
                         height: '100%', 
-                        bgcolor: colors[index % colors.length],
+                        bgcolor: ageGroupColors[index % ageGroupColors.length],
                         transition: 'width 0.5s ease-in-out'
                       }} 
                     />
