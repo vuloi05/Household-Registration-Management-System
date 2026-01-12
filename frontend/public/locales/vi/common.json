@@ -1,1 +1,22 @@
-{}
+{
+  "save": "Lưu",
+  "cancel": "Hủy",
+  "edit": "Sửa",
+  "delete": "Xóa",
+  "add": "Thêm",
+  "confirm": "Xác nhận",
+  "confirm_delete_title": "Xác nhận xóa",
+  "actions": "Thao tác",
+  "all": "Tất cả",
+  "no_info": "Chưa có thông tin",
+  "stt": "STT",
+  "fullname": "Họ và tên",
+  "dob": "Ngày sinh",
+  "gender": "Giới tính",
+  "male": "Nam",
+  "female": "Nữ",
+  "notes": "Ghi chú",
+  "reason": "Lý do",
+  "error_generic": "Có lỗi xảy ra, vui lòng thử lại.",
+  "success": "Thành công"
+}

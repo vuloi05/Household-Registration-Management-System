@@ -29,6 +29,7 @@ import ConfirmationDialog from '../components/shared/ConfirmationDialog';
 import InfoIcon from '@mui/icons-material/Info'; // Import icon Xem chi tiết
 import { Link as RouterLink } from 'react-router-dom'; 
 import { useSnackbar } from 'notistack';
+import { formatDateByLang } from '../utils/formatUtils';
 
 /**
  * Hàm helper để format số thành định dạng tiền tệ VNĐ.
@@ -76,12 +77,12 @@ export default function ThuPhiPage() {
         setDanhSachHoKhau(hoKhauData);
       } catch (error) { 
         console.error('Failed to fetch page data:', error); 
-        // Có thể thêm state để hiển thị thông báo lỗi ra UI
+        enqueueSnackbar(t('error_fetching_fees'), { variant: 'error' });
       } 
       finally { setLoading(false); }
     };
     fetchData();
-  }, []); // Mảng rỗng đảm bảo chỉ chạy 1 lần
+  }, [enqueueSnackbar, t]); // Mảng rỗng đảm bảo chỉ chạy 1 lần
 
   // === CÁC HÀM XỬ LÝ SỰ KIỆN ===
 
@@ -94,12 +95,17 @@ export default function ThuPhiPage() {
       if (editingKhoanThu) {
         const updated = await updateKhoanThu(editingKhoanThu.id, data);
         setKhoanThuList(list => list.map(item => item.id === updated.id ? updated : item));
+        enqueueSnackbar(t('update_fee_success'), { variant: 'success' });
       } else {
         const created = await createKhoanThu(data);
         setKhoanThuList(prevList => [...prevList, created]);
+        enqueueSnackbar(t('add_fee_success'), { variant: 'success' });
       }
       handleCloseForm();
-    } catch (error) { console.error('Failed to submit KhoanThu form:', error); }
+    } catch (error) {
+      console.error('Failed to submit KhoanThu form:', error);
+      enqueueSnackbar(editingKhoanThu ? t('error_updating_fee') : t('error_adding_fee'), { variant: 'error' });
+    }
   };
 
   // ---- Logic cho Dialog Xóa Khoản thu ----
@@ -110,8 +116,12 @@ export default function ThuPhiPage() {
     try {
       await deleteKhoanThu(deletingKhoanThuId);
       setKhoanThuList(list => list.filter(item => item.id !== deletingKhoanThuId));
+      enqueueSnackbar(t('delete_fee_success'), { variant: 'success' });
       handleCloseDeleteDialog();
-    } catch (error) { console.error("Failed to delete KhoanThu:", error); }
+    } catch (error) {
+      console.error("Failed to delete KhoanThu:", error);
+      enqueueSnackbar(t('error_deleting_fee'), { variant: 'error' });
+    }
   };
 
   // ---- Logic cho Form Ghi nhận Nộp tiền ----
@@ -178,7 +188,7 @@ export default function ThuPhiPage() {
                             <TableRow key={row.id} hover>
                                 <TableCell>{row.tenKhoanThu}</TableCell>
                                 <TableCell>{row.loaiKhoanThu === 'BAT_BUOC' ? t('type_mandatory') : t('type_voluntary')}</TableCell>
-                                <TableCell>{formatDateSlash(row.ngayTao)}</TableCell>
+                                <TableCell>{formatDateByLang(row.ngayTao)}</TableCell>
                                 <TableCell align="right">{formatCurrency(row.soTienTrenMotNhanKhau)}</TableCell>
                                 
 

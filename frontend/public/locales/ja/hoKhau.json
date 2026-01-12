@@ -40,5 +40,20 @@
   "separate_dialog_confirmation_text": "この人を現在の世帯から分離し、新しい世帯を作成してもよろしいですか？",
   "separate_dialog_note": "注意：この操作により、この人は古い世帯から新しい世帯に移動します。",
   "separate_dialog_cancel_button": "キャンセル",
-  "separate_dialog_confirm_button": "世帯分離を確認"
+  "separate_dialog_confirm_button": "世帯分離を確認",
+  "error_fetching": "世帯リストの読み込みに失敗しました。",
+  "error_adding": "世帯の追加に失敗しました。",
+  "error_updating": "世帯情報の更新に失敗しました。",
+  "error_deleting": "世帯の削除に失敗しました。",
+  "add_success": "世帯の追加に成功しました。",
+  "update_success": "世帯情報の更新に成功しました。",
+  "delete_success": "世帯の削除に成功しました。",
+  "error_fetching_details": "世帯詳細の読み込みに失敗しました。",
+  "add_member_success": "メンバーの追加に成功しました。",
+  "error_adding_member": "メンバーの追加に失敗しました。",
+  "update_member_success": "メンバー情報の更新に成功しました。",
+  "error_updating_member": "メンバー情報の更新に失敗しました。",
+  "delete_member_success": "メンバーの削除に成功しました。",
+  "error_deleting_member": "メンバーの削除に失敗しました。",
+  "error_fetching_member_details": "メンバー詳細の読み込みに失敗しました。"
 }

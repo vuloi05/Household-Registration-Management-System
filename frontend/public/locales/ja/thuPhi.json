@@ -68,5 +68,14 @@
   "export_dialog_export_excel_success": "Excelのエクスポートに成功しました",
   "export_dialog_export_pdf_success": "PDFのエクスポートに成功しました",
   "export_dialog_export_excel_error_generic": "Excelのエクスポートに失敗しました",
-  "export_dialog_export_pdf_error_generic": "PDFのエクスポートに失敗しました"
+  "export_dialog_export_pdf_error_generic": "PDFのエクスポートに失敗しました",
+  "error_fetching_fees": "料金項目のリストを読み込めませんでした。",
+  "error_fetching_households": "世帯リストを読み込めませんでした。",
+  "add_fee_success": "料金項目の作成に成功しました。",
+  "update_fee_success": "料金項目の更新に成功しました。",
+  "error_adding_fee": "料金項目の作成に失敗しました。",
+  "error_updating_fee": "料金項目の更新に失敗しました。",
+  "delete_fee_success": "料金項目の削除に成功しました。",
+  "error_deleting_fee": "料金項目の削除に失敗しました。",
+  "error_fetching_details": "料金詳細の読み込みに失敗しました。"
 }

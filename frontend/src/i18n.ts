@@ -14,7 +14,8 @@ const namespaces = [
   'nhanKhau', 
   'bienDong', 
   'tamVangTamTru', 
-  'thuPhi'
+  'thuPhi',
+  'notifications'
 ];
 
 i18n

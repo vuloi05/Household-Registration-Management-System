@@ -1,0 +1,8 @@
+{
+  "title": "Thông báo thanh toán",
+  "mark_all_read": "Đánh dấu tất cả đã đọc",
+  "no_notifications": "Chưa có thông báo nào",
+  "payment_notification": "{{name}} đã thanh toán",
+  "fee_label": "Khoản thu",
+  "household_label": "Hộ khẩu"
+}

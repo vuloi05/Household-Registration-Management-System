@@ -76,5 +76,13 @@
   "form_select_gender": "Chọn giới tính",
   "form_helper_household_code": "Nhập mã hộ khẩu để thêm nhân khẩu vào hộ",
   "form_button_cancel": "Hủy",
-  "form_button_save": "Lưu"
+  "form_button_save": "Lưu",
+  "add_success": "Thêm nhân khẩu thành công.",
+  "error_adding": "Không thể thêm nhân khẩu.",
+  "update_success": "Cập nhật nhân khẩu thành công.",
+  "error_updating": "Không thể cập nhật nhân khẩu.",
+  "delete_success": "Xóa nhân khẩu thành công.",
+  "error_deleting": "Không thể xóa nhân khẩu.",
+  "record_change_success": "Ghi nhận biến động thành công.",
+  "error_record_change": "Không thể ghi nhận biến động."
 }

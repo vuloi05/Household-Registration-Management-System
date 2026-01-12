@@ -1,8 +1,10 @@
 // src/api/axiosClient.ts
 import axios from 'axios';
 
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+
 const axiosClient = axios.create({
-  baseURL: 'http://localhost:8080/api', // URL gốc của backend
+  baseURL: baseURL, // URL gốc của backend
   headers: {
     'Content-Type': 'application/json',
   },
@@ -85,7 +87,7 @@ axiosClient.interceptors.response.use(
       if (refreshToken) {
         try {
           // Gọi API refresh token trực tiếp để tránh circular import
-          const response = await axios.post('http://localhost:8080/api/auth/refresh-token', { 
+          const response = await axios.post(`${baseURL}/auth/refresh-token`, { 
             refreshToken 
           });
           const newToken = response.data.jwt;

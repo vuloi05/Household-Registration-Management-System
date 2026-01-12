@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Box, Typography, Paper, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, TextField, InputAdornment, IconButton } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { useSnackbar } from 'notistack';
 import PeopleIcon from '@mui/icons-material/People';
 import PaidIcon from '@mui/icons-material/Paid';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -36,6 +37,7 @@ export default function KhoanThuDetailPage() {
   const { t } = useTranslation('thuPhi');
   const { khoanThuId } = useParams<{ khoanThuId: string }>();
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
   const [khoanThu, setKhoanThu] = useState<KhoanThu | null>(null);
   const [lichSuList, setLichSuList] = useState<LichSuNopTien[]>([]);
   const [thongKe, setThongKe] = useState<ThongKeKhoanThu | null>(null);
@@ -69,12 +71,15 @@ export default function KhoanThuDetailPage() {
           const allHouseholds = await getDanhSachHoKhau();
           setAllHouseholds(allHouseholds);
           setUnpaidHouseholds(allHouseholds.filter(h => !paidHouseholdIds.has(h.id)));
-        } catch (error) { console.error('Failed to fetch details:', error); } 
+        } catch (error) { 
+          console.error('Failed to fetch details:', error);
+          enqueueSnackbar(t('error_fetching_details'), { variant: 'error' });
+        } 
         finally { setLoading(false); }
       };
       fetchData();
     }
-  }, [khoanThuId]);
+  }, [khoanThuId, enqueueSnackbar, t]);
 
   // Fetch all households once for UNPAID export
   useEffect(() => {

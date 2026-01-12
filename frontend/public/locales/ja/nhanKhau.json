@@ -76,5 +76,14 @@
   "form_select_gender": "性別を選択",
   "form_helper_household_code": "住民を世帯に追加するには世帯コードを入力してください",
   "form_button_cancel": "キャンセル",
-  "form_button_save": "保存"
+  "form_button_save": "保存",
+  "add_success": "住民の追加に成功しました。",
+  "error_adding": "住民を追加できませんでした。",
+  "update_success": "住民情報の更新に成功しました。",
+  "error_updating": "住民情報を更新できませんでした。",
+  "delete_success": "住民の削除に成功しました。",
+  "error_deleting": "住民を削除できませんでした。",
+  "record_change_success": "変動の記録に成功しました。",
+  "error_record_change": "変動を記録できませんでした。"
 }
+

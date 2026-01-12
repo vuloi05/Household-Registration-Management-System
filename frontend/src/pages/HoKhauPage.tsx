@@ -1,5 +1,3 @@
-// src/pages/NhanKhauPage.tsx
-
 import {
   Button, Typography, Box, Paper, TableContainer, Table, TableHead,
   TableRow, TableCell, TableBody, IconButton, CircularProgress, TextField, InputAdornment,
@@ -51,12 +49,13 @@ export default function HoKhauPage() {
         setPage(0); // reset page khi tải dữ liệu lần đầu
       } catch (error) {
         console.error('Failed to fetch ho khau list:', error);
+        enqueueSnackbar(t('error_fetching'), { variant: 'error' });
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, []);
+  }, [enqueueSnackbar, t]);
 
   // Effect để lọc dữ liệu khi có thay đổi từ khóa tìm kiếm
   useEffect(() => {
@@ -184,14 +183,17 @@ export default function HoKhauPage() {
         setFilteredHoKhauList(prevList => 
           prevList.map(item => item.id === updatedHoKhau.id ? updatedHoKhau : item)
         );
+        enqueueSnackbar(t('update_success'), { variant: 'success' });
       } else {
         const newHoKhau = await createHoKhau(data);
         setHoKhauList(prevList => [...prevList, newHoKhau]);
         setFilteredHoKhauList(prevList => [...prevList, newHoKhau]);
+        enqueueSnackbar(t('add_success'), { variant: 'success' });
       }
       handleCloseForm();
     } catch (error) {
       console.error('Failed to submit HoKhau form:', error);
+      enqueueSnackbar(editingHoKhau ? t('error_updating') : t('error_adding'), { variant: 'error' });
     }
   };
   const handleOpenDeleteDialog = (id: number) => {
@@ -208,9 +210,11 @@ export default function HoKhauPage() {
         await deleteHoKhau(selectedHoKhauId);
         setHoKhauList(prevList => prevList.filter(item => item.id !== selectedHoKhauId));
         setFilteredHoKhauList(prevList => prevList.filter(item => item.id !== selectedHoKhauId));
+        enqueueSnackbar(t('delete_success'), { variant: 'success' });
         handleCloseDeleteDialog();
       } catch (error) {
         console.error('Failed to delete ho khau:', error);
+        enqueueSnackbar(t('error_deleting'), { variant: 'error' });
       }
     }
   };

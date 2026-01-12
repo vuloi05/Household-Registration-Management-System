@@ -68,5 +68,14 @@
   "export_dialog_export_excel_success": "Xuất Excel thành công",
   "export_dialog_export_pdf_success": "Xuất PDF thành công",
   "export_dialog_export_excel_error_generic": "Xuất Excel thất bại",
-  "export_dialog_export_pdf_error_generic": "Xuất PDF thất bại"
+  "export_dialog_export_pdf_error_generic": "Xuất PDF thất bại",
+  "error_fetching_fees": "Không thể tải danh sách khoản thu.",
+  "error_fetching_households": "Không thể tải danh sách hộ khẩu.",
+  "add_fee_success": "Tạo khoản thu thành công.",
+  "update_fee_success": "Cập nhật khoản thu thành công.",
+  "error_adding_fee": "Tạo khoản thu thất bại.",
+  "error_updating_fee": "Cập nhật khoản thu thất bại.",
+  "delete_fee_success": "Xóa khoản thu thành công.",
+  "error_deleting_fee": "Xóa khoản thu thất bại.",
+  "error_fetching_details": "Không thể tải chi tiết khoản thu."
 }

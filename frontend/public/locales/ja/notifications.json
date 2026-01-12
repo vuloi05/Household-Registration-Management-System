@@ -1,0 +1,8 @@
+{
+  "title": "支払い通知",
+  "mark_all_read": "すべて既読にする",
+  "no_notifications": "通知はありません",
+  "payment_notification": "{{name}}さんが支払いました",
+  "fee_label": "料金項目",
+  "household_label": "世帯"
+}

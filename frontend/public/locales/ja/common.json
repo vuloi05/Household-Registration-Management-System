@@ -1,1 +1,22 @@
-{}
+{
+  "save": "保存",
+  "cancel": "キャンセル",
+  "edit": "編集",
+  "delete": "削除",
+  "add": "追加",
+  "confirm": "確認",
+  "confirm_delete_title": "削除の確認",
+  "actions": "操作",
+  "all": "すべて",
+  "no_info": "情報なし",
+  "stt": "番号",
+  "fullname": "氏名",
+  "dob": "生年月日",
+  "gender": "性別",
+  "male": "男性",
+  "female": "女性",
+  "notes": "備考",
+  "reason": "理由",
+  "error_generic": "エラーが発生しました。もう一度お試しください。",
+  "success": "成功"
+}

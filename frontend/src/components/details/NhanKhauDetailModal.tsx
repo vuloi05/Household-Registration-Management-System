@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useTranslation } from 'react-i18next';
-import { formatDate } from '../../utils/formatUtils';
+import { formatDateByLang } from '../../utils/formatUtils';
 
 // Extended interface for detail view
 interface NhanKhau {
@@ -90,7 +90,7 @@ export default function NhanKhauDetailModal({ open, onClose, nhanKhau, loading }
             {/* === THÔNG TIN CÁ NHÂN === */}
             <InfoRow label={t('label_fullname')} value={nhanKhau.hoTen} noInfoText={t('no_info')} />
             <InfoRow label={t('label_alias')} value={nhanKhau.biDanh} noInfoText={t('no_info')} />
-            <InfoRow label={t('label_dob')} value={formatDate(nhanKhau.ngaySinh)} noInfoText={t('no_info')} />
+            <InfoRow label={t('label_dob')} value={formatDateByLang(nhanKhau.ngaySinh)} noInfoText={t('no_info')} />
             <InfoRow label={t('label_gender')} value={getGenderLabel(nhanKhau.gioiTinh)} noInfoText={t('no_info')} />
             <InfoRow label={t('label_pob')} value={nhanKhau.noiSinh} noInfoText={t('no_info')} />
             <InfoRow label={t('label_hometown')} value={nhanKhau.queQuan} noInfoText={t('no_info')} />
@@ -100,7 +100,7 @@ export default function NhanKhauDetailModal({ open, onClose, nhanKhau, loading }
 
             {/* === THÔNG TIN CĂN CƯỚC & NGHỀ NGHIỆP === */}
             <InfoRow label={t('label_cccd_number')} value={nhanKhau.cmndCccd} noInfoText={t('no_info')} />
-            <InfoRow label={t('label_issue_date')} value={formatDate(nhanKhau.ngayCap)} noInfoText={t('no_info')} />
+            <InfoRow label={t('label_issue_date')} value={formatDateByLang(nhanKhau.ngayCap)} noInfoText={t('no_info')} />
             <InfoRow label={t('label_issue_place')} value={nhanKhau.noiCap} noInfoText={t('no_info')} />
             <InfoRow label={t('label_job')} value={nhanKhau.ngheNghiep} noInfoText={t('no_info')} />
             <InfoRow label={t('label_workplace')} value={nhanKhau.noiLamViec} noInfoText={t('no_info')} />
@@ -109,7 +109,7 @@ export default function NhanKhauDetailModal({ open, onClose, nhanKhau, loading }
 
             {/* === THÔNG TIN CƯ TRÚ === */}
             <InfoRow label={t('label_relationship_with_holder')} value={nhanKhau.quanHeVoiChuHo} noInfoText={t('no_info')} />
-            <InfoRow label={t('label_registration_date')} value={formatDate(nhanKhau.ngayDangKyThuongTru)} noInfoText={t('no_info')} />
+            <InfoRow label={t('label_registration_date')} value={formatDateByLang(nhanKhau.ngayDangKyThuongTru)} noInfoText={t('no_info')} />
             <InfoRow label={t('label_previous_address')} value={nhanKhau.diaChiTruocKhiChuyenDen} noInfoText={t('no_info')} />
             <InfoRow label={t('label_household_code')} value={nhanKhau.maHoKhau} noInfoText={t('no_info')} />
             <InfoRow label={t('label_household_address')} value={nhanKhau.diaChiHoKhau} noInfoText={t('no_info')} />
