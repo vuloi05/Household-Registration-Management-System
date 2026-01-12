@@ -1,0 +1,76 @@
+@startuml
+title Class Diagram - He thong Quan ly Nhan khau
+
+skinparam classAttributeIconSize 0
+hide empty members
+
+class HoKhau {
+  - Long id
+  - String maHoKhau
+  - String diaChi
+  - LocalDate ngayLap
+}
+
+class NhanKhau {
+  - Long id
+  - String hoTen
+  - String cmndCccd
+  - LocalDate ngaySinh
+  - String quanHeVoiChuHo
+}
+
+class KhoanThu {
+  - Long id
+  - String tenKhoanThu
+  - String loaiKhoanThu
+  - double soTien
+}
+
+class LichSuNopTien {
+  - Long id
+  - LocalDate ngayNop
+  - double soTien
+}
+
+class LichSuBienDong {
+  - Long id
+  - LocalDate ngayThayDoi
+  - String thongTinThayDoi
+}
+
+class TamVang {
+    - Long id
+    - LocalDate tuNgay
+    - LocalDate denNgay
+    - String lyDo
+}
+
+class TamTru {
+    - Long id
+    - String hoTen
+    - String cmndCccd
+    - LocalDate tuNgay
+    - LocalDate denNgay
+    - String lyDo
+}
+
+class User {
+  - Long id
+  - String username
+  - String password
+  - String role
+}
+
+' Relationships
+HoKhau "1" o-- "1..*" NhanKhau : "co thanh vien"
+HoKhau "1" ..> "1" NhanKhau : "la chu ho"
+
+HoKhau "1" -- "0..*" LichSuNopTien
+KhoanThu "1" -- "0..*" LichSuNopTien
+
+HoKhau "1" -- "0..*" LichSuBienDong
+NhanKhau "1" -- "0..*" LichSuBienDong
+
+NhanKhau "1" -- "0..*" TamVang
+
+@enduml
