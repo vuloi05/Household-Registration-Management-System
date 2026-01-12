@@ -39,7 +39,8 @@
     "recharts": "^3.2.1",
     "styled-components": "^6.1.19",
     "xlsx": "^0.18.5",
-    "zod": "^4.1.12"
+    "zod": "^4.1.12",
+    "@phosphor-icons/react": "^2.1.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
