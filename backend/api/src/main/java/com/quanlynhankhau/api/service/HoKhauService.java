@@ -1,3 +1,4 @@
+// src/main/java/com/quanlynhankhau/api/service/HoKhauService.java
 package com.quanlynhankhau.api.service;
 
 import com.quanlynhankhau.api.dto.HoKhauLichSuDTO;
@@ -16,6 +17,7 @@ import com.quanlynhankhau.api.entity.NhanKhau;
 import com.quanlynhankhau.api.repository.HoKhauRepository;
 import com.quanlynhankhau.api.repository.NhanKhauRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,20 +26,17 @@ import java.util.stream.Collectors; //Import Collectors để dùng Stream API
 @Service
 public class HoKhauService {
 
-    private final HoKhauRepository hoKhauRepository;
+    @Autowired
+    private HoKhauRepository hoKhauRepository;
 
-    private final NhanKhauRepository nhanKhauRepository;
+    @Autowired
+    private NhanKhauRepository nhanKhauRepository;
 
-    private final LichSuThayDoiHoKhauRepository lichSuThayDoiHoKhauRepository;
+    @Autowired
+    private LichSuThayDoiHoKhauRepository lichSuThayDoiHoKhauRepository;
 
-    private final LichSuBienDongRepository lichSuBienDongRepository;
-
-    public HoKhauService(HoKhauRepository hoKhauRepository, NhanKhauRepository nhanKhauRepository, LichSuThayDoiHoKhauRepository lichSuThayDoiHoKhauRepository, LichSuBienDongRepository lichSuBienDongRepository) {
-        this.hoKhauRepository = hoKhauRepository;
-        this.nhanKhauRepository = nhanKhauRepository;
-        this.lichSuThayDoiHoKhauRepository = lichSuThayDoiHoKhauRepository;
-        this.lichSuBienDongRepository = lichSuBienDongRepository;
-    }
+    @Autowired
+    private LichSuBienDongRepository lichSuBienDongRepository;
 
     public List<HoKhauLichSuDTO> getLichSuTongHopByHoKhauId(Long hoKhauId) {
         // Lấy lịch sử thay đổi của chính hộ khẩu (thay đổi chủ hộ, địa chỉ...)
@@ -63,10 +62,11 @@ public class HoKhauService {
             });
 
         // Gộp 2 stream lại và sắp xếp
-
-        return Stream.concat(stream1, stream2)
+        List<HoKhauLichSuDTO> combinedList = Stream.concat(stream1, stream2)
                 .sorted(HoKhauLichSuDTO.getComparator())
                 .collect(Collectors.toList());
+
+        return combinedList;
     }
 
 
@@ -94,7 +94,6 @@ public class HoKhauService {
             NhanKhauBasicDTO chuHoDTO = new NhanKhauBasicDTO();
             chuHoDTO.setId(hoKhau.getChuHo().getId());
             chuHoDTO.setHoTen(hoKhau.getChuHo().getHoTen());
-            chuHoDTO.setNgaySinh(hoKhau.getChuHo().getNgaySinh());
             dto.setChuHo(chuHoDTO);
         }
 
@@ -104,7 +103,6 @@ public class HoKhauService {
             NhanKhauBasicDTO nkDto = new NhanKhauBasicDTO();
             nkDto.setId(nk.getId());
             nkDto.setHoTen(nk.getHoTen());
-            nkDto.setNgaySinh(nk.getNgaySinh());
             nkDto.setQuanHeVoiChuHo(nk.getQuanHeVoiChuHo());
             return nkDto;
         }).collect(Collectors.toList());

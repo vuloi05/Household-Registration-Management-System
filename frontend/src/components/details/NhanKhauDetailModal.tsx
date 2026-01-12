@@ -1,3 +1,5 @@
+// src/components/details/NhanKhauDetailModal.tsx
+
 import {
   Dialog, DialogTitle, DialogContent, Typography,
   Divider, IconButton, Box, CircularProgress

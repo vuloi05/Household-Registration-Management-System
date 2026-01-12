@@ -105,7 +105,7 @@ export default function UserPage() {
     username: '',
     password: '',
     fullName: '',
-    role: 'ROLE_ACCOUNTANT' as 'ROLE_ADMIN' | 'ROLE_ACCOUNTANT' | 'ROLE_RESIDENT',
+    role: 'ROLE_ACCOUNTANT' as 'ROLE_ADMIN' | 'ROLE_ACCOUNTANT',
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -299,15 +299,8 @@ export default function UserPage() {
   };
 
   // Get role color
-  const getRoleColor = (role: string): 'error' | 'primary' | 'default' => {
-    switch (role) {
-      case 'ROLE_ADMIN':
-        return 'error';
-      case 'ROLE_ACCOUNTANT':
-        return 'primary';
-      default:
-        return 'default';
-    }
+  const getRoleColor = (role: string): 'error' | 'primary' => {
+    return role === 'ROLE_ADMIN' ? 'error' : 'primary';
   };
 
   // Memoized displayed data

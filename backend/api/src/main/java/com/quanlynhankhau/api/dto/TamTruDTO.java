@@ -1,12 +1,8 @@
+// d:\Household-Registration-Management-System\backend\api\src\main\java\com\quanlynhankhau\api\dto\TamTruDTO.java
 package com.quanlynhankhau.api.dto;
-
-import lombok.Getter;
-import lombok.Setter;
 
 import java.time.LocalDate;
 
-@Setter
-@Getter
 public class TamTruDTO {
     private Long id;
     private String hoTen;
@@ -40,4 +36,91 @@ public class TamTruDTO {
 
     // Getters and Setters
 
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getHoTen() {
+        return hoTen;
+    }
+
+    public void setHoTen(String hoTen) {
+        this.hoTen = hoTen;
+    }
+
+    public LocalDate getNgaySinh() {
+        return ngaySinh;
+    }
+
+    public void setNgaySinh(LocalDate ngaySinh) {
+        this.ngaySinh = ngaySinh;
+    }
+
+    public String getGioiTinh() {
+        return gioiTinh;
+    }
+
+    public void setGioiTinh(String gioiTinh) {
+        this.gioiTinh = gioiTinh;
+    }
+
+    public String getCmndCccd() {
+        return cmndCccd;
+    }
+
+    public void setCmndCccd(String cmndCccd) {
+        this.cmndCccd = cmndCccd;
+    }
+
+    public String getNoiThuongTru() {
+        return noiThuongTru;
+    }
+
+    public void setNoiThuongTru(String noiThuongTru) {
+        this.noiThuongTru = noiThuongTru;
+    }
+
+    public Long getHoKhauTiepNhanId() {
+        return hoKhauTiepNhanId;
+    }
+
+    public void setHoKhauTiepNhanId(Long hoKhauTiepNhanId) {
+        this.hoKhauTiepNhanId = hoKhauTiepNhanId;
+    }
+
+    public String getHoKhauTiepNhanMaHoKhau() {
+        return hoKhauTiepNhanMaHoKhau;
+    }
+
+    public void setHoKhauTiepNhanMaHoKhau(String hoKhauTiepNhanMaHoKhau) {
+        this.hoKhauTiepNhanMaHoKhau = hoKhauTiepNhanMaHoKhau;
+    }
+
+    public LocalDate getNgayBatDau() {
+        return ngayBatDau;
+    }
+
+    public void setNgayBatDau(LocalDate ngayBatDau) {
+        this.ngayBatDau = ngayBatDau;
+    }
+
+    public LocalDate getNgayKetThuc() {
+        return ngayKetThuc;
+    }
+
+    public void setNgayKetThuc(LocalDate ngayKetThuc) {
+        this.ngayKetThuc = ngayKetThuc;
+    }
+
+    public String getLyDo() {
+        return lyDo;
+    }
+
+    public void setLyDo(String lyDo) {
+        this.lyDo = lyDo;
+    }
 }
