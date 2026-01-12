@@ -1,0 +1,22 @@
+{
+  "title": "Bảng điều khiển",
+  "subtitle": "Thống kê và phân tích dữ liệu quản lý hộ khẩu",
+  "total_households": "Tổng hộ khẩu",
+  "total_persons": "Tổng nhân khẩu",
+  "temporary_absence": "Tạm vắng",
+  "temporary_residence": "Tạm trú",
+  "age_distribution": "Phân bố theo độ tuổi",
+  "detailed_classification": "Chi tiết phân loại",
+  "age_group_0_5": "Mầm non (0-5)",
+  "age_group_6_10": "Cấp 1 (6-10)",
+  "age_group_11_14": "Cấp 2 (11-14)",
+  "age_group_15_17": "Cấp 3 (15-17)",
+  "age_group_18_60": "Độ tuổi lao động (18-60)",
+  "age_group_over_60": "Nghỉ hưu (>60)",
+  "people": "người",
+  "gender_distribution": "Phân bố theo giới tính",
+  "total_households_summary": "Tổng số hộ",
+  "households": "hộ",
+  "temporary_residence_rate": "Tỷ lệ tạm trú",
+  "view_details": "Xem chi tiết"
+}

@@ -3,6 +3,7 @@ import {
   Divider, IconButton, Box, CircularProgress
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import { useTranslation } from 'react-i18next';
 import { formatDate } from '../../utils/formatUtils';
 
 // Extended interface for detail view
@@ -29,14 +30,14 @@ interface NhanKhau {
 
 // Component con giúp hiển thị một dòng thông tin (label: value) cho gọn gàng
 // Đã được viết lại bằng Box và Flexbox
-const InfoRow = ({ label, value }: { label: string, value: string | null | undefined }) => (
+const InfoRow = ({ label, value, noInfoText }: { label: string, value: string | null | undefined, noInfoText: string }) => (
   <Box sx={{ display: 'flex', py: 0.75 }}>
     <Box sx={{ width: '40%', minWidth: '150px' }}>
       <Typography variant="body2" color="text.secondary">{label}:</Typography>
     </Box>
     <Box sx={{ flexGrow: 1 }}>
       <Typography variant="body1" sx={{ fontWeight: 500 }}>
-        {value || 'Chưa có thông tin'}
+        {value || noInfoText}
       </Typography>
     </Box>
   </Box>
@@ -50,12 +51,19 @@ interface NhanKhauDetailModalProps {
 }
 
 export default function NhanKhauDetailModal({ open, onClose, nhanKhau, loading }: NhanKhauDetailModalProps) {
+  const { t } = useTranslation('nhanKhau');
+
+  const getGenderLabel = (gender: string | undefined) => {
+    if (gender === 'Nam') return t('gender_male');
+    if (gender === 'Nữ') return t('gender_female');
+    return undefined;
+  };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ m: 0, p: 2 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          Thông tin chi tiết Nhân khẩu
+          {t('detail_modal_title')}
           <IconButton
             aria-label="close"
             onClick={onClose}
@@ -78,34 +86,34 @@ export default function NhanKhauDetailModal({ open, onClose, nhanKhau, loading }
         ) : nhanKhau ? (
           <>
             {/* === THÔNG TIN CÁ NHÂN === */}
-            <InfoRow label="Họ và tên" value={nhanKhau.hoTen} />
-            <InfoRow label="Bí danh" value={nhanKhau.biDanh} />
-            <InfoRow label="Ngày sinh" value={formatDate(nhanKhau.ngaySinh)} />
-            <InfoRow label="Giới tính" value={nhanKhau.gioiTinh} />
-            <InfoRow label="Nơi sinh" value={nhanKhau.noiSinh} />
-            <InfoRow label="Quê quán" value={nhanKhau.queQuan} />
-            <InfoRow label="Dân tộc" value={nhanKhau.danToc} />
+            <InfoRow label={t('label_fullname')} value={nhanKhau.hoTen} noInfoText={t('no_info')} />
+            <InfoRow label={t('label_alias')} value={nhanKhau.biDanh} noInfoText={t('no_info')} />
+            <InfoRow label={t('label_dob')} value={formatDate(nhanKhau.ngaySinh)} noInfoText={t('no_info')} />
+            <InfoRow label={t('label_gender')} value={getGenderLabel(nhanKhau.gioiTinh)} noInfoText={t('no_info')} />
+            <InfoRow label={t('label_pob')} value={nhanKhau.noiSinh} noInfoText={t('no_info')} />
+            <InfoRow label={t('label_hometown')} value={nhanKhau.queQuan} noInfoText={t('no_info')} />
+            <InfoRow label={t('label_ethnicity')} value={nhanKhau.danToc} noInfoText={t('no_info')} />
             
             <Divider sx={{ my: 1.5 }} />
 
             {/* === THÔNG TIN CĂN CƯỚC & NGHỀ NGHIỆP === */}
-            <InfoRow label="Số CCCD" value={nhanKhau.cmndCccd} />
-            <InfoRow label="Ngày cấp" value={formatDate(nhanKhau.ngayCap)} />
-            <InfoRow label="Nơi cấp" value={nhanKhau.noiCap} />
-            <InfoRow label="Nghề nghiệp" value={nhanKhau.ngheNghiep} />
-            <InfoRow label="Nơi làm việc" value={nhanKhau.noiLamViec} />
+            <InfoRow label={t('label_cccd_number')} value={nhanKhau.cmndCccd} noInfoText={t('no_info')} />
+            <InfoRow label={t('label_issue_date')} value={formatDate(nhanKhau.ngayCap)} noInfoText={t('no_info')} />
+            <InfoRow label={t('label_issue_place')} value={nhanKhau.noiCap} noInfoText={t('no_info')} />
+            <InfoRow label={t('label_job')} value={nhanKhau.ngheNghiep} noInfoText={t('no_info')} />
+            <InfoRow label={t('label_workplace')} value={nhanKhau.noiLamViec} noInfoText={t('no_info')} />
 
             <Divider sx={{ my: 1.5 }} />
 
             {/* === THÔNG TIN CƯ TRÚ === */}
-            <InfoRow label="Quan hệ với chủ hộ" value={nhanKhau.quanHeVoiChuHo} />
-            <InfoRow label="Ngày ĐK thường trú" value={formatDate(nhanKhau.ngayDangKyThuongTru)} />
-            <InfoRow label="Địa chỉ trước đây" value={nhanKhau.diaChiTruocKhiChuyenDen} />
-            <InfoRow label="Mã hộ khẩu" value={nhanKhau.maHoKhau} />
-            <InfoRow label="Địa chỉ hộ khẩu" value={nhanKhau.diaChiHoKhau} />
+            <InfoRow label={t('label_relationship_with_holder')} value={nhanKhau.quanHeVoiChuHo} noInfoText={t('no_info')} />
+            <InfoRow label={t('label_registration_date')} value={formatDate(nhanKhau.ngayDangKyThuongTru)} noInfoText={t('no_info')} />
+            <InfoRow label={t('label_previous_address')} value={nhanKhau.diaChiTruocKhiChuyenDen} noInfoText={t('no_info')} />
+            <InfoRow label={t('label_household_code')} value={nhanKhau.maHoKhau} noInfoText={t('no_info')} />
+            <InfoRow label={t('label_household_address')} value={nhanKhau.diaChiHoKhau} noInfoText={t('no_info')} />
           </>
         ) : (
-          <Typography>Không có thông tin để hiển thị.</Typography>
+          <Typography>{t('no_info_to_display')}</Typography>
         )}
       </DialogContent>
     </Dialog>

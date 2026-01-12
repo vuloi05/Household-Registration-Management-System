@@ -1,6 +1,7 @@
 // src/pages/TamVangTamTruPage.tsx
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Typography,
@@ -52,6 +53,7 @@ function TabPanel(props: {
 }
 
 export default function TamVangTamTruPage() {
+  const { t } = useTranslation('tamVangTamTru');
   const { enqueueSnackbar } = useSnackbar();
   const [tabValue, setTabValue] = useState(0);
 
@@ -82,11 +84,11 @@ export default function TamVangTamTruPage() {
       setTamVangList(response.data);
       setPageTamVang(0);
     } catch {
-      enqueueSnackbar('Không thể tải danh sách tạm vắng', { variant: 'error' });
+      enqueueSnackbar(t('error_load_tam_vang'), { variant: 'error' });
     } finally {
       setLoadingTamVang(false);
     }
-  }, [enqueueSnackbar]);
+  }, [enqueueSnackbar, t]);
 
   const fetchTamTru = useCallback(async () => {
     try {
@@ -95,11 +97,11 @@ export default function TamVangTamTruPage() {
       setTamTruList(response.data);
       setPageTamTru(0);
     } catch {
-      enqueueSnackbar('Không thể tải danh sách tạm trú', { variant: 'error' });
+      enqueueSnackbar(t('error_load_tam_tru'), { variant: 'error' });
     } finally {
       setLoadingTamTru(false);
     }
-  }, [enqueueSnackbar]);
+  }, [enqueueSnackbar, t]);
 
   useEffect(() => {
     fetchTamVang();
@@ -113,22 +115,22 @@ export default function TamVangTamTruPage() {
   const handleCreateTamVang = async (data: TamVangFormValues) => {
     try {
       await createTamVang(data);
-      enqueueSnackbar('Thêm tạm vắng thành công', { variant: 'success' });
+      enqueueSnackbar(t('add_tam_vang_success'), { variant: 'success' });
       setTamVangFormOpen(false);
       fetchTamVang();
     } catch {
-      enqueueSnackbar('Không thể thêm tạm vắng', { variant: 'error' });
+      enqueueSnackbar(t('add_tam_vang_error'), { variant: 'error' });
     }
   };
 
   const handleCreateTamTru = async (data: TamTruFormValues) => {
     try {
       await createTamTru(data);
-      enqueueSnackbar('Thêm tạm trú thành công', { variant: 'success' });
+      enqueueSnackbar(t('add_tam_tru_success'), { variant: 'success' });
       setTamTruFormOpen(false);
       fetchTamTru();
     } catch {
-      enqueueSnackbar('Không thể thêm tạm trú', { variant: 'error' });
+      enqueueSnackbar(t('add_tam_tru_error'), { variant: 'error' });
     }
   };
 
@@ -159,15 +161,15 @@ export default function TamVangTamTruPage() {
       {/* Header with action button aligned to reference pages */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, width: '100%' }}>
         <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-          Quản lý Tạm vắng / Tạm trú
+          {t('title')}
         </Typography>
         {tabValue === 0 ? (
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setTamVangFormOpen(true)}>
-            Thêm Tạm vắng
+            {t('add_tam_vang')}
           </Button>
         ) : (
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setTamTruFormOpen(true)}>
-            Thêm Tạm trú
+            {t('add_tam_tru')}
           </Button>
         )}
       </Box>
@@ -190,7 +192,7 @@ export default function TamVangTamTruPage() {
               label={
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <FlightTakeoffIcon fontSize="small" />
-                  <span>Tạm vắng</span>
+                  <span>{t('tam_vang_tab')}</span>
                 </Box>
               }
               disableRipple
@@ -211,7 +213,7 @@ export default function TamVangTamTruPage() {
               label={
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <HomeWorkIcon fontSize="small" />
-                  <span>Tạm trú</span>
+                  <span>{t('tam_tru_tab')}</span>
                 </Box>
               }
               disableRipple
@@ -236,7 +238,7 @@ export default function TamVangTamTruPage() {
           <Box sx={{ mb: 2, width: '100%' }}>
             <TextField
               fullWidth
-              placeholder="Tìm kiếm theo Họ tên, Nhân khẩu ID, nơi đến, lý do..."
+              placeholder={t('search_placeholder_tam_vang')}
               value={searchTamVang}
               onChange={(e) => { setSearchTamVang(e.target.value); setPageTamVang(0); }}
               InputProps={{
@@ -253,7 +255,7 @@ export default function TamVangTamTruPage() {
           <Box sx={{ mb: 2, width: '100%' }}>
             <TextField
               fullWidth
-              placeholder="Tìm kiếm theo Họ tên, mã hộ khẩu tiếp nhận, lý do..."
+              placeholder={t('search_placeholder_tam_tru')}
               value={searchTamTru}
               onChange={(e) => { setSearchTamTru(e.target.value); setPageTamTru(0); }}
               InputProps={{
@@ -280,12 +282,12 @@ export default function TamVangTamTruPage() {
                 <Table sx={{ width: '100%', tableLayout: 'fixed', '& .MuiTableCell-root': { fontSize: '0.85rem', py: 1 } }} size="small">
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ fontWeight: 'bold', width: '6%' }}>STT</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '18%' }}>Họ và Tên</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>Ngày bắt đầu</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>Ngày kết thúc</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Nơi đến</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '28%' }}>Lý do</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '6%' }}>{t('col_stt')}</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '18%' }}>{t('col_ho_ten')}</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>{t('col_ngay_bat_dau')}</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>{t('col_ngay_ket_thuc')}</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>{t('col_noi_den')}</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '28%' }}>{t('col_ly_do')}</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -312,7 +314,7 @@ export default function TamVangTamTruPage() {
                       <TableRow>
                         <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                           <Typography variant="body2" color="text.secondary">
-                            Không tìm thấy bản ghi tạm vắng nào
+                            {t('no_tam_vang_records')}
                           </Typography>
                         </TableCell>
                       </TableRow>
@@ -335,13 +337,13 @@ export default function TamVangTamTruPage() {
                 <Table sx={{ width: '100%', tableLayout: 'fixed', '& .MuiTableCell-root': { fontSize: '0.85rem', py: 1 } }} size="small">
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ fontWeight: 'bold', width: '6%' }}>STT</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '18%' }}>Họ tên</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '12%' }}>Ngày sinh</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '16%' }}>Hộ khẩu tiếp nhận ID</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>Ngày bắt đầu</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>Ngày kết thúc</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Lý do</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '6%' }}>{t('col_stt')}</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '18%' }}>{t('col_ho_ten_tam_tru')}</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '12%' }}>{t('col_ngay_sinh')}</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '16%' }}>{t('col_ho_khau_id')}</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>{t('col_ngay_bat_dau')}</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>{t('col_ngay_ket_thuc')}</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>{t('col_ly_do')}</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -366,7 +368,7 @@ export default function TamVangTamTruPage() {
                       <TableRow>
                         <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
                           <Typography variant="body2" color="text.secondary">
-                            Không tìm thấy bản ghi tạm trú nào
+                            {t('no_tam_tru_records')}
                           </Typography>
                         </TableCell>
                       </TableRow>
@@ -390,8 +392,8 @@ export default function TamVangTamTruPage() {
           page={pageTamVang}
           onPageChange={(_, newPage) => setPageTamVang(newPage)}
           onRowsPerPageChange={(event) => { setRowsPerPageTamVang(parseInt(event.target.value, 10)); setPageTamVang(0); }}
-          labelRowsPerPage="Số hàng mỗi trang:"
-          labelDisplayedRows={({ from, to, count }) => `${from}-${to} của ${count !== -1 ? count : to}`}
+          labelRowsPerPage={t('rows_per_page')}
+          labelDisplayedRows={({ from, to, count }) => t('pagination_display', { from, to, count })}
         />
       ) : (
         <TablePagination
@@ -402,8 +404,8 @@ export default function TamVangTamTruPage() {
           page={pageTamTru}
           onPageChange={(_, newPage) => setPageTamTru(newPage)}
           onRowsPerPageChange={(event) => { setRowsPerPageTamTru(parseInt(event.target.value, 10)); setPageTamTru(0); }}
-          labelRowsPerPage="Số hàng mỗi trang:"
-          labelDisplayedRows={({ from, to, count }) => `${from}-${to} của ${count !== -1 ? count : to}`}
+          labelRowsPerPage={t('rows_per_page')}
+          labelDisplayedRows={({ from, to, count }) => t('pagination_display', { from, to, count })}
         />
       )}
 

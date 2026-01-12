@@ -11,43 +11,32 @@ import HistoryIcon from '@mui/icons-material/History';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import { useAuth } from '../../context/AuthContext'; // Import hook useAuth
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
-
-/**
- * Mảng cấu hình cho các mục menu trong Sidebar.
- * Mỗi mục có:
- * - text: Văn bản hiển thị.
- * - icon: Biểu tượng (component từ MUI).
- * - path: Đường dẫn URL khi click vào.
- * - roles: Mảng các vai trò được phép nhìn thấy mục menu này.
- */
-const menuItems = [
-  { text: 'Bảng điều khiển', icon: <DashboardIcon />, path: '/dashboard', roles: ['ROLE_ADMIN', 'ROLE_ACCOUNTANT'] },
-  { text: 'Quản lý Người dùng', icon: <ManageAccountsIcon />, path: '/quan-ly-nguoi-dung', roles: ['ROLE_ADMIN'] },
-  { text: 'Quản lý Hộ khẩu', icon: <PeopleIcon />, path: '/ho-khau', roles: ['ROLE_ADMIN'] },
-  { text: 'Quản lý Nhân khẩu', icon: <PersonIcon />, path: '/nhan-khau', roles: ['ROLE_ADMIN'] },
-  { text: 'Lịch sử Biến động', icon: <HistoryIcon />, path: '/lich-su-bien-dong', roles: ['ROLE_ADMIN'] },
-  { text: 'Tạm vắng / Tạm trú', icon: <TransferWithinAStationIcon />, path: '/tam-vang-tam-tru', roles: ['ROLE_ADMIN'] },
-  { text: 'Quản lý Thu phí', icon: <PaymentsIcon />, path: '/thu-phi', roles: ['ROLE_ADMIN', 'ROLE_ACCOUNTANT'] },
-];
+import { useTranslation } from 'react-i18next';
 
 const drawerWidth = 240;
 
 export default function Sidebar() {
-  const location = useLocation(); // Hook để lấy URL hiện tại, giúp highlight mục menu đang active.
+  const { t } = useTranslation('layout');
+  const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth(); // Lấy thông tin user và logout
+  const { user, logout } = useAuth();
+
+  const menuItems = [
+    { key: 'sidebar_dashboard', icon: <DashboardIcon />, path: '/dashboard', roles: ['ROLE_ADMIN', 'ROLE_ACCOUNTANT'] },
+    { key: 'sidebar_user_management', icon: <ManageAccountsIcon />, path: '/quan-ly-nguoi-dung', roles: ['ROLE_ADMIN'] },
+    { key: 'sidebar_household_management', icon: <PeopleIcon />, path: '/ho-khau', roles: ['ROLE_ADMIN'] },
+    { key: 'sidebar_person_management', icon: <PersonIcon />, path: '/nhan-khau', roles: ['ROLE_ADMIN'] },
+    { key: 'sidebar_change_history', icon: <HistoryIcon />, path: '/lich-su-bien-dong', roles: ['ROLE_ADMIN'] },
+    { key: 'sidebar_absence_residence', icon: <TransferWithinAStationIcon />, path: '/tam-vang-tam-tru', roles: ['ROLE_ADMIN'] },
+    { key: 'sidebar_fee_management', icon: <PaymentsIcon />, path: '/thu-phi', roles: ['ROLE_ADMIN', 'ROLE_ACCOUNTANT'] },
+  ];
 
   const handleLogout = () => {
     logout();
     navigate('/', { replace: true });
   };
 
-  /**
-   * Lọc danh sách menuItems ban đầu để chỉ giữ lại những mục mà
-   * vai trò (role) của người dùng hiện tại được phép truy cập.
-   */
   const accessibleMenuItems = menuItems.filter(item => 
-    // Kiểm tra xem user có tồn tại và role của user có nằm trong danh sách roles của mục menu không.
     user && item.roles.includes(user.role)
   );
 
@@ -67,25 +56,19 @@ export default function Sidebar() {
       {/* Greeting at top */}
       <Toolbar>
         <Typography variant="subtitle1" noWrap sx={{ fontWeight: 700 }}>
-          Chào, {user?.sub}
+          {t('greeting', { name: user?.sub })}
         </Typography>
       </Toolbar>
       <List>
-        {/* 
-          Sử dụng `accessibleMenuItems` (danh sách đã được lọc) thay vì `menuItems` (danh sách gốc) 
-          để render ra các mục menu.
-        */}
         {accessibleMenuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            {/* Bọc ListItemButton trong RouterLink để xử lý điều hướng */}
+          <ListItem key={item.key} disablePadding>
             <ListItemButton
               component={RouterLink}
               to={item.path}
-              // Thêm style 'selected' để highlight mục menu đang được chọn
               selected={location.pathname === item.path}
             >
               <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
+              <ListItemText primary={t(item.key)} />
             </ListItemButton>
           </ListItem>
         ))}
@@ -100,7 +83,7 @@ export default function Sidebar() {
           startIcon={<LogoutIcon />}
           onClick={handleLogout}
         >
-          Đăng xuất
+          {t('logout')}
         </Button>
       </Box>
     </Drawer>

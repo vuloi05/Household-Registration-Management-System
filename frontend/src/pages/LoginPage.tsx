@@ -10,11 +10,13 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '../context/AuthContext';
 import type { AuthRequest } from '../api/authApi';
 
 export default function LoginPage() {
+  const { t } = useTranslation('login');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   
@@ -30,7 +32,7 @@ export default function LoginPage() {
       navigate('/dashboard');
     } catch (error) {
       console.error("Login failed:", error);
-      setLoginError("Tên đăng nhập hoặc mật khẩu không chính xác.");
+      setLoginError(t('login_failed'));
     }
   };
 
@@ -54,7 +56,7 @@ export default function LoginPage() {
               <img src="vite1.png" alt="logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </Box>
             <Typography component="h1" variant="h5" sx={{ mt: 1, fontWeight: 'bold' }}>
-              Đăng nhập hệ thống
+              {t('login_title')}
             </Typography>
 
             {loginError && <Alert severity="error" sx={{ width: '100%', mt: 2 }}>{loginError}</Alert>}
@@ -64,23 +66,23 @@ export default function LoginPage() {
                 name="username"
                 control={control}
                 defaultValue=""
-                rules={{ required: 'Tên đăng nhập là bắt buộc' }}
+                rules={{ required: t('username_required') }}
                 render={({ field }) => (
-                  <TextField {...field} margin="normal" required fullWidth label="Tên đăng nhập" autoFocus error={!!errors.username} helperText={errors.username?.message as string} />
+                  <TextField {...field} margin="normal" required fullWidth label={t('username_label')} autoFocus error={!!errors.username} helperText={errors.username?.message as string} />
                 )}
               />
               <Controller
                 name="password"
                 control={control}
                 defaultValue=""
-                rules={{ required: 'Mật khẩu là bắt buộc' }}
+                rules={{ required: t('password_required') }}
                 render={({ field }) => (
                   <TextField
                     {...field}
                     margin="normal"
                     required
                     fullWidth
-                    label="Mật khẩu"
+                    label={t('password_label')}
                     type={showPassword ? 'text' : 'password'}
                     error={!!errors.password}
                     helperText={errors.password?.message as string}
@@ -97,7 +99,7 @@ export default function LoginPage() {
                 )}
               />
               <Button type="submit" fullWidth variant="contained" size="large" startIcon={<LockOutlinedIcon />} sx={{ mt: 3, mb: 2, py: 1.5 }} disabled={isSubmitting} >
-                {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+                {isSubmitting ? t('logging_in') : t('login_button')}
               </Button>
             </Box>
           </Box>

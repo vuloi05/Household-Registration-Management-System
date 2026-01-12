@@ -1,5 +1,6 @@
 // src/pages/NhanKhauPage.tsx
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Typography,
@@ -48,6 +49,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function NhanKhauPage() {
+  const { t } = useTranslation('nhanKhau');
   const { enqueueSnackbar } = useSnackbar();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -130,11 +132,11 @@ export default function NhanKhauPage() {
       setLastDataLoadedAt(Date.now());
     } catch (error) {
       console.error('Error loading nhan khau:', error);
-      enqueueSnackbar('Không thể tải dữ liệu nhân khẩu. Vui lòng kiểm tra backend có đang chạy không.', { variant: 'error' });
+      enqueueSnackbar(t('error_loading_data'), { variant: 'error' });
     } finally {
       setLoading(false);
     }
-  }, [page, rowsPerPage, searchQuery, ageFilter, genderFilter, locationFilter, enqueueSnackbar]);
+  }, [page, rowsPerPage, searchQuery, ageFilter, genderFilter, locationFilter, enqueueSnackbar, t]);
 
   // Load toàn bộ dữ liệu khi xuất file
   const loadAllDataForExport = async () => {
@@ -301,7 +303,7 @@ export default function NhanKhauPage() {
         width: '100%' 
       }}>
         <Typography variant={isMobile ? 'h5' : 'h4'} sx={{ fontWeight: 'bold' }}>
-          Quản lý Nhân khẩu
+          {t('title')}
         </Typography>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ width: { xs: '100%', sm: 'auto' } }}>
           <Button
@@ -312,7 +314,7 @@ export default function NhanKhauPage() {
             fullWidth={isMobile}
             size={isMobile ? 'medium' : 'medium'}
           >
-            Xuất Excel
+            {t('export_excel')}
           </Button>
           <Button
             variant="outlined"
@@ -322,7 +324,7 @@ export default function NhanKhauPage() {
             fullWidth={isMobile}
             size={isMobile ? 'medium' : 'medium'}
           >
-            Xuất PDF
+            {t('export_pdf')}
           </Button>
           <Button
             variant="contained"
@@ -331,7 +333,7 @@ export default function NhanKhauPage() {
             fullWidth={isMobile}
             size={isMobile ? 'medium' : 'medium'}
           >
-            Thêm Nhân khẩu
+            {t('add_person')}
           </Button>
         </Stack>
       </Box>
@@ -355,9 +357,7 @@ export default function NhanKhauPage() {
 
       {/* Kết quả tìm kiếm */}
       <Box sx={{ mb: 2 }}>
-        <Typography variant="body2" color="text.secondary">
-          Tìm thấy <strong>{totalItems}</strong> nhân khẩu
-        </Typography>
+        <Typography variant="body2" color="text.secondary" dangerouslySetInnerHTML={{ __html: t('found_total', { count: totalItems }) }} />
       </Box>
 
       {/* Bảng dữ liệu - Responsive */}
@@ -394,9 +394,9 @@ export default function NhanKhauPage() {
         page={page}
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
-        labelRowsPerPage={isMobile ? 'Dòng:' : 'Số hàng mỗi trang:'}
+        labelRowsPerPage={isMobile ? t('rows_per_page_mobile') : t('rows_per_page_desktop')}
         labelDisplayedRows={({ from, to, count }) =>
-          isMobile ? `${from}-${to}/${count}` : `${from}-${to} của ${count}`
+          isMobile ? t('pagination_display_mobile', { from, to, count }) : t('pagination_display', { from, to, count})
         }
         sx={{
           '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
@@ -411,7 +411,7 @@ export default function NhanKhauPage() {
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
-        <MenuItem onClick={() => handleOpenBienDongForm(selectedNhanKhau!)}>Ghi nhận biến động</MenuItem>
+        <MenuItem onClick={() => handleOpenBienDongForm(selectedNhanKhau!)}>{t('menu_record_change')}</MenuItem>
       </Menu>
 
       {/* Form thêm/sửa nhân khẩu */}
@@ -451,8 +451,8 @@ export default function NhanKhauPage() {
       {/* Dialog xác nhận xóa */}
       <ConfirmationDialog
         open={deleteDialogOpen}
-        title="Xác nhận xóa"
-        message={`Bạn có chắc chắn muốn xóa nhân khẩu "${selectedNhanKhau?.hoTen}" khỏi hệ thống?`}
+        title={t('delete_confirm_title')}
+        message={t('delete_confirm_message', { name: selectedNhanKhau?.hoTen })}
         onConfirm={handleDeleteNhanKhau}
         onClose={() => {
           setDeleteDialogOpen(false);

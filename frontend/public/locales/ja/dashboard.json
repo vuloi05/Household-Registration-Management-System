@@ -1,0 +1,22 @@
+{
+  "title": "ダッシュボード",
+  "subtitle": "世帯管理データの統計と分析",
+  "total_households": "総世帯数",
+  "total_persons": "総人口",
+  "temporary_absence": "一時不在",
+  "temporary_residence": "一時居住",
+  "age_distribution": "年齢分布",
+  "detailed_classification": "詳細分類",
+  "age_group_0_5": "未就学児 (0-5歳)",
+  "age_group_6_10": "小学生 (6-10歳)",
+  "age_group_11_14": "中学生 (11-14歳)",
+  "age_group_15_17": "高校生 (15-17歳)",
+  "age_group_18_60": "労働年齢 (18-60歳)",
+  "age_group_over_60": "退職者 (60歳以上)",
+  "people": "人",
+  "gender_distribution": "性別分布",
+  "total_households_summary": "総世帯数",
+  "households": "世帯",
+  "temporary_residence_rate": "一時居住率",
+  "view_details": "詳細を見る"
+}

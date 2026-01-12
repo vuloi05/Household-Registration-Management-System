@@ -1,5 +1,5 @@
 // src/components/nhanKhau/NhanKhauSearchAndFilter.tsx
-
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   TextField,
@@ -121,13 +121,15 @@ export default function NhanKhauSearchAndFilter({
   isAgentTypingSearch,
   onOpenQrScanner,
 }: NhanKhauSearchAndFilterProps) {
+  const { t } = useTranslation('nhanKhau');
+
   return (
     <>
       {/* Thanh tìm kiếm */}
       <Box sx={{ mb: 3, width: '100%' }}>
         <TextField
           fullWidth
-          placeholder="Tìm kiếm theo họ tên, CCCD, quê quán, ngày sinh..."
+          placeholder={t('search_placeholder')}
           value={searchInputValue}
           onChange={(e) => onSearchChange(e.target.value)}
           InputProps={{
@@ -144,7 +146,7 @@ export default function NhanKhauSearchAndFilter({
                       <ClearIcon />
                     </IconButton>
                   )}
-                  <Tooltip title="Quét từ AppSheet">
+                  <Tooltip title={t('scan_from_appsheet_tooltip')}>
                     <IconButton
                       size="small"
                       onClick={onOpenQrScanner}
@@ -159,8 +161,8 @@ export default function NhanKhauSearchAndFilter({
           inputProps={{ readOnly: isAgentTypingSearch }}
           helperText={
             isAgentTypingSearch
-              ? 'Trợ lý ảo đang nhập từ khóa giúp bạn...'
-              : 'Bạn có thể nhập Họ tên, CCCD, quê quán, hoặc ngày sinh để tìm kiếm. Ví dụ: Nguyễn Mạnh Tí 023456789 hoặc Hà Nội'
+              ? t('agent_typing_helper')
+              : t('search_helper_text')
           }
           sx={{
             '& .MuiOutlinedInput-root': {
@@ -178,7 +180,7 @@ export default function NhanKhauSearchAndFilter({
           variant="outlined"
           size="small"
         >
-          {showFilters ? 'Ẩn bộ lọc' : 'Hiển thị bộ lọc'}
+          {showFilters ? t('hide_filters') : t('show_filters')}
         </Button>
       </Box>
 
@@ -188,29 +190,29 @@ export default function NhanKhauSearchAndFilter({
           <Stack spacing={2}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <FormControl fullWidth size="small">
-                <InputLabel>Độ tuổi</InputLabel>
+                <InputLabel>{t('age_filter_label')}</InputLabel>
                 <Select
                   value={ageFilter}
-                  label="Độ tuổi"
+                  label={t('age_filter_label')}
                   onChange={(e) => onAgeFilterChange(e.target.value)}
                 >
-                  <MenuItem value="all">Tất cả</MenuItem>
-                  <MenuItem value="under18">Dưới 18 tuổi</MenuItem>
-                  <MenuItem value="18-35">18-35 tuổi</MenuItem>
-                  <MenuItem value="36-60">36-60 tuổi</MenuItem>
-                  <MenuItem value="over60">Trên 60 tuổi</MenuItem>
+                  <MenuItem value="all">{t('filter_all')}</MenuItem>
+                  <MenuItem value="under18">{t('age_under_18')}</MenuItem>
+                  <MenuItem value="18-35">{t('age_18_35')}</MenuItem>
+                  <MenuItem value="36-60">{t('age_36_60')}</MenuItem>
+                  <MenuItem value="over60">{t('age_over_60')}</MenuItem>
                 </Select>
               </FormControl>
               <FormControl fullWidth size="small">
-                <InputLabel>Giới tính</InputLabel>
+                <InputLabel>{t('gender_filter_label')}</InputLabel>
                 <Select
                   value={genderFilter}
-                  label="Giới tính"
+                  label={t('gender_filter_label')}
                   onChange={(e) => onGenderFilterChange(e.target.value)}
                 >
-                  <MenuItem value="all">Tất cả</MenuItem>
-                  <MenuItem value="Nam">Nam</MenuItem>
-                  <MenuItem value="Nữ">Nữ</MenuItem>
+                  <MenuItem value="all">{t('filter_all')}</MenuItem>
+                  <MenuItem value="Nam">{t('gender_male')}</MenuItem>
+                  <MenuItem value="Nữ">{t('gender_female')}</MenuItem>
                 </Select>
               </FormControl>
               <Autocomplete
@@ -221,12 +223,12 @@ export default function NhanKhauSearchAndFilter({
                 onChange={(_event, newValue) => {
                   onLocationFilterChange(newValue || 'all');
                 }}
-                getOptionLabel={(option) => option === 'all' ? 'Tất cả' : option}
+                getOptionLabel={(option) => option === 'all' ? t('filter_all') : option}
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    label="Quê quán"
-                    placeholder="Chọn hoặc nhập tỉnh/thành phố"
+                    label={t('location_filter_label')}
+                    placeholder={t('location_placeholder')}
                   />
                 )}
                 isOptionEqualToValue={(option, value) => option === value}
@@ -244,7 +246,7 @@ export default function NhanKhauSearchAndFilter({
                 onClick={onClearFilters}
                 sx={{ minWidth: { sm: '150px' } }}
               >
-                Xóa bộ lọc
+                {t('clear_filters')}
               </Button>
             </Stack>
           </Stack>

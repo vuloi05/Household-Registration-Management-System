@@ -1,5 +1,5 @@
 // src/components/nhanKhau/NhanKhauTable.tsx
-
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Typography,
@@ -56,6 +56,14 @@ export default function NhanKhauTable({
   handleOpenDeleteDialog,
   handleMenuClick,
 }: NhanKhauTableProps) {
+  const { t } = useTranslation('nhanKhau');
+
+  const getGenderLabel = (gender: string | undefined) => {
+    if (gender === 'Nam') return t('gender_male');
+    if (gender === 'Nữ') return t('gender_female');
+    return t('no_info');
+  };
+
   if (isMobile) {
     // Mobile: Card view
     return (
@@ -75,7 +83,7 @@ export default function NhanKhauTable({
         ) : displayedNhanKhau.length === 0 ? (
           <Paper sx={{ p: 4, textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">
-              Không tìm thấy nhân khẩu nào
+              {t('no_people_found')}
             </Typography>
           </Paper>
         ) : (
@@ -88,26 +96,26 @@ export default function NhanKhauTable({
                       {nhanKhau.hoTen}
                     </Typography>
                     <Chip
-                      label={nhanKhau.gioiTinh || 'N/A'}
+                      label={getGenderLabel(nhanKhau.gioiTinh)}
                       size="small"
                       color={nhanKhau.gioiTinh === 'Nam' ? 'primary' : 'secondary'}
                     />
                   </Box>
                   <Stack spacing={0.5}>
                     <Typography variant="body2" color="text.secondary">
-                      <strong>CCCD:</strong> {nhanKhau.cmndCccd || 'N/A'}
+                      <strong>{t('col_cccd')}:</strong> {nhanKhau.cmndCccd || t('no_info')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      <strong>Ngày sinh:</strong> {new Date(nhanKhau.ngaySinh).toLocaleDateString('vi-VN')} ({calculateAge(nhanKhau.ngaySinh)} tuổi)
+                      <strong>{t('col_dob')}:</strong> {new Date(nhanKhau.ngaySinh).toLocaleDateString('vi-VN')} ({calculateAge(nhanKhau.ngaySinh)} {t('label_age_suffix')})
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      <strong>Nghề nghiệp:</strong> {nhanKhau.ngheNghiep || 'N/A'}
+                      <strong>{t('col_job')}:</strong> {nhanKhau.ngheNghiep || t('no_info')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      <strong>Quan hệ:</strong> {nhanKhau.quanHeVoiChuHo}
+                      <strong>{t('col_relationship')}:</strong> {nhanKhau.quanHeVoiChuHo}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      <strong>Mã HK:</strong> {nhanKhau.maHoKhau || 'N/A'}
+                      <strong>{t('col_household_code')}:</strong> {nhanKhau.maHoKhau || t('no_info')}
                     </Typography>
                   </Stack>
                 </CardContent>
@@ -117,7 +125,7 @@ export default function NhanKhauTable({
                     variant="outlined"
                     onClick={() => handleViewDetail(nhanKhau)}
                   >
-                    Chi tiết
+                    {t('tooltip_view_details')}
                   </Button>
                   <Button
                     size="small"
@@ -125,7 +133,7 @@ export default function NhanKhauTable({
                     color="primary"
                     onClick={() => handleOpenEditForm(nhanKhau)}
                   >
-                    Sửa
+                    {t('tooltip_edit')}
                   </Button>
                   <IconButton
                     size="small"
@@ -155,16 +163,16 @@ export default function NhanKhauTable({
           <Table sx={{ width: '100%', tableLayout: 'fixed' }} size="small" stickyHeader>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 'bold', width: '5%', bgcolor: 'background.paper', zIndex: 1 }}>STT</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', width: '18%', bgcolor: 'background.paper', zIndex: 1 }}>Họ và Tên</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', width: '11%', bgcolor: 'background.paper', zIndex: 1 }}>Ngày sinh</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', width: '6%', bgcolor: 'background.paper', zIndex: 1 }}>Tuổi</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', width: '9%', bgcolor: 'background.paper', zIndex: 1 }}>Giới tính</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', width: '12%', bgcolor: 'background.paper', zIndex: 1 }}>CCCD</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', width: '14%', bgcolor: 'background.paper', zIndex: 1 }}>Nghề nghiệp</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', width: '11%', bgcolor: 'background.paper', zIndex: 1 }}>Quan hệ</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', width: '10%', bgcolor: 'background.paper', zIndex: 1 }}>Mã HK</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 'bold', width: '14%', bgcolor: 'background.paper', zIndex: 1 }}>Thao tác</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', width: '5%', bgcolor: 'background.paper', zIndex: 1 }}>{t('col_stt')}</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', width: '18%', bgcolor: 'background.paper', zIndex: 1 }}>{t('col_fullname')}</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', width: '11%', bgcolor: 'background.paper', zIndex: 1 }}>{t('col_dob')}</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', width: '6%', bgcolor: 'background.paper', zIndex: 1 }}>{t('col_age')}</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', width: '9%', bgcolor: 'background.paper', zIndex: 1 }}>{t('col_gender')}</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', width: '12%', bgcolor: 'background.paper', zIndex: 1 }}>{t('col_cccd')}</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', width: '14%', bgcolor: 'background.paper', zIndex: 1 }}>{t('col_job')}</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', width: '11%', bgcolor: 'background.paper', zIndex: 1 }}>{t('col_relationship')}</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', width: '10%', bgcolor: 'background.paper', zIndex: 1 }}>{t('col_household_code')}</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 'bold', width: '14%', bgcolor: 'background.paper', zIndex: 1 }}>{t('col_actions')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -188,20 +196,20 @@ export default function NhanKhauTable({
                   <TableCell>{calculateAge(nhanKhau.ngaySinh)}</TableCell>
                   <TableCell>
                     <Chip
-                      label={nhanKhau.gioiTinh || 'N/A'}
+                      label={getGenderLabel(nhanKhau.gioiTinh)}
                       size="small"
                       color={nhanKhau.gioiTinh === 'Nam' ? 'primary' : 'secondary'}
                       sx={{ fontSize: '0.75rem', height: 24 }}
                     />
                   </TableCell>
-                  <TableCell sx={{ fontSize: '0.85rem' }}>{nhanKhau.cmndCccd || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: '0.85rem' }}>{nhanKhau.cmndCccd || t('no_info')}</TableCell>
                   <TableCell sx={{
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap'
                   }}>
-                    <Tooltip title={nhanKhau.ngheNghiep || 'N/A'}>
-                      <span>{nhanKhau.ngheNghiep || 'N/A'}</span>
+                    <Tooltip title={nhanKhau.ngheNghiep || t('no_info')}>
+                      <span>{nhanKhau.ngheNghiep || t('no_info')}</span>
                     </Tooltip>
                   </TableCell>
                   <TableCell>
@@ -212,10 +220,10 @@ export default function NhanKhauTable({
                       sx={{ fontSize: '0.7rem', height: 24 }}
                     />
                   </TableCell>
-                  <TableCell sx={{ fontSize: '0.85rem' }}>{nhanKhau.maHoKhau || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: '0.85rem' }}>{nhanKhau.maHoKhau || t('no_info')}</TableCell>
                   <TableCell align="center">
                     <Stack direction="row" spacing={0.5} justifyContent="center">
-                      <Tooltip title="Xem chi tiết">
+                      <Tooltip title={t('tooltip_view_details')}>
                         <IconButton
                           size="small"
                           color="info"
@@ -224,7 +232,7 @@ export default function NhanKhauTable({
                           <VisibilityIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Chỉnh sửa">
+                      <Tooltip title={t('tooltip_edit')}>
                         <IconButton
                           size="small"
                           color="primary"
@@ -233,7 +241,7 @@ export default function NhanKhauTable({
                           <EditIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Xóa">
+                      <Tooltip title={t('tooltip_delete')}>
                         <IconButton
                           size="small"
                           color="error"
@@ -242,7 +250,7 @@ export default function NhanKhauTable({
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Thao tác khác">
+                      <Tooltip title={t('tooltip_more_actions')}>
                         <IconButton
                           size="small"
                           onClick={(e) => handleMenuClick(e, nhanKhau)}
@@ -258,7 +266,7 @@ export default function NhanKhauTable({
                 <TableRow>
                   <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
                     <Typography variant="body2" color="text.secondary">
-                      Không tìm thấy nhân khẩu nào
+                      {t('no_people_found')}
                     </Typography>
                   </TableCell>
                 </TableRow>

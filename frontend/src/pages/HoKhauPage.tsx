@@ -18,9 +18,11 @@ import type { HoKhauFormValues } from '../types/hoKhau';
 import { createHoKhau, getDanhSachHoKhau, updateHoKhau, deleteHoKhau } from '../api/hoKhauApi';
 import type { HoKhau } from '../api/hoKhauApi';
 import { useSnackbar } from 'notistack';
+import { useTranslation } from 'react-i18next';
 
 
 export default function HoKhauPage() {
+  const { t } = useTranslation('hoKhau');
   const location = useLocation();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
@@ -217,9 +219,9 @@ export default function HoKhauPage() {
     <> 
       <Box sx={{ width: '100%', maxWidth: '100%' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, width: '100%' }}>
-          <Typography variant="h4" sx={{ fontWeight: 'bold' }}>Quản lý Hộ khẩu</Typography>
+          <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{t('title')}</Typography>
           <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreateForm}>
-            Thêm hộ khẩu mới
+            {t('add_household')}
           </Button>
         </Box>
 
@@ -227,7 +229,7 @@ export default function HoKhauPage() {
         <Box sx={{ mb: 3, width: '100%' }}>
           <TextField
             fullWidth
-            placeholder="Tìm kiếm theo mã hộ khẩu, tên chủ hộ hoặc địa chỉ (ví dụ: Bùi Tiến Dũng HK055 hoặc Bùi Tiến Dũng Mộ Lao)..."
+            placeholder={t('search_placeholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{
@@ -255,11 +257,11 @@ export default function HoKhauPage() {
               <Table sx={{ width: '100%', tableLayout: 'fixed' }} size="small">
                 <TableHead>
                     <TableRow>
-                      <TableCell sx={{ fontWeight: 'bold', width: '6%' }}>STT</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '16%' }}>Mã Hộ khẩu</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '28%' }}>Tên Chủ hộ</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: '35%' }}>Địa chỉ</TableCell>
-                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Hành động</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '6%' }}>{t('col_stt')}</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '16%' }}>{t('col_household_id')}</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '28%' }}>{t('col_holder_name')}</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: '35%' }}>{t('col_address')}</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>{t('col_actions')}</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -272,13 +274,13 @@ export default function HoKhauPage() {
                       <TableCell>{row.chuHo?.hoTen}</TableCell>
                       <TableCell>{row.diaChi}</TableCell>
                       <TableCell align="center">
-                        <IconButton title="Xem chi tiết" color="primary" component={RouterLink} to={`/ho-khau/${row.maHoKhau}`}>
+                        <IconButton title={t('tooltip_view_details')} color="primary" component={RouterLink} to={`/ho-khau/${row.maHoKhau}`}>
                           <InfoIcon />
                         </IconButton>
-                        <IconButton title="Chỉnh sửa" color="secondary" onClick={() => handleOpenEditForm(row)}>
+                        <IconButton title={t('tooltip_edit')} color="secondary" onClick={() => handleOpenEditForm(row)}>
                           <EditIcon />
                         </IconButton>
-                        <IconButton title="Xóa" color="error" onClick={() => handleOpenDeleteDialog(row.id)}>
+                        <IconButton title={t('tooltip_delete')} color="error" onClick={() => handleOpenDeleteDialog(row.id)}>
                           <DeleteIcon />
                         </IconButton>
                       </TableCell>
@@ -288,7 +290,7 @@ export default function HoKhauPage() {
                     <TableRow>
                       <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
                         <Typography variant="body2" color="text.secondary">
-                          Không tìm thấy hộ khẩu nào
+                          {t('no_households_found')}
                         </Typography>
                       </TableCell>
                     </TableRow>
@@ -305,7 +307,7 @@ export default function HoKhauPage() {
           count={filteredHoKhauList.length}
           rowsPerPage={rowsPerPage}
           page={page}
-          labelRowsPerPage="Số hàng mỗi trang:"
+          labelRowsPerPage={t('rows_per_page')}
           labelDisplayedRows={({ from, to, count }) => `${from}-${to} của ${count !== -1 ? count : to}`}
           onPageChange={(_, newPage) => setPage(newPage)}
           onRowsPerPageChange={(event) => {
@@ -325,8 +327,8 @@ export default function HoKhauPage() {
         open={deleteDialogOpen}
         onClose={handleCloseDeleteDialog}
         onConfirm={handleDeleteConfirm}
-        title="Xác nhận xóa"
-        message="Bạn có chắc chắn muốn xóa hộ khẩu này không? Hành động này không thể hoàn tác."
+        title={t('confirm_delete_title')}
+        message={t('confirm_delete_message')}
       />
     </>
   );
