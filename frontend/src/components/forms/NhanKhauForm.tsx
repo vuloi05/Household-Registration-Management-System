@@ -1,5 +1,5 @@
 // src/components/forms/NhanKhauForm.tsx
-
+import { useTranslation } from 'react-i18next';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, TextField, Box, Divider, Typography,
@@ -25,6 +25,7 @@ interface NhanKhauFormProps {
 }
 
 export default function NhanKhauForm({ open, onClose, onSubmit, initialData, showMaHoKhauField = false }: NhanKhauFormProps) {
+  const { t } = useTranslation('nhanKhau');
   const isEditMode = !!initialData;
   const [qrPollingModalOpen, setQrPollingModalOpen] = useState(false);
 
@@ -105,18 +106,18 @@ export default function NhanKhauForm({ open, onClose, onSubmit, initialData, sho
       <Box component="form" onSubmit={handleSubmit(handleFormSubmit)}>
         <DialogTitle sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography variant="h6" component="div">
-            {isEditMode ? 'Cập nhật Nhân khẩu' : 'Thêm Nhân khẩu mới'}
+            {isEditMode ? t('form_edit_title') : t('form_add_title')}
           </Typography>
-          <Tooltip title="Quét từ AppSheet">
+          <Tooltip title={t('form_scan_from_appsheet')}>
             <Button size="small" variant="outlined" startIcon={<QrCodeScannerIcon fontSize="small" />} onClick={() => setQrPollingModalOpen(true)}>
-              Quét QR
+              {t('form_scan_qr')}
             </Button>
           </Tooltip>
         </DialogTitle>
         <DialogContent>
           
           {/* === THÔNG TIN CÁ NHÂN === */}
-          <Typography variant="subtitle1" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>Thông tin cá nhân</Typography>
+          <Typography variant="subtitle1" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>{t('form_section_personal')}</Typography>
           <Box
             sx={{
               display: 'grid',
@@ -124,32 +125,32 @@ export default function NhanKhauForm({ open, onClose, onSubmit, initialData, sho
               gap: 2,
             }}
           >
-            <Controller name="hoTen" control={control} render={({ field }) => ( <TextField {...field} autoFocus required label="Họ và Tên" error={!!errors.hoTen} helperText={errors.hoTen?.message} /> )} />
-            <Controller name="biDanh" control={control} render={({ field }) => ( <TextField {...field} label="Bí danh" /> )} />
-            <Controller name="ngaySinh" control={control} render={({ field }) => ( <TextField {...field} required label="Ngày sinh" type="date" InputLabelProps={{ shrink: true }} error={!!errors.ngaySinh} helperText={errors.ngaySinh?.message} /> )} />
+            <Controller name="hoTen" control={control} render={({ field }) => ( <TextField {...field} autoFocus required label={t('label_fullname')} error={!!errors.hoTen} helperText={errors.hoTen?.message} /> )} />
+            <Controller name="biDanh" control={control} render={({ field }) => ( <TextField {...field} label={t('label_alias')} /> )} />
+            <Controller name="ngaySinh" control={control} render={({ field }) => ( <TextField {...field} required label={t('label_dob')} type="date" InputLabelProps={{ shrink: true }} error={!!errors.ngaySinh} helperText={errors.ngaySinh?.message} /> )} />
             <Controller 
               name="gioiTinh" 
               control={control} 
               render={({ field }) => ( 
                 <FormControl fullWidth>
-                  <InputLabel>Giới tính</InputLabel>
-                  <Select {...field} label="Giới tính">
-                    <MenuItem value="">Chọn giới tính</MenuItem>
-                    <MenuItem value="Nam">Nam</MenuItem>
-                    <MenuItem value="Nữ">Nữ</MenuItem>
+                  <InputLabel>{t('label_gender')}</InputLabel>
+                  <Select {...field} label={t('label_gender')}>
+                    <MenuItem value="">{t('form_select_gender')}</MenuItem>
+                    <MenuItem value="Nam">{t('gender_male')}</MenuItem>
+                    <MenuItem value="Nữ">{t('gender_female')}</MenuItem>
                   </Select>
                 </FormControl>
               )} 
             />
-            <Controller name="noiSinh" control={control} render={({ field }) => ( <TextField {...field} label="Nơi sinh" /> )} />
-            <Controller name="queQuan" control={control} render={({ field }) => ( <TextField {...field} label="Quê quán" /> )} />
-            <Controller name="danToc" control={control} render={({ field }) => ( <TextField {...field} label="Dân tộc" /> )} />
+            <Controller name="noiSinh" control={control} render={({ field }) => ( <TextField {...field} label={t('label_pob')} /> )} />
+            <Controller name="queQuan" control={control} render={({ field }) => ( <TextField {...field} label={t('label_hometown')} /> )} />
+            <Controller name="danToc" control={control} render={({ field }) => ( <TextField {...field} label={t('label_ethnicity')} /> )} />
           </Box>
           
           <Divider sx={{ my: 3 }} />
 
           {/* === THÔNG TIN CĂN CƯỚC & NGHỀ NGHIỆP === */}
-          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>Thông tin Căn cước & Nghề nghiệp</Typography>
+          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>{t('form_section_id_job')}</Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 2, }}>
             <Controller 
               name="cmndCccd" 
@@ -158,22 +159,22 @@ export default function NhanKhauForm({ open, onClose, onSubmit, initialData, sho
                 <TextField 
                   {...field} 
                   required 
-                  label="Số CMND/CCCD" 
+                  label={t('label_cccd_number')} 
                   error={!!errors.cmndCccd} 
                   helperText={errors.cmndCccd?.message}
                 /> 
               )} 
             />
-            <Controller name="ngayCap" control={control} render={({ field }) => ( <TextField {...field} required label="Ngày cấp" type="date" InputLabelProps={{ shrink: true }} error={!!errors.ngayCap} helperText={errors.ngayCap?.message} /> )} />
-            <Controller name="noiCap" control={control} render={({ field }) => ( <TextField {...field} required label="Nơi cấp" error={!!errors.noiCap} helperText={errors.noiCap?.message} /> )} />
-            <Controller name="ngheNghiep" control={control} render={({ field }) => ( <TextField {...field} label="Nghề nghiệp" /> )} />
-            <Controller name="noiLamViec" control={control} render={({ field }) => ( <TextField {...field} label="Nơi làm việc" /> )} />
+            <Controller name="ngayCap" control={control} render={({ field }) => ( <TextField {...field} required label={t('label_issue_date')} type="date" InputLabelProps={{ shrink: true }} error={!!errors.ngayCap} helperText={errors.ngayCap?.message} /> )} />
+            <Controller name="noiCap" control={control} render={({ field }) => ( <TextField {...field} required label={t('label_issue_place')} error={!!errors.noiCap} helperText={errors.noiCap?.message} /> )} />
+            <Controller name="ngheNghiep" control={control} render={({ field }) => ( <TextField {...field} label={t('label_job')} /> )} />
+            <Controller name="noiLamViec" control={control} render={({ field }) => ( <TextField {...field} label={t('label_workplace')} /> )} />
           </Box>
 
           <Divider sx={{ my: 3 }} />
 
           {/* === THÔNG TIN CƯ TRÚ === */}
-          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>Thông tin Cư trú</Typography>
+          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>{t('form_section_residence')}</Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 2, }}>
             {showMaHoKhauField && (
               <Controller 
@@ -183,22 +184,22 @@ export default function NhanKhauForm({ open, onClose, onSubmit, initialData, sho
                   <TextField 
                     {...field} 
                     required 
-                    label="Mã hộ khẩu" 
+                    label={t('label_household_code')} 
                     error={!!errors.maHoKhau} 
-                    helperText={errors.maHoKhau?.message || 'Nhập mã hộ khẩu để thêm nhân khẩu vào hộ'} 
+                    helperText={errors.maHoKhau?.message || t('form_helper_household_code')} 
                   /> 
                 )} 
               />
             )}
-            <Controller name="quanHeVoiChuHo" control={control} render={({ field }) => ( <TextField {...field} required label="Quan hệ với chủ hộ" error={!!errors.quanHeVoiChuHo} helperText={errors.quanHeVoiChuHo?.message} /> )} />
-            <Controller name="ngayDangKyThuongTru" control={control} render={({ field }) => ( <TextField {...field} label="Ngày ĐK thường trú" type="date" InputLabelProps={{ shrink: true }} /> )} />
-            <Controller name="diaChiTruocKhiChuyenDen" control={control} render={({ field }) => ( <TextField {...field} label="Địa chỉ trước đây" /> )} />
+            <Controller name="quanHeVoiChuHo" control={control} render={({ field }) => ( <TextField {...field} required label={t('label_relationship_with_holder')} error={!!errors.quanHeVoiChuHo} helperText={errors.quanHeVoiChuHo?.message} /> )} />
+            <Controller name="ngayDangKyThuongTru" control={control} render={({ field }) => ( <TextField {...field} label={t('label_registration_date')} type="date" InputLabelProps={{ shrink: true }} /> )} />
+            <Controller name="diaChiTruocKhiChuyenDen" control={control} render={({ field }) => ( <TextField {...field} label={t('label_previous_address')} /> )} />
           </Box>
 
         </DialogContent>
         <DialogActions sx={{ p: '0 24px 16px' }}>
-          <Button onClick={onClose}>Hủy</Button>
-          <Button type="submit" variant="contained">Lưu</Button>
+          <Button onClick={onClose}>{t('form_button_cancel')}</Button>
+          <Button type="submit" variant="contained">{t('form_button_save')}</Button>
         </DialogActions>
         <QRPollingModal open={qrPollingModalOpen} onClose={() => setQrPollingModalOpen(false)} onReceiveQRCode={handleQRSuccess} />
       </Box>

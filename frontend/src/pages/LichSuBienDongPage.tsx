@@ -1,6 +1,7 @@
 // src/pages/LichSuBienDongPage.tsx
 
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Typography,
@@ -50,21 +51,22 @@ const getChipColor = (loaiBienDong: string) => {
   }
 };
 
-const getLoaiBienDongLabel = (loaiBienDong: string) => {
-  switch (loaiBienDong) {
-    case 'CHUYEN_DI':
-      return 'Chuyển đi';
-    case 'QUA_DOI':
-      return 'Qua đời';
-    case 'TAM_VANG':
-      return 'Tạm vắng';
-    default:
-      return loaiBienDong.replace('_', ' ');
-  }
-};
-
 export default function LichSuBienDongPage() {
+  const { t } = useTranslation('bienDong');
   const { enqueueSnackbar } = useSnackbar();
+
+  const getLoaiBienDongLabel = (loaiBienDong: string) => {
+    switch (loaiBienDong) {
+      case 'CHUYEN_DI':
+        return t('type_chuyen_di');
+      case 'QUA_DOI':
+        return t('type_qua_doi');
+      case 'TAM_VANG':
+        return t('type_tam_vang');
+      default:
+        return loaiBienDong.replace('_', ' ');
+    }
+  };
 
   const [lichSuList, setLichSuList] = useState<BienDongNhanKhauDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,12 +92,12 @@ export default function LichSuBienDongPage() {
       })
       .catch(error => {
         console.error('Error fetching lich su bien dong:', error);
-        enqueueSnackbar('Không thể tải lịch sử biến động.', { variant: 'error' });
+        enqueueSnackbar(t('error_loading'), { variant: 'error' });
       })
       .finally(() => {
         setLoading(false);
       });
-  }, [enqueueSnackbar]);
+  }, [enqueueSnackbar, t]);
 
   const sortedAndFilteredList = useMemo(() => {
     let filtered = lichSuList.filter(item =>
@@ -167,7 +169,7 @@ export default function LichSuBienDongPage() {
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, width: '100%' }}>
         <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-          Lịch sử Biến động Nhân khẩu
+          {t('title')}
         </Typography>
       </Box>
 
@@ -175,7 +177,7 @@ export default function LichSuBienDongPage() {
       <Box sx={{ mb: 3, width: '100%' }}>
         <TextField
           fullWidth
-          placeholder="Tìm kiếm theo họ tên, CCCD, mã hộ khẩu..."
+          placeholder={t('search_placeholder')}
           value={searchTerm}
           onChange={(e) => handleSearchChange(e.target.value)}
           InputProps={{
@@ -210,7 +212,7 @@ export default function LichSuBienDongPage() {
           variant="outlined"
           size="small"
         >
-          {showFilters ? 'Ẩn bộ lọc' : 'Hiển thị bộ lọc'}
+          {showFilters ? t('hide_filters') : t('show_filters')}
         </Button>
       </Box>
 
@@ -219,16 +221,16 @@ export default function LichSuBienDongPage() {
         <Paper sx={{ p: 2, mb: 3, bgcolor: 'background.default' }}>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <FormControl fullWidth size="small">
-              <InputLabel>Loại biến động</InputLabel>
+              <InputLabel>{t('filter_label_type')}</InputLabel>
               <Select
                 value={loaiBienDongFilter}
-                label="Loại biến động"
+                label={t('filter_label_type')}
                 onChange={(e) => handleFilterChange(e.target.value)}
               >
-                <MenuItem value="ALL">Tất cả</MenuItem>
-                <MenuItem value="CHUYEN_DI">Chuyển đi</MenuItem>
-                <MenuItem value="QUA_DOI">Qua đời</MenuItem>
-                <MenuItem value="TAM_VANG">Tạm vắng</MenuItem>
+                <MenuItem value="ALL">{t('filter_all')}</MenuItem>
+                <MenuItem value="CHUYEN_DI">{t('type_chuyen_di')}</MenuItem>
+                <MenuItem value="QUA_DOI">{t('type_qua_doi')}</MenuItem>
+                <MenuItem value="TAM_VANG">{t('type_tam_vang')}</MenuItem>
               </Select>
             </FormControl>
             <Button
@@ -238,7 +240,7 @@ export default function LichSuBienDongPage() {
               onClick={handleClearFilters}
               sx={{ minWidth: { sm: '150px' } }}
             >
-              Xóa bộ lọc
+              {t('clear_filters')}
             </Button>
           </Stack>
         </Paper>
@@ -246,9 +248,7 @@ export default function LichSuBienDongPage() {
 
       {/* Kết quả tìm kiếm */}
       <Box sx={{ mb: 2 }}>
-        <Typography variant="body2" color="text.secondary">
-          Tìm thấy <strong>{sortedAndFilteredList.length}</strong> biến động
-        </Typography>
+        <Typography variant="body2" color="text.secondary" dangerouslySetInnerHTML={{ __html: t('found_total', { count: sortedAndFilteredList.length }) }} />
       </Box>
 
       {/* Bảng dữ liệu */}
@@ -268,7 +268,7 @@ export default function LichSuBienDongPage() {
                       direction={sortConfig.key === 'ngayBienDong' ? sortConfig.direction : 'asc'}
                       onClick={() => handleSortRequest('ngayBienDong')}
                     >
-                      Ngày biến động
+                      {t('col_date')}
                     </TableSortLabel>
                   </TableCell>
                   <TableCell sx={{ fontWeight: 'bold', width: '18%' }}>
@@ -277,14 +277,14 @@ export default function LichSuBienDongPage() {
                       direction={sortConfig.key === 'hoTenNhanKhau' ? sortConfig.direction : 'asc'}
                       onClick={() => handleSortRequest('hoTenNhanKhau')}
                     >
-                      Họ tên
+                      {t('col_name')}
                     </TableSortLabel>
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '12%' }}>CCCD</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '12%' }}>Mã Hộ khẩu</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>Loại biến động</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Ghi chú</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '12%' }}>Người ghi nhận</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '12%' }}>{t('col_cccd')}</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '12%' }}>{t('col_household_code')}</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '14%' }}>{t('col_type')}</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>{t('col_notes')}</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '12%' }}>{t('col_recorder')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -325,7 +325,7 @@ export default function LichSuBienDongPage() {
                   <TableRow>
                     <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
                       <Typography variant="body2" color="text.secondary">
-                        {lichSuList.length > 0 ? 'Không tìm thấy kết quả phù hợp.' : 'Chưa có lịch sử biến động nào.'}
+                        {lichSuList.length > 0 ? t('no_results_found') : t('no_history_found')}
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -345,10 +345,8 @@ export default function LichSuBienDongPage() {
         page={page}
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
-        labelRowsPerPage="Số hàng mỗi trang:"
-        labelDisplayedRows={({ from, to, count }) =>
-          `${from}-${to} của ${count}`
-        }
+        labelRowsPerPage={t('rows_per_page')}
+        labelDisplayedRows={({ from, to, count }) => t('pagination_display', { from, to, count })}
       />
     </Box>
   );

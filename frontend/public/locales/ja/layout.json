@@ -1,0 +1,12 @@
+{
+  "header_title": "住民管理システム",
+  "sidebar_dashboard": "ダッシュボード",
+  "sidebar_user_management": "ユーザー管理",
+  "sidebar_household_management": "世帯管理",
+  "sidebar_person_management": "個人管理",
+  "sidebar_change_history": "変更履歴",
+  "sidebar_absence_residence": "一時不在・一時居住",
+  "sidebar_fee_management": "料金管理",
+  "greeting": "こんにちは、{{name}}さん",
+  "logout": "ログアウト"
+}

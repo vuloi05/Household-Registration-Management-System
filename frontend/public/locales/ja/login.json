@@ -1,0 +1,10 @@
+{
+  "login_button": "ログイン",
+  "username_label": "ユーザー名",
+  "password_label": "パスワード",
+  "login_title": "システムにログイン",
+  "login_failed": "ユーザー名またはパスワードが正しくありません。",
+  "username_required": "ユーザー名は必須です",
+  "password_required": "パスワードは必須です",
+  "logging_in": "ログインしています..."
+}

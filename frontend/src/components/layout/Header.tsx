@@ -1,10 +1,13 @@
 // src/components/layout/Header.tsx
 import { AppBar, Toolbar, Typography } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import NotificationButton from '../notifications/NotificationButton';
+import LanguageSwitcher from '../shared/LanguageSwitcher';
 
 const drawerWidth = 240;
 
 export default function Header() {
+  const { t } = useTranslation('layout');
 
   return (
     <AppBar
@@ -18,8 +21,9 @@ export default function Header() {
     >
       <Toolbar>
         <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-          Hệ thống Quản lý Dân Cư
+          {t('layout:header_title')}
         </Typography>
+        <LanguageSwitcher />
         <NotificationButton />
       </Toolbar>
     </AppBar>

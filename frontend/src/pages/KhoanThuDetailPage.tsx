@@ -1,8 +1,9 @@
 // src/pages/KhoanThuDetailPage.tsx
-
+import { useTranslation } from 'react-i18next';
 import { Box, Typography, Paper, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, TextField, InputAdornment, IconButton } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { useSnackbar } from 'notistack';
 import PeopleIcon from '@mui/icons-material/People';
 import PaidIcon from '@mui/icons-material/Paid';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -33,8 +34,10 @@ const makeSearchableText = (item: LichSuNopTien): string => {
     };
 
 export default function KhoanThuDetailPage() {
+  const { t } = useTranslation('thuPhi');
   const { khoanThuId } = useParams<{ khoanThuId: string }>();
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
   const [khoanThu, setKhoanThu] = useState<KhoanThu | null>(null);
   const [lichSuList, setLichSuList] = useState<LichSuNopTien[]>([]);
   const [thongKe, setThongKe] = useState<ThongKeKhoanThu | null>(null);
@@ -68,12 +71,15 @@ export default function KhoanThuDetailPage() {
           const allHouseholds = await getDanhSachHoKhau();
           setAllHouseholds(allHouseholds);
           setUnpaidHouseholds(allHouseholds.filter(h => !paidHouseholdIds.has(h.id)));
-        } catch (error) { console.error('Failed to fetch details:', error); } 
+        } catch (error) { 
+          console.error('Failed to fetch details:', error);
+          enqueueSnackbar(t('error_fetching_details'), { variant: 'error' });
+        } 
         finally { setLoading(false); }
       };
       fetchData();
     }
-  }, [khoanThuId]);
+  }, [khoanThuId, enqueueSnackbar, t]);
 
   // Fetch all households once for UNPAID export
   useEffect(() => {
@@ -173,7 +179,7 @@ export default function KhoanThuDetailPage() {
   }
 
   if (!khoanThu || !thongKe) {
-    return <Typography>Không tìm thấy thông tin khoản thu.</Typography>;
+    return <Typography>{t('fee_not_found')}</Typography>;
   }
 
   return (
@@ -185,12 +191,12 @@ export default function KhoanThuDetailPage() {
         sx={{ mb: 2 }}
         variant="outlined"
       >
-        Quay lại
+        {t('back_button')}
       </Button>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-          Chi tiết Khoản thu: {khoanThu.tenKhoanThu}
+          {t('detail_page_title', { name: khoanThu.tenKhoanThu })}
         </Typography>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
           {/* Nút xuất Excel và PDF - hiển thị cho cả Bắt buộc và Đóng góp */}
@@ -208,7 +214,7 @@ export default function KhoanThuDetailPage() {
               }
             }}
           >
-            Xuất Excel
+            {t('export_excel')}
           </Button>
           <Button
             variant="outlined"
@@ -224,7 +230,7 @@ export default function KhoanThuDetailPage() {
               }
             }}
           >
-            Xuất PDF
+            {t('export_pdf')}
           </Button>
         </Box>
       </Box>
@@ -256,13 +262,13 @@ export default function KhoanThuDetailPage() {
         }}
       >
         <StatCard 
-            title="Số hộ đã nộp" 
+            title={t('stat_paid_households')}
             value={`${thongKe.soHoDaNop} / ${thongKe.tongSoHo}`}
             icon={<PeopleIcon sx={{ fontSize: 40 }} />}
             color="info.main"
         />
         <StatCard 
-            title="Tổng số tiền đã thu" 
+            title={t('stat_total_collected')}
             value={formatCurrency(thongKe.tongSoTien)}
             icon={<PaidIcon sx={{ fontSize: 40 }} />}
             color="success.main"
@@ -274,7 +280,7 @@ export default function KhoanThuDetailPage() {
         <TextField
           fullWidth
           variant="outlined"
-          placeholder="Tìm kiếm theo họ tên, địa chỉ, ngày nộp, số tiền..."
+          placeholder={t('search_placeholder')}
           value={searchTerm}
           onChange={handleSearchChange}
           InputProps={{
@@ -310,20 +316,20 @@ export default function KhoanThuDetailPage() {
           }}
         />
         <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-          Bạn có thể nhập cả Họ tên và Địa chỉ để tìm kiếm : Nguyễn Đức Trung Hà Nội
+          {t('search_helper')}
         </Typography>
       </Box>
       
       <Paper sx={{ p: 2, width: '100%' }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>Danh sách các hộ đã nộp</Typography>
+        <Typography variant="h6" sx={{ mb: 2 }}>{t('paid_list_title')}</Typography>
         <TableContainer sx={{ width: '100%' }}>
           <Table sx={{ width: '100%', tableLayout: 'fixed' }}>
             <TableHead>
                 <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold', width: '30%' }}>Họ tên Chủ hộ</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', width: '40%' }}>Địa chỉ</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Ngày nộp</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 'bold', width: '10%' }}>Số tiền</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', width: '30%' }}>{t('col_holder_name')}</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', width: '40%' }}>{t('col_address')}</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>{t('col_payment_date')}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold', width: '10%' }}>{t('col_amount')}</TableCell>
                 </TableRow>
             </TableHead>
             <TableBody>
@@ -342,19 +348,19 @@ export default function KhoanThuDetailPage() {
 
       <Box sx={{ mt: 3 }}>
         <Button variant="outlined" onClick={() => setShowUnpaid(!showUnpaid)}>
-          {showUnpaid ? 'Ẩn danh sách hộ chưa nộp' : 'Hiển thị danh sách hộ chưa nộp'}
+          {showUnpaid ? t('hide_unpaid_list') : t('show_unpaid_list')}
         </Button>
       </Box>
 
       {showUnpaid && (
         <Paper sx={{ p: 2, width: '100%', mt: 2 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>Danh sách các hộ chưa nộp</Typography>
+          <Typography variant="h6" sx={{ mb: 2 }}>{t('unpaid_list_title')}</Typography>
           <TableContainer sx={{ width: '100%' }}>
             <Table sx={{ width: '100%', tableLayout: 'fixed' }}>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold', width: '40%' }}>Họ tên Chủ hộ</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', width: '60%' }}>Địa chỉ</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '40%' }}>{t('col_holder_name')}</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '60%' }}>{t('col_address')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

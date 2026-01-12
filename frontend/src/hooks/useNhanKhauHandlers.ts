@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react';
 import { useSnackbar } from 'notistack';
+import { useTranslation } from 'react-i18next';
 import {
   createNhanKhauManagement,
   updateNhanKhauManagement,
@@ -34,12 +35,13 @@ export function useNhanKhauHandlers({
   selectedNhanKhau,
 }: UseNhanKhauHandlersProps) {
   const { enqueueSnackbar } = useSnackbar();
+  const { t } = useTranslation('nhanKhau');
 
   // Xử lý thêm nhân khẩu
   const handleAddNhanKhau = useCallback(async (data: NhanKhauFormValues) => {
     try {
       await createNhanKhauManagement(data);
-      enqueueSnackbar('Thêm nhân khẩu thành công', { variant: 'success' });
+      enqueueSnackbar(t('add_success'), { variant: 'success' });
       setFormOpen(false);
       loadNhanKhauData(); // Reload data
     } catch (error: unknown) {
@@ -51,13 +53,13 @@ export function useNhanKhauHandlers({
         if (axiosError.response?.data?.error) {
           enqueueSnackbar(axiosError.response.data.error, { variant: 'error' });
         } else {
-          enqueueSnackbar('Không thể thêm nhân khẩu', { variant: 'error' });
+          enqueueSnackbar(t('error_adding'), { variant: 'error' });
         }
       } else {
-        enqueueSnackbar('Không thể thêm nhân khẩu', { variant: 'error' });
+        enqueueSnackbar(t('error_adding'), { variant: 'error' });
       }
     }
-  }, [enqueueSnackbar, setFormOpen, loadNhanKhauData]);
+  }, [enqueueSnackbar, setFormOpen, loadNhanKhauData, t]);
 
   // Xử lý cập nhật nhân khẩu
   const handleUpdateNhanKhau = useCallback(async (data: NhanKhauFormValues) => {
@@ -65,16 +67,16 @@ export function useNhanKhauHandlers({
 
     try {
       await updateNhanKhauManagement(selectedNhanKhau.id, data);
-      enqueueSnackbar('Cập nhật nhân khẩu thành công', { variant: 'success' });
+      enqueueSnackbar(t('update_success'), { variant: 'success' });
       setFormOpen(false);
       setSelectedNhanKhau(null);
       setEditingNhanKhau(null);
       loadNhanKhauData(); // Reload data
     } catch (error) {
       console.error('Error updating nhan khau:', error);
-      enqueueSnackbar('Không thể cập nhật nhân khẩu', { variant: 'error' });
+      enqueueSnackbar(t('error_updating'), { variant: 'error' });
     }
-  }, [selectedNhanKhau, enqueueSnackbar, setFormOpen, setSelectedNhanKhau, setEditingNhanKhau, loadNhanKhauData]);
+  }, [selectedNhanKhau, enqueueSnackbar, setFormOpen, setSelectedNhanKhau, setEditingNhanKhau, loadNhanKhauData, t]);
 
   // Xử lý xóa nhân khẩu
   const handleDeleteNhanKhau = useCallback(async () => {
@@ -82,21 +84,21 @@ export function useNhanKhauHandlers({
 
     try {
       await deleteNhanKhauManagement(selectedNhanKhau.id);
-      enqueueSnackbar('Xóa nhân khẩu thành công', { variant: 'success' });
+      enqueueSnackbar(t('delete_success'), { variant: 'success' });
       setDeleteDialogOpen(false);
       setSelectedNhanKhau(null);
       loadNhanKhauData(); // Reload data
     } catch (error) {
       console.error('Error deleting nhan khau:', error);
-      enqueueSnackbar('Không thể xóa nhân khẩu', { variant: 'error' });
+      enqueueSnackbar(t('error_deleting'), { variant: 'error' });
     }
-  }, [selectedNhanKhau, enqueueSnackbar, setDeleteDialogOpen, setSelectedNhanKhau, loadNhanKhauData]);
+  }, [selectedNhanKhau, enqueueSnackbar, setDeleteDialogOpen, setSelectedNhanKhau, loadNhanKhauData, t]);
 
   // Xử lý ghi nhận biến động
   const handleBienDongSubmit = useCallback(async (data: BienDongNhanKhauFormValues) => {
     try {
       await ghiNhanBienDong(data);
-      enqueueSnackbar('Ghi nhận biến động thành công', { variant: 'success' });
+      enqueueSnackbar(t('record_change_success'), { variant: 'success' });
       setBienDongFormOpen(false);
       loadNhanKhauData();
     } catch (error: unknown) {
@@ -106,13 +108,13 @@ export function useNhanKhauHandlers({
         if (axiosError.response?.data?.error) {
           enqueueSnackbar(axiosError.response.data.error, { variant: 'error' });
         } else {
-          enqueueSnackbar('Không thể ghi nhận biến động', { variant: 'error' });
+          enqueueSnackbar(t('error_record_change'), { variant: 'error' });
         }
       } else {
-        enqueueSnackbar('Không thể ghi nhận biến động', { variant: 'error' });
+        enqueueSnackbar(t('error_record_change'), { variant: 'error' });
       }
     }
-  }, [enqueueSnackbar, setBienDongFormOpen, loadNhanKhauData]);
+  }, [enqueueSnackbar, setBienDongFormOpen, loadNhanKhauData, t]);
 
   // Xử lý mở form thêm mới
   const handleOpenAddForm = useCallback(() => {
@@ -161,4 +163,3 @@ export function useNhanKhauHandlers({
     handleOpenBienDongForm,
   };
 }
-

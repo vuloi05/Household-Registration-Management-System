@@ -7,6 +7,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import HomeIcon from '@mui/icons-material/Home';
 import GroupsIcon from '@mui/icons-material/Groups';
 import TransferWithinAStationIcon from '@mui/icons-material/TransferWithinAStation';
+import { useTranslation } from 'react-i18next';
 
 // Sửa lại import
 import { getThongKeDoTuoi, getThongKeTongQuan, getThongKeGioiTinh } from '../api/thongKeApi';
@@ -18,6 +19,7 @@ import StatCard from '../components/dashboard/StatCard';
 import DoTuoiChart from '../components/dashboard/DoTuoiChart';
 
 export default function DashboardPage() {
+  const { t } = useTranslation('dashboard');
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [tongQuanData, setTongQuanData] = useState<ThongKeTongQuan | null>(null);
@@ -76,10 +78,10 @@ export default function DashboardPage() {
             mb: 0.5
           }}
         >
-          Bảng điều khiển
+          {t('title')}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Thống kê và phân tích dữ liệu quản lý hộ khẩu
+          {t('subtitle')}
         </Typography>
       </Box>
       
@@ -98,36 +100,40 @@ export default function DashboardPage() {
         }}
       >
         <StatCard 
-          title="Tổng hộ khẩu" 
+          title={t('total_households')} 
           value={soHoKhau}
           icon={<HomeIcon sx={{ fontSize: 36 }} />}
           color="#1976d2"
           detailLink="/ho-khau"
           onDetailClick={() => navigate('/ho-khau')}
+          detailText={t('view_details')}
         />
         <StatCard 
-          title="Tổng nhân khẩu" 
+          title={t('total_persons')}
           value={soNhanKhau}
           icon={<PeopleIcon sx={{ fontSize: 36 }} />}
           color="#2e7d32"
           detailLink="/nhan-khau"
           onDetailClick={() => navigate('/nhan-khau')}
+          detailText={t('view_details')}
         />
         <StatCard 
-          title="Tạm vắng" 
+          title={t('temporary_absence')}
           value={soTamVang}
           icon={<TransferWithinAStationIcon sx={{ fontSize: 36 }} />}
           color="#ed6c02"
           detailLink="/tam-vang-tam-tru"
           onDetailClick={() => navigate('/tam-vang-tam-tru')}
+          detailText={t('view_details')}
         />
         <StatCard 
-          title="Tạm trú" 
+          title={t('temporary_residence')}
           value={soTamTru}
           icon={<GroupsIcon sx={{ fontSize: 36 }} />}
           color="#00bcd4"
           detailLink="/tam-vang-tam-tru"
           onDetailClick={() => navigate('/tam-vang-tam-tru')}
+          detailText={t('view_details')}
         />
       </Box>
 
@@ -153,7 +159,7 @@ export default function DashboardPage() {
           }}
         >
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-            Phân bố theo độ tuổi
+            {t('age_distribution')}
           </Typography>
           <Divider sx={{ mb: 3 }} />
           {doTuoiData && <DoTuoiChart data={doTuoiData} colors={ageGroupColors} />}
@@ -170,7 +176,7 @@ export default function DashboardPage() {
           }}
         >
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-            Chi tiết phân loại
+            {t('detailed_classification')}
           </Typography>
           <Divider sx={{ mb: 3 }} />
           
@@ -178,12 +184,12 @@ export default function DashboardPage() {
             {doTuoiData && Object.entries(doTuoiData).map(([nhom, soLuong], index) => {
               const percent = soNhanKhau > 0 ? ((soLuong / soNhanKhau) * 100).toFixed(1) : 0;
               const labelMap: Record<string, string> = {
-                '0-5': 'Mầm non (0-5)',
-                '6-10': 'Cấp 1 (6-10)',
-                '11-14': 'Cấp 2 (11-14)',
-                '15-17': 'Cấp 3 (15-17)',
-                '18-60': 'Độ tuổi lao động (18-60)',
-                '>60': 'Nghỉ hưu (>60)',
+                '0-5': t('age_group_0_5'),
+                '6-10': t('age_group_6_10'),
+                '11-14': t('age_group_11_14'),
+                '15-17': t('age_group_15_17'),
+                '18-60': t('age_group_18_60'),
+                '>60': t('age_group_over_60'),
               };
               
               return (
@@ -193,7 +199,7 @@ export default function DashboardPage() {
                       {labelMap[nhom] || nhom}
                     </Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {soLuong} người ({percent}%)
+                      {soLuong} {t('people')} ({percent}%)
                     </Typography>
                   </Box>
                   <Box 
@@ -224,7 +230,7 @@ export default function DashboardPage() {
           {gioiTinhData && (
             <Box sx={{ mb: 3 }}>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                Phân bố theo giới tính
+                {t('gender_distribution')}
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                 {Object.entries(gioiTinhData).map(([gender, count], index) => {
@@ -237,7 +243,7 @@ export default function DashboardPage() {
                           {gender}
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {count} người ({percent}%)
+                          {count} {t('people')} ({percent}%)
                         </Typography>
                       </Box>
                       <Box
@@ -269,23 +275,23 @@ export default function DashboardPage() {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Typography variant="body2" color="text.secondary">
-                Tổng số hộ
+                {t('total_households_summary')}
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {soHoKhau} hộ
+                {soHoKhau} {t('households')}
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Typography variant="body2" color="text.secondary">
-                Tổng nhân khẩu
+                {t('total_persons')}
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {soNhanKhau} người
+                {soNhanKhau} {t('people')}
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Typography variant="body2" color="text.secondary">
-                Tỷ lệ tạm trú
+                {t('temporary_residence_rate')}
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
                 {soNhanKhau > 0 ? ((soTamTru / soNhanKhau) * 100).toFixed(1) : 0}%

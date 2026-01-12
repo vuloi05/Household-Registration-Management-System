@@ -10,9 +10,10 @@ interface StatCardProps {
   color?: string;
   detailLink?: string;
   onDetailClick?: () => void;
+  detailText?: string;
 }
 
-export default function StatCard({ title, value, icon, color = '#1976d2', detailLink, onDetailClick }: StatCardProps) {
+export default function StatCard({ title, value, icon, color = '#1976d2', detailLink, onDetailClick, detailText }: StatCardProps) {
   return (
     <Card 
       elevation={0}
@@ -89,7 +90,7 @@ export default function StatCard({ title, value, icon, color = '#1976d2', detail
                 }
               }}
             >
-              Xem chi tiết
+              {detailText || 'Xem chi tiết'}
             </Button>
           </Box>
         )}

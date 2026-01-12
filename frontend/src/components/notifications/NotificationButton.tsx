@@ -1,5 +1,6 @@
 // src/components/notifications/NotificationButton.tsx
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   IconButton,
   Badge,
@@ -16,7 +17,7 @@ import {
 } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import { getPaymentNotifications, markNotificationAsRead, markAllNotificationsAsRead, getUnreadNotificationCount, type PaymentNotification } from '../../api/paymentApi';
-import { formatCurrency } from '../../utils/formatUtils';
+import { formatCurrency, formatDateByLang } from '../../utils/formatUtils';
 
 // Nếu formatUtils chưa có, sử dụng hàm này
 const formatCurrencyFallback = (value: number) => {
@@ -27,6 +28,7 @@ const formatCurrencyFallback = (value: number) => {
 };
 
 export default function NotificationButton() {
+  const { t } = useTranslation('notifications');
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [notifications, setNotifications] = useState<PaymentNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -96,17 +98,6 @@ export default function NotificationButton() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date);
-  };
-
   return (
     <>
       <IconButton
@@ -143,7 +134,7 @@ export default function NotificationButton() {
         <Paper>
           <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-              Thông báo thanh toán
+              {t('title')}
             </Typography>
             {unreadCount > 0 && (
               <Button
@@ -152,7 +143,7 @@ export default function NotificationButton() {
                 disabled={loading}
                 sx={{ textTransform: 'none' }}
               >
-                {loading ? <CircularProgress size={16} /> : 'Đánh dấu tất cả đã đọc'}
+                {loading ? <CircularProgress size={16} /> : t('mark_all_read')}
               </Button>
             )}
           </Box>
@@ -161,7 +152,7 @@ export default function NotificationButton() {
           {notifications.length === 0 ? (
             <Box sx={{ p: 3, textAlign: 'center' }}>
               <Typography variant="body2" color="text.secondary">
-                Chưa có thông báo nào
+                {t('no_notifications')}
               </Typography>
             </Box>
           ) : (
@@ -190,22 +181,22 @@ export default function NotificationButton() {
                             fontWeight: notification.daXem ? 'normal' : 'bold',
                           }}
                         >
-                          {notification.nguoiThanhToan} đã thanh toán
+                          {t('payment_notification', { name: notification.nguoiThanhToan })}
                         </Typography>
                       }
                       secondary={
                         <Box>
                           <Typography variant="body2" color="text.secondary">
-                            Khoản thu: {notification.khoanThuTen}
+                            {t('fee_label')}: {notification.khoanThuTen}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            Hộ khẩu: {notification.hoKhauTen}
+                            {t('household_label')}: {notification.hoKhauTen}
                           </Typography>
                           <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'success.main', mt: 0.5 }}>
                             {formatCurrency(notification.soTien) || formatCurrencyFallback(notification.soTien)}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {formatDate(notification.ngayThanhToan)}
+                            {formatDateByLang(notification.ngayThanhToan)}
                           </Typography>
                         </Box>
                       }

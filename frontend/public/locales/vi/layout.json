@@ -1,0 +1,12 @@
+{
+  "header_title": "Hệ thống Quản lý Dân Cư",
+  "sidebar_dashboard": "Bảng điều khiển",
+  "sidebar_user_management": "Quản lý Người dùng",
+  "sidebar_household_management": "Quản lý Hộ khẩu",
+  "sidebar_person_management": "Quản lý Nhân khẩu",
+  "sidebar_change_history": "Lịch sử Biến động",
+  "sidebar_absence_residence": "Tạm vắng / Tạm trú",
+  "sidebar_fee_management": "Quản lý Thu phí",
+  "greeting": "Chào, {{name}}",
+  "logout": "Đăng xuất"
+}

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 // src/pages/UserPage.tsx
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
@@ -79,6 +80,7 @@ function getErrorMessage(error: unknown, defaultMessage: string): string {
 }
 
 export default function UserPage() {
+  const { t } = useTranslation('user');
   const { enqueueSnackbar } = useSnackbar();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -103,7 +105,7 @@ export default function UserPage() {
     username: '',
     password: '',
     fullName: '',
-    role: 'ROLE_ACCOUNTANT' as 'ROLE_ADMIN' | 'ROLE_ACCOUNTANT',
+    role: 'ROLE_ACCOUNTANT' as 'ROLE_ADMIN' | 'ROLE_ACCOUNTANT' | 'ROLE_RESIDENT',
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -120,11 +122,11 @@ export default function UserPage() {
       setTotalElements(response.totalElements);
     } catch (error) {
       console.error('Error loading users:', error);
-      enqueueSnackbar('Không thể tải danh sách người dùng', { variant: 'error' });
+      enqueueSnackbar(t('error_loading_users'), { variant: 'error' });
     } finally {
       setLoading(false);
     }
-  }, [page, rowsPerPage, debouncedSearchTerm, enqueueSnackbar]);
+  }, [page, rowsPerPage, debouncedSearchTerm, enqueueSnackbar, t]);
 
   // Load data when dependencies change
   useEffect(() => {
@@ -192,23 +194,23 @@ export default function UserPage() {
     const errors: Record<string, string> = {};
 
     if (!formData.username.trim()) {
-      errors.username = 'Tên đăng nhập không được để trống';
+      errors.username = t('validation_username_required');
     }
 
     if (!editingUser && !formData.password.trim()) {
-      errors.password = 'Mật khẩu không được để trống';
+      errors.password = t('validation_password_required');
     }
 
     if (formData.password && formData.password.length < 6) {
-      errors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
+      errors.password = t('validation_password_min_length');
     }
 
     if (!formData.fullName.trim()) {
-      errors.fullName = 'Họ tên không được để trống';
+      errors.fullName = t('validation_fullname_required');
     }
 
     if (!formData.role) {
-      errors.role = 'Vui lòng chọn vai trò';
+      errors.role = t('validation_role_required');
     }
 
     setFormErrors(errors);
@@ -238,17 +240,17 @@ export default function UserPage() {
       if (editingUser) {
         // Update user
         await updateUser(editingUser.id!, formData);
-        enqueueSnackbar('Cập nhật người dùng thành công', { variant: 'success' });
+        enqueueSnackbar(t('update_user_success'), { variant: 'success' });
       } else {
         // Create user
         await createUser(formData);
-        enqueueSnackbar('Thêm người dùng thành công', { variant: 'success' });
+        enqueueSnackbar(t('add_user_success'), { variant: 'success' });
       }
       handleCloseDialog();
       loadUsers();
     } catch (error: unknown) {
       console.error('Error saving user:', error);
-      const defaultMessage = editingUser ? 'Không thể cập nhật người dùng' : 'Không thể thêm người dùng';
+      const defaultMessage = editingUser ? t('update_user_error') : t('add_user_error');
       const errorMessage = getErrorMessage(error, defaultMessage);
       enqueueSnackbar(errorMessage, { variant: 'error' });
     }
@@ -272,24 +274,40 @@ export default function UserPage() {
 
     try {
       await deleteUser(userToDelete.id);
-      enqueueSnackbar('Xóa người dùng thành công', { variant: 'success' });
+      enqueueSnackbar(t('delete_user_success'), { variant: 'success' });
       handleCloseDeleteDialog();
       loadUsers();
     } catch (error: unknown) {
       console.error('Error deleting user:', error);
-      const errorMessage = getErrorMessage(error, 'Không thể xóa người dùng');
+      const errorMessage = getErrorMessage(error, t('delete_user_error'));
       enqueueSnackbar(errorMessage, { variant: 'error' });
     }
   };
 
   // Get role label
   const getRoleLabel = (role: string) => {
-    return role === 'ROLE_ADMIN' ? 'Quản trị viên' : 'Kế toán';
+    switch (role) {
+      case 'ROLE_ADMIN':
+        return t('role_admin');
+      case 'ROLE_ACCOUNTANT':
+        return t('role_accountant');
+      case 'ROLE_RESIDENT':
+        return t('role_resident');
+      default:
+        return role;
+    }
   };
 
   // Get role color
-  const getRoleColor = (role: string): 'error' | 'primary' => {
-    return role === 'ROLE_ADMIN' ? 'error' : 'primary';
+  const getRoleColor = (role: string): 'error' | 'primary' | 'default' => {
+    switch (role) {
+      case 'ROLE_ADMIN':
+        return 'error';
+      case 'ROLE_ACCOUNTANT':
+        return 'primary';
+      default:
+        return 'default';
+    }
   };
 
   // Memoized displayed data
@@ -306,7 +324,7 @@ export default function UserPage() {
                 {user.fullName}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Tên đăng nhập: {user.username}
+                {t('username')}: {user.username}
               </Typography>
             </Box>
             <Chip 
@@ -323,7 +341,7 @@ export default function UserPage() {
           startIcon={<EditIcon />}
           onClick={() => handleOpenEditDialog(user)}
         >
-          Sửa
+          {t('edit')}
         </Button>
         <Button
           size="small"
@@ -331,7 +349,7 @@ export default function UserPage() {
           startIcon={<DeleteIcon />}
           onClick={() => handleOpenDeleteDialog(user)}
         >
-          Xóa
+          {t('delete')}
         </Button>
       </CardActions>
     </Card>
@@ -363,7 +381,7 @@ export default function UserPage() {
         mb={3}
       >
         <Typography variant={isMobile ? 'h5' : 'h4'} fontWeight="bold">
-          Quản lý người dùng
+          {t('title')}
         </Typography>
         <Button
           variant="contained"
@@ -371,14 +389,14 @@ export default function UserPage() {
           onClick={handleOpenCreateDialog}
           fullWidth={isMobile}
         >
-          Thêm người dùng
+          {t('add_user')}
         </Button>
       </Stack>
 
       {/* Search */}
       <TextField
         fullWidth
-        placeholder="Tìm kiếm theo tên đăng nhập, họ tên, vai trò..."
+        placeholder={t('search_placeholder')}
         value={searchTerm}
         onChange={handleSearchChange}
         sx={{ mb: 3 }}
@@ -406,7 +424,7 @@ export default function UserPage() {
           {displayedUsers.length === 0 ? (
             <Paper sx={{ p: 3, textAlign: 'center' }}>
               <Typography color="text.secondary">
-                Không tìm thấy người dùng
+                {t('no_users_found')}
               </Typography>
             </Paper>
           ) : (
@@ -419,11 +437,11 @@ export default function UserPage() {
           <Table stickyHeader>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 'bold' }}>Tên đăng nhập</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Họ tên</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Vai trò</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>{t('username')}</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>{t('full_name')}</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>{t('role')}</TableCell>
                 <TableCell sx={{ fontWeight: 'bold', textAlign: 'center' }}>
-                  Thao tác
+                  {t('actions')}
                 </TableCell>
               </TableRow>
             </TableHead>
@@ -432,7 +450,7 @@ export default function UserPage() {
                 <TableRow>
                   <TableCell colSpan={4} align="center">
                     <Typography color="text.secondary">
-                      Không tìm thấy người dùng
+                      {t('no_users_found')}
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -481,9 +499,9 @@ export default function UserPage() {
         rowsPerPage={rowsPerPage}
         onRowsPerPageChange={handleChangeRowsPerPage}
         rowsPerPageOptions={[10, 25, 50]}
-        labelRowsPerPage={isMobile ? 'Số dòng:' : 'Số dòng mỗi trang:'}
+        labelRowsPerPage={t('rows_per_page')}
         labelDisplayedRows={({ from, to, count }) =>
-          `${from}-${to} trong ${count}`
+          t('pagination_display', { from, to, count })
         }
         sx={{
           mt: 2,
@@ -502,12 +520,12 @@ export default function UserPage() {
         fullScreen={isMobile}
       >
         <DialogTitle>
-          {editingUser ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới'}
+          {editingUser ? t('edit_user_title') : t('add_user_title')}
         </DialogTitle>
         <DialogContent>
           <Stack spacing={2.5} sx={{ mt: 1 }}>
             <TextField
-              label="Tên đăng nhập"
+              label={t('username')}
               value={formData.username}
               onChange={(e) => handleFormChange('username', e.target.value)}
               error={!!formErrors.username}
@@ -516,20 +534,20 @@ export default function UserPage() {
               required
             />
             <TextField
-              label="Mật khẩu"
+              label={t('password')}
               type="password"
               value={formData.password}
               onChange={(e) => handleFormChange('password', e.target.value)}
               error={!!formErrors.password}
               helperText={
                 formErrors.password ||
-                (editingUser ? 'Để trống nếu không muốn thay đổi' : '')
+                (editingUser ? t('password_edit_helper') : '')
               }
               fullWidth
               required={!editingUser}
             />
             <TextField
-              label="Họ tên"
+              label={t('full_name')}
               value={formData.fullName}
               onChange={(e) => handleFormChange('fullName', e.target.value)}
               error={!!formErrors.fullName}
@@ -538,14 +556,15 @@ export default function UserPage() {
               required
             />
             <FormControl fullWidth required error={!!formErrors.role}>
-              <InputLabel>Vai trò</InputLabel>
+              <InputLabel>{t('role')}</InputLabel>
               <Select
                 value={formData.role}
                 onChange={(e) => handleFormChange('role', e.target.value)}
-                label="Vai trò"
+                label={t('role')}
               >
-                <MenuItem value="ROLE_ADMIN">Quản trị viên</MenuItem>
-                <MenuItem value="ROLE_ACCOUNTANT">Kế toán</MenuItem>
+                <MenuItem value="ROLE_ADMIN">{t('role_admin')}</MenuItem>
+                <MenuItem value="ROLE_ACCOUNTANT">{t('role_accountant')}</MenuItem>
+                <MenuItem value="ROLE_RESIDENT">{t('role_resident')}</MenuItem>
               </Select>
               {formErrors.role && (
                 <FormHelperText>{formErrors.role}</FormHelperText>
@@ -554,9 +573,9 @@ export default function UserPage() {
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={handleCloseDialog}>Hủy</Button>
+          <Button onClick={handleCloseDialog}>{t('cancel')}</Button>
           <Button variant="contained" onClick={handleSubmit}>
-            {editingUser ? 'Cập nhật' : 'Thêm'}
+            {editingUser ? t('update') : t('add')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -568,16 +587,14 @@ export default function UserPage() {
         maxWidth="xs"
         fullWidth
       >
-        <DialogTitle>Xác nhận xóa</DialogTitle>
+        <DialogTitle>{t('confirm_delete_title')}</DialogTitle>
         <DialogContent>
-          <Typography>
-            Bạn có chắc chắn muốn xóa người dùng <strong>{userToDelete?.fullName}</strong>?
-          </Typography>
+          <Typography dangerouslySetInnerHTML={{ __html: t('confirm_delete_message', { name: userToDelete?.fullName }) }} />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={handleCloseDeleteDialog}>Hủy</Button>
+          <Button onClick={handleCloseDeleteDialog}>{t('cancel')}</Button>
           <Button variant="contained" color="error" onClick={handleDelete}>
-            Xóa
+            {t('delete')}
           </Button>
         </DialogActions>
       </Dialog>

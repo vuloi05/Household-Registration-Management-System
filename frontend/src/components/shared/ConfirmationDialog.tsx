@@ -1,5 +1,5 @@
 // src/components/shared/ConfirmationDialog.tsx
-
+import { useTranslation } from 'react-i18next';
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 
 interface ConfirmationDialogProps {
@@ -11,6 +11,8 @@ interface ConfirmationDialogProps {
 }
 
 export default function ConfirmationDialog({ open, onClose, onConfirm, title, message }: ConfirmationDialogProps) {
+  const { t } = useTranslation('common');
+
   return (
     <Dialog
       open={open}
@@ -21,9 +23,9 @@ export default function ConfirmationDialog({ open, onClose, onConfirm, title, me
         <DialogContentText>{message}</DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Hủy</Button>
+        <Button onClick={onClose}>{t('cancel')}</Button>
         <Button onClick={onConfirm} color="primary" autoFocus>
-          Đồng ý
+          {t('confirm')}
         </Button>
       </DialogActions>
     </Dialog>

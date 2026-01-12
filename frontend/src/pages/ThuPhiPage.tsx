@@ -4,6 +4,7 @@ import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton
 } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -27,6 +28,8 @@ import ConfirmationDialog from '../components/shared/ConfirmationDialog';
 
 import InfoIcon from '@mui/icons-material/Info'; // Import icon Xem chi tiết
 import { Link as RouterLink } from 'react-router-dom'; 
+import { useSnackbar } from 'notistack';
+import { formatDateByLang } from '../utils/formatUtils';
 
 /**
  * Hàm helper để format số thành định dạng tiền tệ VNĐ.
@@ -42,6 +45,8 @@ const formatCurrency = (value: number | null | undefined) => {
  * Trang chính để quản lý các khoản thu phí và đóng góp.
  */
 export default function ThuPhiPage() {
+  const { t } = useTranslation('thuPhi');
+  const { enqueueSnackbar } = useSnackbar();
   // === CÁC STATE QUẢN LÝ DỮ LIỆU VÀ GIAO DIỆN ===
   const [khoanThuList, setKhoanThuList] = useState<KhoanThu[]>([]);
   const [danhSachHoKhau, setDanhSachHoKhau] = useState<HoKhau[]>([]);
@@ -72,12 +77,12 @@ export default function ThuPhiPage() {
         setDanhSachHoKhau(hoKhauData);
       } catch (error) { 
         console.error('Failed to fetch page data:', error); 
-        // Có thể thêm state để hiển thị thông báo lỗi ra UI
+        enqueueSnackbar(t('error_fetching_fees'), { variant: 'error' });
       } 
       finally { setLoading(false); }
     };
     fetchData();
-  }, []); // Mảng rỗng đảm bảo chỉ chạy 1 lần
+  }, [enqueueSnackbar, t]); // Mảng rỗng đảm bảo chỉ chạy 1 lần
 
   // === CÁC HÀM XỬ LÝ SỰ KIỆN ===
 
@@ -90,12 +95,17 @@ export default function ThuPhiPage() {
       if (editingKhoanThu) {
         const updated = await updateKhoanThu(editingKhoanThu.id, data);
         setKhoanThuList(list => list.map(item => item.id === updated.id ? updated : item));
+        enqueueSnackbar(t('update_fee_success'), { variant: 'success' });
       } else {
         const created = await createKhoanThu(data);
         setKhoanThuList(prevList => [...prevList, created]);
+        enqueueSnackbar(t('add_fee_success'), { variant: 'success' });
       }
       handleCloseForm();
-    } catch (error) { console.error('Failed to submit KhoanThu form:', error); }
+    } catch (error) {
+      console.error('Failed to submit KhoanThu form:', error);
+      enqueueSnackbar(editingKhoanThu ? t('error_updating_fee') : t('error_adding_fee'), { variant: 'error' });
+    }
   };
 
   // ---- Logic cho Dialog Xóa Khoản thu ----
@@ -106,8 +116,12 @@ export default function ThuPhiPage() {
     try {
       await deleteKhoanThu(deletingKhoanThuId);
       setKhoanThuList(list => list.filter(item => item.id !== deletingKhoanThuId));
+      enqueueSnackbar(t('delete_fee_success'), { variant: 'success' });
       handleCloseDeleteDialog();
-    } catch (error) { console.error("Failed to delete KhoanThu:", error); }
+    } catch (error) {
+      console.error("Failed to delete KhoanThu:", error);
+      enqueueSnackbar(t('error_deleting_fee'), { variant: 'error' });
+    }
   };
 
   // ---- Logic cho Form Ghi nhận Nộp tiền ----
@@ -132,10 +146,10 @@ export default function ThuPhiPage() {
             };
             await ghiNhanNopTien(payload);
             handleCloseNopTienForm();
-            alert('Ghi nhận nộp tiền thành công!');
+            enqueueSnackbar(t('add_payment_success'), { variant: 'success' });
     } catch (error) {
       console.error("Failed to submit nop tien:", error);
-      alert('Có lỗi xảy ra, vui lòng thử lại.');
+      enqueueSnackbar(t('add_payment_error'), { variant: 'error' });
     }
   };
 
@@ -145,9 +159,9 @@ export default function ThuPhiPage() {
       <Box sx={{ width: '100%', maxWidth: '100%' }}>
         {/* Header của trang */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, width: '100%' }}>
-          <Typography variant="h4" sx={{ fontWeight: 'bold' }}>Quản lý Thu phí</Typography>
+          <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{t('title')}</Typography>
           <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreateForm}>
-            Tạo khoản thu mới
+            {t('add_fee')}
           </Button>
         </Box>
         
@@ -162,34 +176,34 @@ export default function ThuPhiPage() {
                     <Table sx={{ width: '100%', tableLayout: 'fixed' }}>
                         <TableHead>
                             <TableRow>
-                                <TableCell sx={{ fontWeight: 'bold', width: '30%' }}>Tên khoản thu</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', width: '15%' }}>Loại</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Ngày tạo</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 'bold', width: '20%' }}>Đơn giá/Nhân khẩu</TableCell>
-                                <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Hành động</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', width: '30%' }}>{t('col_name')}</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', width: '15%' }}>{t('col_type')}</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>{t('col_date')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 'bold', width: '20%' }}>{t('col_price_per_person')}</TableCell>
+                                <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>{t('col_actions')}</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {khoanThuList.map((row) => (
                             <TableRow key={row.id} hover>
                                 <TableCell>{row.tenKhoanThu}</TableCell>
-                                <TableCell>{row.loaiKhoanThu === 'BAT_BUOC' ? 'Bắt buộc' : 'Đóng góp'}</TableCell>
-                                <TableCell>{row.ngayTao}</TableCell>
+                                <TableCell>{row.loaiKhoanThu === 'BAT_BUOC' ? t('type_mandatory') : t('type_voluntary')}</TableCell>
+                                <TableCell>{formatDateByLang(row.ngayTao)}</TableCell>
                                 <TableCell align="right">{formatCurrency(row.soTienTrenMotNhanKhau)}</TableCell>
                                 
 
                                 <TableCell align="center">
                                     <IconButton 
-                                      title="Xem chi tiết & thống kê" color = "primary" size="small" component={RouterLink} to={`/thu-phi/${row.id}`}>
+                                      title={t('tooltip_view_details')} color = "primary" size="small" component={RouterLink} to={`/thu-phi/${row.id}`}>
                                       <InfoIcon fontSize="small" />
                                     </IconButton>
-                                    <IconButton title="Ghi nhận nộp tiền" size="small" color="success" onClick={() => handleOpenNopTienForm(row.id)}>
+                                    <IconButton title={t('tooltip_record_payment')} size="small" color="success" onClick={() => handleOpenNopTienForm(row.id)}>
                                       <PaymentIcon fontSize="small" />
                                     </IconButton>
-                                    <IconButton title="Chỉnh sửa" size="small" onClick={() => handleOpenEditForm(row)}>
+                                    <IconButton title={t('tooltip_edit')} size="small" onClick={() => handleOpenEditForm(row)}>
                                       <EditIcon fontSize="small" />
                                     </IconButton>
-                                    <IconButton title="Xóa" size="small" color="error" onClick={() => handleOpenDeleteDialog(row.id)}>
+                                    <IconButton title={t('tooltip_delete')} size="small" color="error" onClick={() => handleOpenDeleteDialog(row.id)}>
                                       <DeleteIcon fontSize="small" />
                                     </IconButton>
                                 </TableCell>
@@ -214,8 +228,8 @@ export default function ThuPhiPage() {
         open={deletingKhoanThuId !== null}
         onClose={handleCloseDeleteDialog}
         onConfirm={handleDeleteConfirm}
-        title="Xác nhận Xóa Khoản thu"
-        message="Bạn có chắc chắn muốn xóa khoản thu này? Toàn bộ lịch sử nộp tiền liên quan cũng có thể bị ảnh hưởng."
+        title={t('delete_confirm_title')}
+        message={t('delete_confirm_message')}
       />
       <NopTienForm
         open={openNopTienForm}

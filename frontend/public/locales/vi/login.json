@@ -1,0 +1,10 @@
+{
+  "login_button": "Đăng nhập",
+  "username_label": "Tài khoản",
+  "password_label": "Mật khẩu",
+  "login_title": "Đăng nhập vào hệ thống",
+  "login_failed": "Tên đăng nhập hoặc mật khẩu không chính xác.",
+  "username_required": "Tên đăng nhập là bắt buộc",
+  "password_required": "Mật khẩu là bắt buộc",
+  "logging_in": "Đang đăng nhập..."
+}
