@@ -34,14 +34,19 @@ import {
   Select,
   MenuItem,
   FormHelperText,
+  Avatar,
 } from '@mui/material';
 import {
   Search as SearchIcon,
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
+  Person as PersonIcon,
+  AdminPanelSettings as AdminIcon,
+  AccountBalance as AccountantIcon,
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
+import { motion } from 'framer-motion';
 import {
   getAllUsers,
   createUser,
@@ -310,6 +315,18 @@ export default function UserPage() {
     }
   };
 
+  // Get role icon
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'ROLE_ADMIN':
+        return <AdminIcon />;
+      case 'ROLE_ACCOUNTANT':
+        return <AccountantIcon />;
+      default:
+        return <PersonIcon />;
+    }
+  };
+
   // Memoized displayed data
   const displayedUsers = useMemo(() => userList, [userList]);
 
@@ -432,15 +449,71 @@ export default function UserPage() {
           )}
         </>
       ) : (
-        /* Desktop table view */
-        <TableContainer component={Paper}>
+        /* Desktop table view - Modern Design */
+        <TableContainer 
+          component={Paper}
+          sx={{
+            borderRadius: 3,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            overflow: 'hidden',
+            border: '1px solid',
+            borderColor: 'divider'
+          }}
+        >
           <Table stickyHeader>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 'bold' }}>{t('username')}</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>{t('full_name')}</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>{t('role')}</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+                <TableCell 
+                  sx={{ 
+                    fontWeight: 700,
+                    bgcolor: 'grey.50',
+                    color: 'text.primary',
+                    fontSize: '0.875rem',
+                    py: 2,
+                    borderBottom: '2px solid',
+                    borderColor: 'primary.main'
+                  }}
+                >
+                  {t('username')}
+                </TableCell>
+                <TableCell 
+                  sx={{ 
+                    fontWeight: 700,
+                    bgcolor: 'grey.50',
+                    color: 'text.primary',
+                    fontSize: '0.875rem',
+                    py: 2,
+                    borderBottom: '2px solid',
+                    borderColor: 'primary.main'
+                  }}
+                >
+                  {t('full_name')}
+                </TableCell>
+                <TableCell 
+                  sx={{ 
+                    fontWeight: 700,
+                    bgcolor: 'grey.50',
+                    color: 'text.primary',
+                    fontSize: '0.875rem',
+                    py: 2,
+                    borderBottom: '2px solid',
+                    borderColor: 'primary.main'
+                  }}
+                >
+                  {t('role')}
+                </TableCell>
+                <TableCell 
+                  align="center"
+                  sx={{ 
+                    fontWeight: 700,
+                    bgcolor: 'grey.50',
+                    color: 'text.primary',
+                    fontSize: '0.875rem',
+                    py: 2,
+                    borderBottom: '2px solid',
+                    borderColor: 'primary.main'
+                  }}
+                >
                   {t('actions')}
                 </TableCell>
               </TableRow>
@@ -448,39 +521,128 @@ export default function UserPage() {
             <TableBody>
               {displayedUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} align="center">
-                    <Typography color="text.secondary">
-                      {t('no_users_found')}
-                    </Typography>
+                  <TableCell colSpan={4} align="center" sx={{ py: 8 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                      <PersonIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
+                      <Typography color="text.secondary" variant="h6">
+                        {t('no_users_found')}
+                      </Typography>
+                    </Box>
                   </TableCell>
                 </TableRow>
               ) : (
-                displayedUsers.map((user) => (
-                  <TableRow key={user.id} hover>
-                    <TableCell>{user.username}</TableCell>
-                    <TableCell>{user.fullName}</TableCell>
-                    <TableCell>
+                displayedUsers.map((user, index) => (
+                  <TableRow 
+                    key={user.id} 
+                    component={motion.tr}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    sx={{
+                      '&:hover': {
+                        bgcolor: 'action.hover',
+                        transform: 'scale(1.001)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                        '& .action-buttons': {
+                          opacity: 1,
+                          transform: 'translateX(0)'
+                        }
+                      },
+                      transition: 'all 0.2s ease',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <TableCell sx={{ py: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Avatar
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            bgcolor: 'primary.main',
+                            fontSize: '1rem',
+                            fontWeight: 700,
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                          }}
+                        >
+                          {user.fullName.charAt(0).toUpperCase()}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.2, mb: 0.5 }}>
+                            {user.username}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            ID: {user.id}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ py: 2 }}>
+                      <Typography variant="body2" fontWeight={600}>
+                        {user.fullName}
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ py: 2 }}>
                       <Chip
+                        icon={getRoleIcon(user.role)}
                         label={getRoleLabel(user.role)}
                         color={getRoleColor(user.role)}
                         size="small"
+                        sx={{ 
+                          fontWeight: 600,
+                          height: 28,
+                          '& .MuiChip-icon': {
+                            fontSize: '1rem'
+                          }
+                        }}
                       />
                     </TableCell>
-                    <TableCell align="center">
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => handleOpenEditDialog(user)}
+                    <TableCell align="center" sx={{ py: 2 }}>
+                      <Box 
+                        className="action-buttons"
+                        sx={{ 
+                          display: 'flex', 
+                          gap: 1, 
+                          justifyContent: 'center',
+                          opacity: { xs: 1, md: 0.6 },
+                          transform: { xs: 'translateX(0)', md: 'translateX(-5px)' },
+                          transition: 'all 0.3s ease'
+                        }}
                       >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleOpenDeleteDialog(user)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleOpenEditDialog(user)}
+                          sx={{
+                            bgcolor: 'primary.main',
+                            color: 'white',
+                            width: 32,
+                            height: 32,
+                            '&:hover': {
+                              bgcolor: 'primary.dark',
+                              transform: 'scale(1.1)'
+                            },
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <EditIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleOpenDeleteDialog(user)}
+                          sx={{
+                            bgcolor: 'error.main',
+                            color: 'white',
+                            width: 32,
+                            height: 32,
+                            '&:hover': {
+                              bgcolor: 'error.dark',
+                              transform: 'scale(1.1)'
+                            },
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <DeleteIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))
@@ -490,26 +652,46 @@ export default function UserPage() {
         </TableContainer>
       )}
 
-      {/* Pagination */}
-      <TablePagination
-        component="div"
-        count={totalElements}
-        page={page}
-        onPageChange={handleChangePage}
-        rowsPerPage={rowsPerPage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-        rowsPerPageOptions={[10, 25, 50]}
-        labelRowsPerPage={t('rows_per_page')}
-        labelDisplayedRows={({ from, to, count }) =>
-          t('pagination_display', { from, to, count })
-        }
+      {/* Pagination - Modern Style */}
+      <Paper
         sx={{
           mt: 2,
-          '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
-            fontSize: isMobile ? '0.75rem' : '0.875rem',
-          },
+          borderRadius: 2,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          border: '1px solid',
+          borderColor: 'divider'
         }}
-      />
+      >
+        <TablePagination
+          component="div"
+          count={totalElements}
+          page={page}
+          onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[10, 25, 50]}
+          labelRowsPerPage={t('rows_per_page')}
+          labelDisplayedRows={({ from, to, count }) =>
+            t('pagination_display', { from, to, count })
+          }
+          sx={{
+            '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
+              fontSize: isMobile ? '0.75rem' : '0.875rem',
+              fontWeight: 500
+            },
+            '.MuiTablePagination-select': {
+              fontWeight: 600
+            },
+            '.MuiTablePagination-actions button': {
+              bgcolor: 'action.hover',
+              borderRadius: 1,
+              '&:hover': {
+                bgcolor: 'action.selected'
+              }
+            }
+          }}
+        />
+      </Paper>
 
       {/* User Form Dialog */}
       <Dialog 
