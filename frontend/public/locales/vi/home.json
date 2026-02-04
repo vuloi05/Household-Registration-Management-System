@@ -1,0 +1,108 @@
+{
+  "title": "Quản lý chung cư",
+  "nav": {
+    "home": "Trang chủ",
+    "services": "Dịch vụ",
+    "references": "Tài liệu tham khảo",
+    "about": "Về chúng tôi",
+    "contact": "Liên hệ",
+    "login": "Đăng nhập"
+  },
+  "hero": {
+    "title": "Chào mừng đến với Quản lý Chung cư",
+    "subtitle": "Hệ thống Quản lý Hộ khẩu và Cư dân",
+    "description": "Giải pháp hiện đại và hiệu quả cho việc quản lý hộ khẩu, cư dân và các dịch vụ hành chính trong cộng đồng.",
+    "explore_services": "Khám phá Dịch vụ",
+    "get_started": "Bắt đầu"
+  },
+  "services": {
+    "title": "Dịch vụ của chúng tôi",
+    "subtitle": "Giải pháp toàn diện cho quản lý chung cư hiện đại",
+    "household_management": {
+      "title": "Quản lý Hộ khẩu",
+      "description": "Quản lý hiệu quả thông tin hộ khẩu, đăng ký và cập nhật với nền tảng số hóa tinh gọn của chúng tôi."
+    },
+    "fee_management": {
+      "title": "Quản lý Thu phí",
+      "description": "Theo dõi, thu và quản lý các khoản phí với thông báo tự động và báo cáo chi tiết."
+    },
+    "admin_tools": {
+      "title": "Công cụ Quản trị",
+      "description": "Bảng điều khiển quản trị toàn diện với phân tích, báo cáo, và khả năng quản lý cư dân."
+    }
+  },
+  "references": {
+    "title": "Câu chuyện thành công",
+    "subtitle": "Được tin dùng bởi các cộng đồng trên toàn quốc",
+    "testimonials": {
+      "district": {
+        "title": "Văn phòng Quản lý Quận",
+        "content": "Hệ thống đã thay đổi hoàn toàn quy trình đăng ký hộ khẩu của chúng tôi. Những công việc trước đây mất hàng ngày giờ chỉ cần vài phút. Hệ thống trực quan và nhân viên thích nghi rất nhanh.",
+        "author": "Giám đốc Hành chính, TP. Hà Nội"
+      },
+      "community": {
+        "title": "Ban Quản lý Cộng đồng",
+        "content": "Mô-đun quản lý phí đã cách mạng hóa cách chúng tôi thu và theo dõi thanh toán. Tính minh bạch tăng lên và tranh chấp giảm đáng kể.",
+        "author": "Chủ tịch Ban Quản lý, TP. Hồ Chí Minh"
+      },
+      "city": {
+        "title": "Chính quyền Thành phố",
+        "content": "Tính năng phân tích và báo cáo cung cấp những hiểu biết vô giá về xu hướng nhân khẩu học. Dữ liệu này định hướng các quyết định quy hoạch đô thị của chúng tôi.",
+        "author": "Chuyên viên Quy hoạch Thành phố Đà Nẵng"
+      },
+      "ward": {
+        "title": "Văn phòng Phường",
+        "content": "Sự hài lòng của người dân đã cải thiện đáng kể. Hệ thống nhanh chóng, đáng tin cậy và đã giảm hơn 80% khối lượng giấy tờ.",
+        "author": "Trưởng Phường, Tỉnh Cần Thơ"
+      }
+    }
+  },
+  "about": {
+    "title": "Về chúng tôi",
+    "paragraph1": "Chúng tôi là nhà cung cấp hàng đầu các giải pháp chuyển đổi số cho quản lý công. Với nhiều năm kinh nghiệm trong hệ thống đăng ký hộ khẩu và quản lý cư dân, chúng tôi hiểu rõ những thách thức độc đáo mà các cơ quan chính quyền phải đối mặt.",
+    "paragraph2": "Sứ mệnh của chúng tôi là hiện đại hóa quy trình hành chính, giảm quan liêu, và nâng cao sự hài lòng của người dân thông qua các giải pháp công nghệ sáng tạo. Chúng tôi kết hợp phần mềm tiên tiến với thiết kế trực quan để tạo ra hệ thống vừa mạnh mẽ vừa dễ sử dụng.",
+    "paragraph3": "Được tin dùng bởi các cơ quan chính quyền trên toàn quốc, chúng tôi tiếp tục đặt ra tiêu chuẩn xuất sắc cho dịch vụ số trong khu vực công.",
+    "stats": {
+      "clients": "Khách hàng",
+      "households": "Hộ khẩu đăng ký",
+      "uptime": "Thời gian hoạt động",
+      "support": "Hỗ trợ"
+    }
+  },
+  "contact": {
+    "title": "Liên hệ với chúng tôi",
+    "subtitle": "Có thắc mắc? Chúng tôi rất muốn được nghe từ bạn.",
+    "form": {
+      "title": "Gửi tin nhắn cho chúng tôi",
+      "fullname": "Họ và tên",
+      "email": "Địa chỉ Email",
+      "subject": "Tiêu đề",
+      "message": "Nội dung",
+      "submit": "Gửi tin nhắn"
+    },
+    "info": {
+      "title": "Thông tin liên hệ",
+      "email": {
+        "label": "Email",
+        "value": "lienhe@quanlychungcu.vn"
+      },
+      "phone": {
+        "label": "Điện thoại",
+        "value": "+84 (024) 1234 5678"
+      },
+      "address": {
+        "label": "Địa chỉ",
+        "value": "123 Đường Lê Duẩn, Hà Nội, Việt Nam"
+      },
+      "hours": {
+        "title": "Giờ làm việc",
+        "weekdays": "Thứ Hai - Thứ Sáu: 8:00 - 18:00",
+        "saturday": "Thứ Bảy: 9:00 - 13:00",
+        "sunday": "Chủ Nhật: Nghỉ"
+      }
+    }
+  },
+  "footer": {
+    "copyright": "© 2025 Hệ thống Quản lý Chung cư. Bảo lưu mọi quyền."
+  }
+}

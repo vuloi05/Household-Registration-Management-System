@@ -229,28 +229,76 @@ export default function DashboardPage() {
 
           {gioiTinhData && (
             <Box sx={{ mb: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
                 {t('gender_distribution')}
               </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+              
+              {/* Gender Cards Layout */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {Object.entries(gioiTinhData).map(([gender, count], index) => {
-                  const colors = ['#1976d2', '#f50057'];
+                  const colors = ['#1976d2', '#d32f2f'];
+                  const bgColors = ['#e3f2fd', '#ffebee'];
+                  const icons = ['👨', '👩'];
                   const percent = soNhanKhau > 0 ? ((count / soNhanKhau) * 100).toFixed(1) : 0;
+                  
+                  // Map gender string to translation key
+                  const genderKey = gender === 'Nam' || gender === '男性' || gender === 'Male' ? 'male' : 'female';
+                  
                   return (
-                    <Box key={gender}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary' }}>
-                          {gender}
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {count} {t('people')} ({percent}%)
-                        </Typography>
+                    <Box 
+                      key={gender}
+                      sx={{
+                        p: 2.5,
+                        borderRadius: 2,
+                        bgcolor: bgColors[index % bgColors.length],
+                        border: '2px solid',
+                        borderColor: colors[index % colors.length],
+                        transition: 'all 0.3s ease',
+                        cursor: 'pointer',
+                        '&:hover': {
+                          boxShadow: `0 4px 12px ${colors[index % colors.length]}40`,
+                          transform: 'translateY(-2px)'
+                        }
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Box 
+                            sx={{ 
+                              fontSize: '2rem',
+                              bgcolor: 'white',
+                              width: 48,
+                              height: 48,
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              border: '2px solid',
+                              borderColor: colors[index % colors.length]
+                            }}
+                          >
+                            {icons[index % icons.length]}
+                          </Box>
+                          <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                            {t(genderKey)}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'right' }}>
+                          <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1, color: colors[index % colors.length] }}>
+                            {percent}%
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                            {count} {t('people')}
+                          </Typography>
+                        </Box>
                       </Box>
+                      
+                      {/* Progress bar */}
                       <Box
                         sx={{
                           width: '100%',
                           height: 8,
-                          bgcolor: 'grey.200',
+                          bgcolor: 'white',
                           borderRadius: 1,
                           overflow: 'hidden'
                         }}
@@ -260,7 +308,7 @@ export default function DashboardPage() {
                             width: `${percent}%`,
                             height: '100%',
                             bgcolor: colors[index % colors.length],
-                            transition: 'width 0.5s ease-in-out'
+                            transition: 'width 1s ease-in-out'
                           }}
                         />
                       </Box>
@@ -268,34 +316,109 @@ export default function DashboardPage() {
                   );
                 })}
               </Box>
+              
+              {/* Comparison indicator */}
+              <Box 
+                sx={{ 
+                  mt: 2, 
+                  p: 2, 
+                  borderRadius: 2, 
+                  bgcolor: 'grey.50',
+                  border: '1px dashed',
+                  borderColor: 'grey.300'
+                }}
+              >
+                <Typography variant="body2" color="text.secondary" align="center">
+                  📊 {t('total_persons')}: <strong>{soNhanKhau}</strong> {t('people')}
+                </Typography>
+              </Box>
             </Box>
           )}
 
           {/* Thống kê tóm tắt */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography variant="body2" color="text.secondary">
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* Tổng số hộ khẩu */}
+            <Box 
+              sx={{ 
+                p: 2.5,
+                borderRadius: 2,
+                bgcolor: '#e3f2fd',
+                border: '2px solid #1976d2',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                '&:hover': {
+                  boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
+                  transform: 'translateY(-2px)'
+                }
+              }}
+            >
+              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>
                 {t('total_households_summary')}
               </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {soHoKhau} {t('households')}
-              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: '#1976d2' }}>
+                  {soHoKhau}
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  {t('households')}
+                </Typography>
+              </Box>
             </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography variant="body2" color="text.secondary">
+
+            {/* Tổng dân số */}
+            <Box 
+              sx={{ 
+                p: 2.5,
+                borderRadius: 2,
+                bgcolor: '#f3e5f5',
+                border: '2px solid #9c27b0',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                '&:hover': {
+                  boxShadow: '0 4px 12px rgba(156, 39, 176, 0.3)',
+                  transform: 'translateY(-2px)'
+                }
+              }}
+            >
+              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>
                 {t('total_persons')}
               </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {soNhanKhau} {t('people')}
-              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: '#9c27b0' }}>
+                  {soNhanKhau}
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  {t('people')}
+                </Typography>
+              </Box>
             </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography variant="body2" color="text.secondary">
+
+            {/* Tỷ lệ tạm trú */}
+            <Box 
+              sx={{ 
+                p: 2.5,
+                borderRadius: 2,
+                bgcolor: '#e0f2f1',
+                border: '2px solid #00897b',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                '&:hover': {
+                  boxShadow: '0 4px 12px rgba(0, 137, 123, 0.3)',
+                  transform: 'translateY(-2px)'
+                }
+              }}
+            >
+              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>
                 {t('temporary_residence_rate')}
               </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {soNhanKhau > 0 ? ((soTamTru / soNhanKhau) * 100).toFixed(1) : 0}%
-              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: '#00897b' }}>
+                  {soNhanKhau > 0 ? ((soTamTru / soNhanKhau) * 100).toFixed(1) : 0}%
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  📊
+                </Typography>
+              </Box>
             </Box>
           </Box>
         </Paper>
