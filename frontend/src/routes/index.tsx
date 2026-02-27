@@ -1,9 +1,8 @@
 // src/routes/index.tsx
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import DashboardPage from '../pages/DashboardPage';
 import LoginPage from '../pages/LoginPage';
-import HomePage from '../pages/Home';
 import HoKhauPage from '../pages/HoKhauPage';
 import NhanKhauPage from '../pages/NhanKhauPage';
 import ThuPhiPage from '../pages/ThuPhiPage';
@@ -16,7 +15,7 @@ import UserPage from '../pages/UserPage';
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <HomePage />,
+    element: <Navigate to="/login" replace />,
   },
   {
     path: '/login',
