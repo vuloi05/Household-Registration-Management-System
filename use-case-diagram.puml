@@ -1,0 +1,77 @@
+@startuml
+' version: 1.2023.11
+
+!theme vibrant
+left to right direction
+
+' Define actors
+actor "Chuyên viên" as Admin
+actor "Kế toán" as Accountant
+actor "Người dùng chưa xác thực" as Guest
+
+rectangle "Hệ thống Quản lý Nhân khẩu" {
+  ' Define use cases for Guest
+  usecase "Đăng nhập" as UC_Login
+  usecase "Xem trang chủ" as UC_HomePage
+
+  ' Define common use cases for authenticated users
+  usecase "Đăng xuất" as UC_Logout
+  usecase "Tương tác với Chatbot" as UC_Chatbot
+  usecase "Xem Dashboard" as UC_Dashboard
+
+  ' Define use cases for Admin
+  package "Quản lý người dùng" as UC_UserMgmt {
+    usecase "Xem danh sách người dùng" as UC_ViewUsers
+    usecase "Tạo người dùng mới" as UC_CreateUser
+    usecase "Sửa thông tin người dùng" as UC_UpdateUser
+    usecase "Xóa người dùng" as UC_DeleteUser
+  }
+
+  package "Quản lý hộ khẩu" as UC_HoKhauMgmt {
+    usecase "Xem danh sách hộ khẩu" as UC_ViewHoKhau
+    usecase "Xem chi tiết hộ khẩu" as UC_ViewHoKhauDetail
+    ' usecase "Thêm/sửa/xóa hộ khẩu" as UC_EditHoKhau ' Inferred
+  }
+
+  package "Quản lý nhân khẩu" as UC_NhanKhauMgmt {
+    usecase "Xem danh sách nhân khẩu" as UC_ViewNhanKhau
+    ' usecase "Thêm/sửa/xóa nhân khẩu" as UC_EditNhanKhau ' Inferred
+  }
+
+  usecase "Xem lịch sử biến động" as UC_ViewHistory
+  usecase "Quản lý tạm vắng, tạm trú" as UC_AbsenceResidence
+
+  ' Define use cases for Accountant
+  package "Quản lý khoản thu" as UC_FeeMgmt {
+    usecase "Xem danh sách khoản thu" as UC_ViewFees
+    usecase "Xem chi tiết khoản thu" as UC_ViewFeeDetail
+    usecase "Quản lý việc nộp tiền" as UC_ManagePayments
+    ' usecase "Thêm/sửa/xóa khoản thu" as UC_EditFees ' Inferred
+  }
+}
+
+' Guest relationships
+Guest --> UC_Login
+Guest --> UC_HomePage
+
+' Authenticated user relationships (base use cases)
+Admin --|> Accountant ' Admin can do everything an Accountant can, and more.
+Accountant --> UC_Logout
+Accountant --> UC_Chatbot
+Accountant --> UC_Dashboard
+
+' Accountant-specific relationships
+Accountant --> UC_FeeMgmt
+
+' Admin-specific relationships
+Admin --> UC_UserMgmt
+Admin --> UC_HoKhauMgmt
+Admin --> UC_NhanKhauMgmt
+Admin --> UC_ViewHistory
+Admin --> UC_AbsenceResidence
+
+
+' Notes
+note "Người dùng có vai trò 'ROLE_RESIDENT' có thể được tạo trong hệ thống nhưng không có quyền truy cập vào bất kỳ chức năng nào của giao diện web chính." as ResidentNote
+
+@enduml
