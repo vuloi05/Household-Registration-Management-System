@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Box, Button, Menu, MenuItem, IconButton, Typography } from '@mui/material';
-import LanguageIcon from '@mui/icons-material/Language';
+import { Box, Menu, MenuItem, IconButton, Typography } from '@mui/material';
 import { GlobeHemisphereEast as GlobeHemisphereEastIcon } from '@phosphor-icons/react'; // Sử dụng icon quả địa cầu
 
 export default function LanguageSwitcher() {
