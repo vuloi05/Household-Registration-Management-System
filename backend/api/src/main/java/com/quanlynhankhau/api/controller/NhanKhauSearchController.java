@@ -75,14 +75,14 @@ public class NhanKhauSearchController {
 
         if (nhanKhauOpt.isPresent() && nhanKhauOpt.get().getHoKhau() != null) {
             HoKhau hoKhau = nhanKhauOpt.get().getHoKhau();
-            
+
             // Tạo DTO an toàn thay vì trả entity trực tiếp (tránh circular reference)
             var response = new java.util.LinkedHashMap<String, Object>();
             response.put("id", hoKhau.getId());
             response.put("maHoKhau", hoKhau.getMaHoKhau());
             response.put("diaChi", hoKhau.getDiaChi());
             response.put("ngayLap", hoKhau.getNgayLap());
-            
+
             // Thông tin chủ hộ (an toàn)
             if (hoKhau.getChuHo() != null) {
                 var chuHoInfo = new java.util.LinkedHashMap<String, Object>();
@@ -105,15 +105,15 @@ public class NhanKhauSearchController {
                     nkInfo.put("quanHeVoiChuHo", nk.getQuanHeVoiChuHo());
                     danhSach.add(nkInfo);
                 }
-                response.put("danhSachNhanKhau", danhSach);
+                response.put("thanhVien", danhSach);
             }
-            
+
             return ResponseEntity.ok(response);
         } else {
             return ResponseEntity.notFound().build();
         }
     }
-    
+
     /**
      * API Cập nhật thông tin cá nhân của người dùng đang đăng nhập (mobile).
      * - Method: PUT
@@ -134,11 +134,11 @@ public class NhanKhauSearchController {
         }
     }
 
-
     /**
      * API tìm kiếm nhân khẩu theo số CCCD.
      * - Method: GET
-     * - URL: <a href="http://localhost:8080/api/nhankhau/search?cmndCccd=">...</a>{cmndCccd}
+     * - URL: <a href=
+     * "http://localhost:8080/api/nhankhau/search?cmndCccd=">...</a>{cmndCccd}
      * - Cho phép ADMIN và RESIDENT (chỉ được tìm chính mình)
      */
     @GetMapping("/search")
@@ -154,7 +154,7 @@ public class NhanKhauSearchController {
                 return new ResponseEntity<>(HttpStatus.FORBIDDEN);
             }
         }
-        
+
         Optional<NhanKhau> nhanKhau = nhanKhauService.findByCmndCccd(cmndCccd);
         if (nhanKhau.isPresent()) {
             return new ResponseEntity<>(nhanKhau.get(), HttpStatus.OK);
@@ -187,7 +187,8 @@ public class NhanKhauSearchController {
     /**
      * API kiểm tra thông tin hộ khẩu hiện tại của nhân khẩu theo CCCD.
      * - Method: GET
-     * - URL: <a href="http://localhost:8080/api/nhankhau/check-household?cmndCccd=">...</a>{cmndCccd}
+     * - URL: <a href=
+     * "http://localhost:8080/api/nhankhau/check-household?cmndCccd=">...</a>{cmndCccd}
      */
     @GetMapping("/check-household")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
@@ -195,15 +196,15 @@ public class NhanKhauSearchController {
         Optional<NhanKhau> nhanKhau = nhanKhauService.findByCmndCccd(cmndCccd);
         if (nhanKhau.isPresent()) {
             NhanKhau person = nhanKhau.get();
-            
+
             // Kiểm tra xem có phải chủ hộ không
             boolean isChuHo = "Chủ hộ".equals(person.getQuanHeVoiChuHo());
-            
+
             // Tạo response object với thông tin hộ khẩu đơn giản
             var response = new java.util.HashMap<String, Object>();
             response.put("found", true);
             response.put("isChuHo", isChuHo);
-            
+
             // Tạo thông tin hộ khẩu đơn giản để tránh lỗi serialization
             var householdInfo = new java.util.HashMap<String, Object>();
             if (person.getHoKhau() != null) {
@@ -212,7 +213,7 @@ public class NhanKhauSearchController {
                 householdInfo.put("diaChi", person.getHoKhau().getDiaChi());
             }
             response.put("currentHousehold", householdInfo);
-            
+
             // Tạo thông tin nhân khẩu đơn giản
             var personInfo = new java.util.HashMap<String, Object>();
             personInfo.put("id", person.getId());
@@ -221,11 +222,10 @@ public class NhanKhauSearchController {
             personInfo.put("cmndCccd", person.getCmndCccd());
             personInfo.put("quanHeVoiChuHo", person.getQuanHeVoiChuHo());
             response.put("personInfo", personInfo);
-            
+
             return new ResponseEntity<>(response, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 }
-
