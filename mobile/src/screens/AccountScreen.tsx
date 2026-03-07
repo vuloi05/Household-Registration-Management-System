@@ -1,6 +1,7 @@
 // src/screens/AccountScreen.tsx
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, Text, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { crossPlatformAlert } from '../utils/alert';
 import { Card, Title, Divider, Avatar, TextInput, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getMyNhanKhau, updateMyNhanKhau, type NhanKhauFormValues } from '../api/nhanKhauApi';
@@ -83,34 +84,34 @@ export default function AccountScreen() {
 
   const handleEditToggle = () => {
     if (isEditing) {
-        // If canceling, reset form data to original
-        setFormData({
-            ngheNghiep: nhanKhau?.ngheNghiep,
-            noiLamViec: nhanKhau?.noiLamViec,
-        });
+      // If canceling, reset form data to original
+      setFormData({
+        ngheNghiep: nhanKhau?.ngheNghiep,
+        noiLamViec: nhanKhau?.noiLamViec,
+      });
     }
     setIsEditing(!isEditing);
   };
 
   const handleSave = async () => {
-      if (!nhanKhau) return;
-      setIsSaving(true);
-      try {
-          // TODO: This API endpoint needs to be implemented on the backend.
-          const updatedNhanKhau = await updateMyNhanKhau(formData);
-          setNhanKhau(updatedNhanKhau);
-          setIsEditing(false);
-          Alert.alert("Thành công", "Thông tin cá nhân đã được cập nhật.");
-      } catch (err: any) {
-          console.error("Failed to save account data:", err);
-          Alert.alert("Lỗi", "Không thể cập nhật thông tin. Vui lòng thử lại.");
-      } finally {
-          setIsSaving(false);
-      }
+    if (!nhanKhau) return;
+    setIsSaving(true);
+    try {
+      // TODO: This API endpoint needs to be implemented on the backend.
+      const updatedNhanKhau = await updateMyNhanKhau(formData);
+      setNhanKhau(updatedNhanKhau);
+      setIsEditing(false);
+      crossPlatformAlert("Thành công", "Thông tin cá nhân đã được cập nhật.");
+    } catch (err: any) {
+      console.error("Failed to save account data:", err);
+      crossPlatformAlert("Lỗi", "Không thể cập nhật thông tin. Vui lòng thử lại.");
+    } finally {
+      setIsSaving(false);
+    }
   };
-  
+
   const handleFormChange = (field: keyof NhanKhauFormValues, value: string) => {
-      setFormData(prev => ({...prev, [field]: value}));
+    setFormData(prev => ({ ...prev, [field]: value }));
   }
 
   const formatDate = (dateString?: string) => {
@@ -158,21 +159,21 @@ export default function AccountScreen() {
       </View>
 
       {isEditing && (
-          <View style={styles.editBanner}>
-              <Text style={styles.editBannerText}>Bạn đang ở chế độ chỉnh sửa</Text>
-          </View>
+        <View style={styles.editBanner}>
+          <Text style={styles.editBannerText}>Bạn đang ở chế độ chỉnh sửa</Text>
+        </View>
       )}
 
       {/* Action Buttons */}
       <View style={styles.buttonContainer}>
-          {isEditing ? (
-              <>
-                <Button mode="outlined" onPress={handleEditToggle} style={styles.actionButton} disabled={isSaving}>Hủy</Button>
-                <Button mode="contained" onPress={handleSave} style={styles.actionButton} loading={isSaving} disabled={isSaving}>Lưu thay đổi</Button>
-              </>
-          ) : (
-            <Button mode="contained" icon="pencil-outline" onPress={handleEditToggle} style={styles.actionButton}>Chỉnh sửa</Button>
-          )}
+        {isEditing ? (
+          <>
+            <Button mode="outlined" onPress={handleEditToggle} style={styles.actionButton} disabled={isSaving}>Hủy</Button>
+            <Button mode="contained" onPress={handleSave} style={styles.actionButton} loading={isSaving} disabled={isSaving}>Lưu thay đổi</Button>
+          </>
+        ) : (
+          <Button mode="contained" icon="pencil-outline" onPress={handleEditToggle} style={styles.actionButton}>Chỉnh sửa</Button>
+        )}
       </View>
 
       <Card style={styles.card}>
@@ -187,7 +188,7 @@ export default function AccountScreen() {
           <EditableDetailRow icon="flag-outline" label="Dân tộc" value={nhanKhau.danToc} />
         </Card.Content>
       </Card>
-      
+
       <Card style={styles.card}>
         <Card.Content>
           <Title style={styles.cardTitle}>Thông tin định danh</Title>
@@ -207,7 +208,7 @@ export default function AccountScreen() {
           <EditableDetailRow icon="calendar-today" label="Ngày đăng ký thường trú" value={formatDate(nhanKhau.ngayDangKyThuongTru)} />
         </Card.Content>
       </Card>
-      <View style={{height: 40}} />
+      <View style={{ height: 40 }} />
     </ScrollView>
   );
 }
@@ -304,21 +305,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   buttonContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-evenly',
-      margin: theme.spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    margin: theme.spacing.md,
   },
   actionButton: {
-      flex: 1,
-      marginHorizontal: theme.spacing.sm,
+    flex: 1,
+    marginHorizontal: theme.spacing.sm,
   },
   editBanner: {
-      backgroundColor: theme.colors.warning,
-      padding: theme.spacing.sm,
-      alignItems: 'center',
+    backgroundColor: theme.colors.warning,
+    padding: theme.spacing.sm,
+    alignItems: 'center',
   },
   editBannerText: {
-      color: '#fff',
-      fontWeight: 'bold',
+    color: '#fff',
+    fontWeight: 'bold',
   }
 });
