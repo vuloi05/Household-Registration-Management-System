@@ -25,7 +25,7 @@ if (Platform.OS !== 'web') {
 }
 
 const { width } = Dimensions.get('window');
-const QR_CODE_SIZE = width * 0.4;
+const QR_CODE_SIZE = Platform.OS === 'web' ? Math.min(width * 0.4, 160) : width * 0.4;
 
 // Cross-platform QR Code component
 function CrossPlatformQRCode({ value, size }: { value: string; size: number }) {
