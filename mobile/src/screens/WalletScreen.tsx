@@ -146,12 +146,14 @@ export default function WalletScreen() {
 
   return (
     <View style={styles.container}>
-      <Image
-        source={require('../../assets/giay_to.png')}
-        style={styles.headerImage}
-        resizeMode="contain"
-      />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <View style={styles.headerWrapper}>
+        <Image
+          source={require('../../assets/giay_to.png')}
+          style={styles.headerImage}
+          resizeMode="contain"
+        />
+      </View>
+      <ScrollView contentContainerStyle={styles.scrollContent} style={styles.scrollView}>
         {/* ID Card Section */}
         <Card style={styles.idCard}>
           <Card.Content>
@@ -232,17 +234,26 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
+  headerWrapper: {
+    zIndex: 2,
+    overflow: 'hidden',
+    height: 140,
+  },
   headerImage: {
     width: '100%',
     position: 'absolute',
     top: 0,
     left: 0,
     marginTop: -235,
-    zIndex: 0,
+  },
+  scrollView: {
+    flex: 1,
+    zIndex: 1,
+    marginTop: -140,
   },
   scrollContent: {
     padding: theme.spacing.md,
-    paddingTop: 140, // Adjust to be below the header image
+    paddingTop: 140,
     paddingBottom: 40,
   },
   centered: {
