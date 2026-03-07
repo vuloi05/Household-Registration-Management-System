@@ -65,15 +65,50 @@ public class NhanKhauSearchController {
      * - Method: GET
      * - URL: /api/nhankhau/me/hokhau
      * - Role: RESIDENT
+     * - Trả về DTO an toàn để tránh lỗi circular reference khi serialize
      */
     @GetMapping("/me/hokhau")
     @PreAuthorize("hasRole('ROLE_RESIDENT')")
-    public ResponseEntity<HoKhau> getMyHoKhau(org.springframework.security.core.Authentication authentication) {
+    public ResponseEntity<?> getMyHoKhau(org.springframework.security.core.Authentication authentication) {
         String username = authentication.getName(); // CCCD
         Optional<NhanKhau> nhanKhauOpt = nhanKhauService.findByCmndCccd(username);
 
         if (nhanKhauOpt.isPresent() && nhanKhauOpt.get().getHoKhau() != null) {
-            return ResponseEntity.ok(nhanKhauOpt.get().getHoKhau());
+            HoKhau hoKhau = nhanKhauOpt.get().getHoKhau();
+            
+            // Tạo DTO an toàn thay vì trả entity trực tiếp (tránh circular reference)
+            var response = new java.util.LinkedHashMap<String, Object>();
+            response.put("id", hoKhau.getId());
+            response.put("maHoKhau", hoKhau.getMaHoKhau());
+            response.put("diaChi", hoKhau.getDiaChi());
+            response.put("ngayLap", hoKhau.getNgayLap());
+            
+            // Thông tin chủ hộ (an toàn)
+            if (hoKhau.getChuHo() != null) {
+                var chuHoInfo = new java.util.LinkedHashMap<String, Object>();
+                chuHoInfo.put("id", hoKhau.getChuHo().getId());
+                chuHoInfo.put("hoTen", hoKhau.getChuHo().getHoTen());
+                chuHoInfo.put("cmndCccd", hoKhau.getChuHo().getCmndCccd());
+                response.put("chuHo", chuHoInfo);
+            }
+
+            // Danh sách nhân khẩu (an toàn - chỉ lấy thông tin cơ bản)
+            if (hoKhau.getDanhSachNhanKhau() != null) {
+                var danhSach = new java.util.ArrayList<java.util.Map<String, Object>>();
+                for (NhanKhau nk : hoKhau.getDanhSachNhanKhau()) {
+                    var nkInfo = new java.util.LinkedHashMap<String, Object>();
+                    nkInfo.put("id", nk.getId());
+                    nkInfo.put("hoTen", nk.getHoTen());
+                    nkInfo.put("ngaySinh", nk.getNgaySinh());
+                    nkInfo.put("gioiTinh", nk.getGioiTinh());
+                    nkInfo.put("cmndCccd", nk.getCmndCccd());
+                    nkInfo.put("quanHeVoiChuHo", nk.getQuanHeVoiChuHo());
+                    danhSach.add(nkInfo);
+                }
+                response.put("danhSachNhanKhau", danhSach);
+            }
+            
+            return ResponseEntity.ok(response);
         } else {
             return ResponseEntity.notFound().build();
         }
