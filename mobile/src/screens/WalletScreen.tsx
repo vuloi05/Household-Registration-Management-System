@@ -206,6 +206,10 @@ export default function WalletScreen() {
                     <View style={styles.memberInfo}>
                       <Text style={styles.memberName}>{member.hoTen}</Text>
                       <Text style={styles.memberRelationship}>{member.quanHeVoiChuHo}</Text>
+                      <Text style={styles.memberDetail}>
+                        {member.gioiTinh || ''}
+                        {member.ngaySinh ? ` • ${new Date(member.ngaySinh).toLocaleDateString('vi-VN')}` : ''}
+                      </Text>
                     </View>
                   </View>
                 ))
@@ -367,5 +371,10 @@ const styles = StyleSheet.create({
   memberRelationship: {
     fontSize: 14,
     color: theme.colors.text.secondary,
+  },
+  memberDetail: {
+    fontSize: 12,
+    color: theme.colors.text.secondary,
+    marginTop: 2,
   },
 });
