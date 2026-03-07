@@ -267,7 +267,10 @@ const FeePopupModal: React.FC<FeePopupModalProps> = ({
       <Text style={styles.title}>Quét mã để thanh toán</Text>
       <View style={styles.qrContainer}>
         {paymentInfo?.qrCode && (
-          <CrossPlatformQRCode value={paymentInfo.qrCode} size={Dimensions.get('window').width * 0.6} />
+          <CrossPlatformQRCode
+            value={paymentInfo.qrCode}
+            size={Platform.OS === 'web' ? Math.min(Dimensions.get('window').width * 0.6, 240) : Dimensions.get('window').width * 0.6}
+          />
         )}
       </View>
       <Text style={styles.description}>Sử dụng ứng dụng ngân hàng hoặc ví điện tử để quét mã VietQR.</Text>
