@@ -1,0 +1,285 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1, T5]{fontenc}
+\usepackage[vietnamese]{babel}
+\usepackage{geometry}
+\geometry{a4paper, margin=2cm}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{graphicx}
+
+\title{\textbf{Bản Mô Tả Dự Án}}
+\author{
+    \textbf{Thông tin sinh viên} \\
+    1. Họ và tên : Vũ Tiến Lợi \\
+    2. Mã sinh viên : 20235768 \\
+    3. Lớp: Việt Nhật 03 -- K68
+}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% ================================================================
+% PHẦN 1: MÔ TẢ DỰ ÁN ĐÃ LÀM
+% ================================================================
+\section{Năng lực chuyên môn \& Dự án đã thực hiện}
+
+\noindent \textbf{\Large Dự án: Hệ thống Quản lý Nhân khẩu (Household Registration Management System)}
+\vspace{0.3cm}
+
+% ----------------------------------------------------------------
+\subsection{Mô tả tổng quan dự án}
+Hệ thống Quản lý Nhân khẩu là một giải pháp phần mềm toàn diện nhằm số hóa công tác quản lý hộ khẩu, nhân khẩu và các biến động dân cư. Thay vì một ứng dụng web đơn lẻ, dự án được thiết kế theo kiến trúc hệ sinh thái (ecosystem) đa nền tảng, quản lý tập trung trong một cấu trúc Monorepo. 
+
+Hệ thống đáp ứng các nghiệp vụ quản lý phức tạp thông qua \textbf{Web Admin} (dành cho bộ phận quản lý/cán bộ), cung cấp sự tiện lợi hỗ trợ tra cứu qua \textbf{Mobile App} (dành cho người dùng di động), và đặc biệt tích hợp một \textbf{AI Chatbot Server} độc lập (ứng dụng LLM Gemini/Ollama) để hỗ trợ tự động hóa việc tra cứu và giải đáp thông tin pháp lý. Kiến trúc phân tán này không chỉ giải quyết trọn vẹn bài toán nghiệp vụ mà còn đảm bảo khả năng mở rộng (scalability) cao.
+
+% ----------------------------------------------------------------
+\subsection{Kiến trúc hệ thống \& Công nghệ sử dụng}
+Hệ thống được thiết kế theo kiến trúc Micro-components quản lý tập trung, chia thành 4 service giao tiếp với nhau qua chuẩn RESTful API:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Core Backend (Hệ thống API \& logic nghiệp vụ):} 
+    \begin{itemize}
+        \item Xây dựng trên nền tảng \textbf{Java 21} và \textbf{Spring Boot 3.5.8}.
+        \item Cơ sở dữ liệu: Sử dụng \textbf{PostgreSQL} (host trên \textbf{Supabase}) để phục vụ lưu trữ quan hệ chặt chẽ, tương tác qua \texttt{Spring Data JPA / Hibernate}.
+        \item Bảo mật/Xác thực: Tích hợp \texttt{Spring Security} với cơ chế \textbf{JWT (JSON Web Token)} (thư viện \texttt{jjwt 0.11.5}) để mã hóa phiên đăng nhập, phân quyền truy cập an toàn. Mật khẩu được hash bằng \textbf{BCrypt}.
+        \item Validate dữ liệu: Sử dụng \texttt{spring-boot-starter-validation} (\texttt{@NotNull}, \texttt{@Size}, \texttt{@Column(unique=true)}).
+        \item Thanh toán trực tuyến: Tích hợp cổng thanh toán \textbf{PayOS} với cơ chế xác thực \textbf{HMAC SHA256}, webhook callback, và sinh mã QR tự động.
+        \item Kiến trúc nội bộ: Tuân thủ mô hình phân lớp MVC rõ ràng gồm 13 Controller, 13 Service, 11 Entity, 11 Repository, nhiều DTO, và utility riêng biệt.
+        \item Bảo mật nâng cao: Đã vá và cập nhật các lỗ hổng CVE (Spring Framework 6.2.11, Spring Security 6.4.11, Tomcat 10.1.47, Logback 1.5.19).
+    \end{itemize}
+
+    \item \textbf{Web Admin Frontend (Trang quản trị trung tâm):} 
+    \begin{itemize}
+        \item Xây dựng theo mô hình Single Page Application (SPA) với \textbf{React 19}, \textbf{TypeScript 5.9} và bundler \textbf{Vite 7}.
+        \item Hệ thống Component UI chuẩn mực sử dụng thư viện \textbf{Material-UI (MUI) v7}.
+        \item Xử lý luồng dữ liệu biểu mẫu chặt chẽ với \texttt{react-hook-form} và validate schema qua \texttt{zod}, tương tác API qua \texttt{axios}.
+        \item Đa ngôn ngữ quốc tế hóa (\textbf{i18n}): Tích hợp \texttt{i18next} với \texttt{i18next-browser-languagedetector}.
+        \item Trực quan hóa dữ liệu: Sử dụng thư viện \texttt{recharts} cho các biểu đồ thống kê trên Dashboard.
+        \item Xuất báo cáo đa định dạng: Hỗ trợ xuất \textbf{Excel} (\texttt{exceljs}, \texttt{xlsx}) và \textbf{PDF} (\texttt{jspdf}, \texttt{jspdf-autotable}).
+        \item Chatbot AI tích hợp: Widget chatbot với khả năng \textbf{streaming real-time} (Server-Sent Events), giao diện kéo thả (draggable), cơ chế feedback Q\&A, và quản lý session cookie.
+        \item Quét mã QR: Tích hợp \texttt{html5-qrcode} để quét mã QR thanh toán.
+        \item Quản lý trạng thái dữ liệu server: Sử dụng \texttt{@tanstack/react-query} cho việc cache và đồng bộ dữ liệu.
+        \item Routing bảo vệ: Hệ thống \texttt{ProtectedRoute} với 9 route được bảo vệ (Dashboard, Hộ khẩu, Nhân khẩu, Thu phí, Lịch sử biến động, Tạm vắng/Tạm trú, Quản lý người dùng, Chi tiết hộ khẩu, Chi tiết khoản thu).
+    \end{itemize}
+
+    \item \textbf{Mobile Application (Ứng dụng di động):} 
+    \begin{itemize}
+        \item Xây dựng bằng \textbf{React Native 0.81} và bộ công cụ \textbf{Expo 54} (Hỗ trợ Cross-platform cho iOS và Android).
+        \item Luồng điều hướng: Bottom Tab Navigator cấu hình bằng \texttt{React Navigation} (\texttt{@react-navigation/bottom-tabs}, \texttt{@react-navigation/stack}).
+        \item Thiết kế giao diện: \texttt{React Native Paper 5.14}, hiệu ứng \texttt{expo-blur}, \texttt{expo-linear-gradient}, animation với \texttt{react-native-reanimated}.
+        \item 11 màn hình chính: Đăng nhập, Trang chủ, Ví điện tử, Thông báo, Cài đặt, Quản lý tài khoản, Đổi mật khẩu, Thu phí, Tin tức, Chi tiết thông báo.
+        \item Tích hợp QR Code: Sinh mã QR (\texttt{react-native-qrcode-svg}) cho các giao dịch thanh toán.
+        \item WebView: Tích hợp \texttt{react-native-webview} cho các nội dung web nhúng.
+        \item Bảo mật: Token JWT lưu trữ qua \texttt{@react-native-async-storage/async-storage}, giải mã token bằng \texttt{jwt-decode}.
+    \end{itemize}
+
+    \item \textbf{AI Chatbot Server (Hệ thống LLM độc lập):} 
+    \begin{itemize}
+        \item Xây dựng Service tách biệt bằng \textbf{Python 3.11+} và \textbf{Flask 3.0} chuyên xử lý input/output trí tuệ nhân tạo.
+        \item Thiết lập giao tiếp trực tiếp với \textbf{Google Gemini API} (streaming + fallback + retry logic với exponential backoff) và \textbf{Ollama} để hỗ trợ xử lý ngôn ngữ tự nhiên.
+        \item \textbf{Knowledge Base thông minh}: Hệ thống tri thức tải từ \textbf{AWS DynamoDB \& S3}, tìm kiếm cục bộ bằng thuật toán \textbf{Jaccard Similarity}, auto-reload định kỳ trong background thread.
+        \item \textbf{Tự học chủ động (Auto-Learning)}: Module phân tích tự động các cuộc hội thoại, tính điểm chất lượng Q\&A (0.0--1.0), loại bỏ trùng lặp bằng SequenceMatcher, và cập nhật knowledge base mà không cần feedback người dùng.
+        \item Quản lý phiên hội thoại: Session management với cookie, conversation history, và tính năng xóa session.
+        \item Hệ thống Cache: Caching thông minh để giảm tải API calls, hỗ trợ xem thống kê cache và xóa cache thủ công.
+        \item Phản hồi người dùng (Q\&A Feedback): API cho phép người dùng đánh giá câu trả lời; nếu đánh giá ``sai'', hệ thống tự động học và cải thiện knowledge base.
+        \item Prompt Engineering: System prompt chuẩn hóa vai trò trợ lý, cung cấp context hệ thống (thống kê hộ khẩu/nhân khẩu), và format lịch sử hội thoại.
+        \item Triển khai Cloud: Hỗ trợ Dockerfile, docker-compose, Nginx reverse proxy, và script triển khai lên \textbf{AWS EC2}.
+    \end{itemize}
+\end{itemize}
+
+% ----------------------------------------------------------------
+\subsection{Mô hình cơ sở dữ liệu}
+Hệ thống sử dụng PostgreSQL với mô hình dữ liệu quan hệ gồm 11 bảng Entity chính:
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Entity} & \textbf{Mô tả \& Các trường chính} \\
+\hline
+\texttt{HoKhau} & Hộ khẩu: \texttt{id}, \texttt{maHoKhau}, \texttt{diaChi}, \texttt{ngayLap}, \texttt{chuHo} (OneToOne $\rightarrow$ NhanKhau), \texttt{danhSachNhanKhau} (OneToMany).\\
+\hline
+\texttt{NhanKhau} & Nhân khẩu: 20+ trường demographics (hoTen, biDanh, ngaySinh, gioiTinh, noiSinh, queQuan, danToc, ngheNghiep, noiLamViec, cmndCccd, quanHeVoiChuHo...), \texttt{trangThai} (DANG\_CU\_TRU / DA\_CHUYEN\_DI / DA\_QUA\_DOI / TAM\_VANG).\\
+\hline
+\texttt{User} & Tài khoản (implements \texttt{UserDetails}): \texttt{username} (unique), \texttt{password} (BCrypt), \texttt{fullName}, \texttt{role} (ROLE\_ADMIN / ROLE\_ACCOUNTANT).\\
+\hline
+\texttt{KhoanThu} & Khoản thu: \texttt{tenKhoanThu}, \texttt{ngayTao}, \texttt{loaiKhoanThu} (BAT\_BUOC / DONG\_GOP), \texttt{soTienTrenMotNhanKhau}.\\
+\hline
+\texttt{LichSuNopTien} & Lịch sử nộp tiền: \texttt{ngayNop}, \texttt{soTien} (BigDecimal), \texttt{nguoiThu}. ManyToOne $\rightarrow$ KhoanThu, HoKhau.\\
+\hline
+\texttt{LichSuBienDong} & Lịch sử biến động nhân khẩu: \texttt{loaiBienDong} (THEM\_MOI / CHUYEN\_DI / QUA\_DOI / THAY\_DOI\_CHU\_HO / THAY\_DOI\_THONG\_TIN), \texttt{ngayBienDong}, \texttt{lyDo}, \texttt{nguoiGhiNhan}.\\
+\hline
+\texttt{TamTru} & Tạm trú: \texttt{hoTen}, \texttt{cmndCccd}, \texttt{noiThuongTru}, \texttt{ngayBatDau}, \texttt{ngayKetThuc}, \texttt{lyDo}, \texttt{nguoiCap}. ManyToOne $\rightarrow$ HoKhau.\\
+\hline
+\texttt{TamVang} & Tạm vắng: \texttt{ngayBatDau}, \texttt{ngayKetThuc}, \texttt{noiDen}, \texttt{lyDo}, \texttt{nguoiCap}. ManyToOne $\rightarrow$ NhanKhau.\\
+\hline
+\texttt{Payment} & Thanh toán PayOS: \texttt{paymentId} (UUID), \texttt{amount}, \texttt{status} (PENDING / PAID / EXPIRED / CANCELLED), \texttt{qrCodeString}, \texttt{transactionId}, \texttt{payerName}.\\
+\hline
+\texttt{PaymentNotification} & Thông báo thanh toán: Lưu log callback từ PayOS webhook.\\
+\hline
+\texttt{LichSuThayDoi} & Lịch sử thay đổi hộ khẩu: Ghi nhận các thay đổi (tách hộ, thay đổi chủ hộ, v.v.).\\
+\hline
+\end{tabularx}
+\caption{Tổng hợp các Entity trong cơ sở dữ liệu}
+\end{table}
+
+% ----------------------------------------------------------------
+\subsection{Các chức năng và nghiệp vụ kỹ thuật cốt lõi}
+Hệ thống được thiết kế để giải quyết toàn diện bài toán quản lý cho ban quản lý tổ dân phố (với quy mô lên tới hơn 400 hộ, 1.700 nhân khẩu và biến động cơ học liên tục). Cụ thể hệ thống đã giải quyết trọn vẹn các bài toán nghiệp vụ sau:
+
+\subsubsection{Phân quyền người dùng (Role-Based Access Control)}
+Thực thi hệ thống RESTful API chuẩn mực, tích hợp cơ chế bảo mật và phân quyền động chặt chẽ:
+\begin{itemize}
+    \item \textbf{Chuyên viên / Admin (ROLE\_ADMIN):} Toàn quyền quản lý hệ thống -- Quản lý người dùng (CRUD), Quản lý hộ khẩu, Quản lý nhân khẩu, Xem lịch sử biến động, Quản lý tạm vắng/tạm trú, Quản lý thu phí.
+    \item \textbf{Kế toán (ROLE\_ACCOUNTANT):} Quyền truy cập giới hạn vào module thu phí và khoản thu, xem Dashboard và tương tác Chatbot.
+    \item Cơ chế bảo mật: Stateless session (SessionCreationPolicy.STATELESS), JWT filter trước UsernamePasswordAuthenticationFilter, BCrypt password encoding, CORS configuration.
+\end{itemize}
+
+\subsubsection{Quản lý Cư trú \& Nhân khẩu học}
+\begin{itemize}
+    \item Số hóa sổ hộ khẩu với mức độ chi tiết cao, gắn mã định danh duy nhất cho từng hộ (\texttt{maHoKhau} dạng HK-XX) và nhân khẩu (\texttt{cmndCccd} -- UNIQUE constraint).
+    \item Quản lý vòng đời nhân khẩu phức tạp với 4 trạng thái: \texttt{DANG\_CU\_TRU}, \texttt{DA\_CHUYEN\_DI}, \texttt{DA\_QUA\_DOI}, \texttt{TAM\_VANG}. Hệ thống tự động ghi nhận lịch sử biến động qua bảng \texttt{LichSuBienDongNhanKhau} với 5 loại biến động: THEM\_MOI, CHUYEN\_DI, QUA\_DOI, THAY\_DOI\_CHU\_HO, THAY\_DOI\_THONG\_TIN.
+    \item Quản lý nhân khẩu lưu trú theo thời hạn: Cấp phát và theo dõi trạng thái giấy hẹn tạm trú (bảng \texttt{TamTru} -- giao liên kết với \texttt{HoKhau} tiếp nhận), tạm vắng (bảng \texttt{TamVang} -- gắn với \texttt{NhanKhau}).
+    \item Tách hộ/đổi chủ hộ: API \texttt{ThayDoiChuHoRequest} cho phép thay đổi chủ hộ và tự động tạo bản ghi biến động.
+    \item Tìm kiếm nâng cao: Controller \texttt{NhanKhauSearchController} hỗ trợ tìm kiếm nhân khẩu đa tiêu chí.
+\end{itemize}
+
+\subsubsection{Quản lý Tài chính \& Thu phí đa năng}
+\begin{itemize}
+    \item Xử lý tự động tính các khoản thu bắt buộc (\texttt{BAT\_BUOC}) (Phí vệ sinh cố định 6.000VNĐ/nhân khẩu/tháng) dựa trên trường \texttt{soTienTrenMotNhanKhau}.
+    \item Quản lý các khoản đóng góp tự nguyện động (\texttt{DONG\_GOP}), không nhận định mức và quản lý theo từng đợt vận động từ ban điều hành (Quỹ vì người nghèo, Lụt bão, Thương binh liệt sĩ, v.v.).
+    \item \textbf{Thanh toán trực tuyến qua PayOS:} 
+    \begin{itemize}
+        \item Tạo payment link với mã QR tự động (\texttt{PayOSService} -- 405 dòng code).
+        \item Xác thực webhook bằng HMAC SHA256 signature.
+        \item Quản lý trạng thái giao dịch: PENDING $\rightarrow$ PAID / EXPIRED / CANCELLED.
+        \item Tự động tạo thông báo thanh toán (\texttt{PaymentNotification}).
+    \end{itemize}
+    \item Xuất báo cáo: Hỗ trợ xuất danh sách thu phí, lịch sử nộp tiền sang Excel và PDF trực tiếp từ frontend.
+\end{itemize}
+
+\subsubsection{Khả năng Thống kê \& Truy vấn}
+Tính toán tự động và trích xuất dữ liệu đa chiều theo thiết kế:
+\begin{itemize}
+    \item Thống kê tổng quan: Tổng số hộ khẩu, nhân khẩu, tạm trú (\texttt{ThongKeTongQuanDTO}).
+    \item Thống kê theo nhóm độ tuổi: Phân loại 6 nhóm (0--5, 6--10, 11--14, 15--17, 18--60, >60) sử dụng Java Stream API.
+    \item Thống kê theo giới tính: Phân bổ nam/nữ.
+    \item Dashboard trực quan: Biểu đồ \texttt{recharts} hiển thị dữ liệu real-time, các StatCard tổng hợp.
+    \item Tổng hợp báo cáo tài chính/thu phí theo mỗi giai đoạn, mỗi hộ (\texttt{ThongKeKhoanThuDTO}).
+\end{itemize}
+
+\subsubsection{AI Chatbot \& Hệ thống trợ lý thông minh}
+\begin{itemize}
+    \item \textbf{Streaming Real-time:} AI trả lời theo từng chunk qua Server-Sent Events (SSE), mang đến trải nghiệm tương tác mượt mà.
+    \item \textbf{Multi-provider LLM:} Hỗ trợ song song Google Gemini API và Ollama (tự host), với cơ chế fallback tự động.
+    \item \textbf{Knowledge Base AWS:} Cơ sở tri thức Q\&A lưu trên DynamoDB \& S3, tìm kiếm cục bộ bằng Jaccard Similarity trước khi gọi LLM.
+    \item \textbf{Auto-Learning:} Module tự động phân tích hội thoại, tính điểm chất lượng (loại bỏ câu hỏi generic, câu trả lời quá ngắn), kiểm tra trùng lặp, và tự cập nhật knowledge base.
+    \item \textbf{Feedback Loop:} Người dùng đánh giá câu trả lời; hệ thống tự học từ các câu trả lời bị đánh giá sai.
+    \item \textbf{Conversation Memory:} Lưu lịch sử hội thoại theo session, hỗ trợ context-aware responses.
+    \item \textbf{Prompt Engineering:} System prompt chi tiết định nghĩa vai trò, tính năng hệ thống, nguyên tắc trả lời, và chuẩn hóa thời gian.
+\end{itemize}
+
+\subsubsection{Tính năng đa nền tảng}
+\begin{itemize}
+    \item Đồng bộ trạng thái và hiển thị dữ liệu mượt mà giữa Web ReactJS và App React Native.
+    \item Mobile App: Ví điện tử, thông báo, QR Code thanh toán, quản lý tài khoản cá nhân.
+    \item Web Admin: Quản trị toàn bộ nghiệp vụ, chatbot AI, xuất báo cáo, quét QR.
+\end{itemize}
+
+% ----------------------------------------------------------------
+\subsection{Triển khai \& DevOps}
+\begin{itemize}
+    \item \textbf{Frontend:} Triển khai trên \textbf{Vercel} (với cấu hình SPA rewrites trong \texttt{vercel.json}).
+    \item \textbf{Backend:} Triển khai trên \textbf{Render} (Cloud hosting).
+    \item \textbf{Database:} PostgreSQL hosted trên \textbf{Supabase}.
+    \item \textbf{AI Server:} Hỗ trợ triển khai trên \textbf{AWS EC2} với Docker + Nginx reverse proxy.
+    \item \textbf{CI/CD:} GitHub Actions được cấu hình cho quy trình tích hợp liên tục.
+    \item \textbf{Version Control:} Git monorepo với \texttt{.gitignore} chuẩn cho mỗi component.
+\end{itemize}
+
+% ----------------------------------------------------------------
+\subsection{Quy mô mã nguồn}
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|c|c|l|}
+\hline
+\textbf{Component} & \textbf{Số file chính} & \textbf{Ngôn ngữ} & \textbf{Ghi chú} \\
+\hline
+Backend API & 66 files Java & Java 21 & 13 Controllers, 13 Services, 11 Entities \\
+\hline
+Frontend Web & 84+ files & TypeScript/React & 11 Pages, 9 Component groups, 12 APIs \\
+\hline
+Mobile App & 32+ files & TypeScript/RN & 11 Screens, 7 APIs, 5 Components \\
+\hline
+AI Server & 18 files Python & Python 3.11+ & Routes, Gemini, Ollama, KB, Memory \\
+\hline
+\end{tabular}
+\caption{Thống kê quy mô mã nguồn}
+\end{table}
+
+% ----------------------------------------------------------------
+\subsection{Vai trò đảm nhiệm \& Kinh nghiệm tích lũy}
+\textbf{Vai trò đảm nhiệm:} 
+\begin{enumerate}
+    \item Trong dự án, tôi đảm nhiệm vai trò \textbf{Team Leader} và chịu trách nhiệm chính về:
+    \begin{itemize}
+        \item Thiết kế kiến trúc tổng thể hệ thống (System Architecture) -- Monorepo 4 service.
+        \item Thiết kế và chuẩn hóa mô hình cơ sở dữ liệu quan hệ PostgreSQL (11 bảng Entity).
+        \item Xây dựng Backend: Hệ thống RESTful API, Dashboard thống kê, Quản lý người dùng, nghiệp vụ nhân khẩu và hộ khẩu.
+        \item Triển khai toàn bộ Mobile App React Native.
+        \item Thiết kế và xây dựng giao diện chính của hệ thống Web Frontend.
+        \item Tích hợp AI Chatbot (Gemini API, Knowledge Base, Auto-Learning).
+        \item Tổ chức phân công công việc theo từng tuần cho 4 thành viên còn lại.
+    \end{itemize}
+    \item Bên cạnh vai trò kỹ thuật, tôi còn chịu trách nhiệm:
+    \begin{itemize}
+        \item Triển khai dự án thực tế trên nền tảng Cloud (\textbf{Vercel}, \textbf{Render}, \textbf{Supabase}).
+        \item Cấu hình Docker, Nginx, và script triển khai lên AWS EC2 cho AI Server.
+        \item Quản lý và vá các lỗ hổng bảo mật (CVE patches) cho toàn bộ backend dependencies.
+    \end{itemize}
+\end{enumerate}
+
+\textbf{Kinh nghiệm đạt được:} 
+\begin{itemize}
+    \item Nâng cao kỹ năng quản trị dự án, điều phối và phân chia công việc hiệu quả cho nhóm 5 thành viên.
+    \item Nắm vững quy trình thiết kế, phát triển và đưa một hệ thống phần mềm đa nền tảng lên môi trường mạng thực tế (Deployment).
+    \item Làm chủ tư duy xây dựng hệ thống toàn diện từ thiết kế Database, kiến trúc Backend đến phát triển giao diện người dùng.
+    \item Tích lũy kinh nghiệm thực tế về tích hợp AI/LLM vào ứng dụng, xây dựng hệ thống tri thức tự học, và prompt engineering.
+    \item Hiểu sâu về bảo mật ứng dụng web: JWT, Spring Security, RBAC, CORS, mã hóa mật khẩu, và vá lỗ hổng CVE.
+    \item Kinh nghiệm tích hợp cổng thanh toán trực tuyến (PayOS) với cơ chế webhook và xác thực HMAC.
+\end{itemize}
+
+% ================================================================
+% PHẦN 2: ĐỊNH HƯỚNG ĐỒ ÁN TỐT NGHIỆP / ĐI LÀM
+% ================================================================
+\section{Định hướng đồ án tốt nghiệp / đi làm}
+
+\subsection{Định hướng nghề nghiệp}
+Với nền tảng kỹ thuật đã tích lũy qua dự án Hệ thống Quản lý Nhân khẩu, tôi mong muốn phát triển theo hướng \textbf{Full-stack Developer} với trọng tâm vào:
+\begin{itemize}
+    \item \textbf{Backend Development:} Thiết kế và xây dựng hệ thống API quy mô lớn, microservices, và kiến trúc phân tán.
+    \item \textbf{AI/ML Integration:} Tích hợp các mô hình AI/LLM vào ứng dụng thực tế, xây dựng hệ thống trợ lý thông minh.
+    \item \textbf{Cloud \& DevOps:} Triển khai và vận hành hệ thống trên các nền tảng Cloud (AWS, GCP).
+\end{itemize}
+
+\subsection{Định hướng đồ án tốt nghiệp}
+Dựa trên kinh nghiệm từ dự án hiện tại, tôi quan tâm đến các hướng đồ án sau:
+\begin{enumerate}
+    \item \textbf{Hệ thống quản lý thông minh ứng dụng AI:} Nâng cấp và mở rộng hệ thống hiện tại hoặc xây dựng hệ thống mới có tích hợp AI/NLP sâu hơn.
+    \item \textbf{Ứng dụng Full-stack với kiến trúc Microservices:} Phát triển ứng dụng quy mô lớn với kiến trúc hiện đại, áp dụng các design pattern nâng cao.
+    \item \textbf{Real-time Application:} Xây dựng ứng dụng thời gian thực (WebSocket, SSE) phục vụ các bài toán cộng tác, thông báo, dashboard trực tuyến.
+\end{enumerate}
+
+\vspace{0.5cm}
+\noindent \textit{Trên đây là mô tả chi tiết về dự án mà tôi đã thực hiện, kính mong thầy/cô tư vấn thêm để tôi có thể xác định rõ hướng đi phù hợp nhất cho đồ án tốt nghiệp.}
+
+\end{document}

@@ -90,7 +90,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
           // Icon mapping
           let iconName: keyof typeof MaterialCommunityIcons.glyphMap = 'home';
           let label = '';
-          
+
           switch (route.name) {
             case 'Home':
               iconName = isFocused ? 'home' : 'home-outline';
@@ -138,20 +138,20 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                     style={styles.bubbleGradient}
                   >
                     <Animated.View style={[styles.iconContainer, animatedIconStyle]}>
-                      <MaterialCommunityIcons 
-                        name={iconName} 
-                        size={24} 
-                        color={iconColor} 
+                      <MaterialCommunityIcons
+                        name={iconName}
+                        size={24}
+                        color={iconColor}
                       />
                     </Animated.View>
                   </LinearGradient>
                 ) : (
                   <View style={styles.bubbleInactive}>
                     <Animated.View style={[styles.iconContainer, animatedIconStyle]}>
-                      <MaterialCommunityIcons 
-                        name={iconName} 
-                        size={24} 
-                        color={iconColor} 
+                      <MaterialCommunityIcons
+                        name={iconName}
+                        size={24}
+                        color={iconColor}
                       />
                     </Animated.View>
                   </View>
@@ -210,6 +210,9 @@ const styles = StyleSheet.create({
       android: {
         elevation: 12,
       },
+      web: {
+        boxShadow: '0 8px 20px rgba(0, 0, 0, 0.15)',
+      } as any,
     }),
   },
   tabItem: {
@@ -243,6 +246,9 @@ const styles = StyleSheet.create({
         elevation: 10,
         shadowColor: theme.colors.primary,
       },
+      web: {
+        boxShadow: `0 8px 16px ${theme.colors.primary}80`,
+      } as any,
     }),
   },
   bubbleInactive: {
@@ -265,6 +271,9 @@ const styles = StyleSheet.create({
       android: {
         elevation: 0,
       },
+      web: {
+        boxShadow: '0 3px 6px rgba(0, 0, 0, 0.12)',
+      } as any,
     }),
   },
   iconContainer: {

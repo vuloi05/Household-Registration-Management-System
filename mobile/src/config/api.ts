@@ -8,18 +8,24 @@
 // Tự động detect platform + host IP của Metro để dùng cho API
 import { NativeModules, Platform } from 'react-native';
 
-// Đọc IP từ file config (được tạo bởi script setup-ip.js)
+// === WEB: Luôn dùng URL production backend trên Render ===
+const PRODUCTION_API_URL = 'https://household-registration-management-system.onrender.com/api';
+
+// Đọc IP từ file config (được tạo bởi script setup-ip.js) - chỉ cho native
 let configIP: string | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const ipConfig = require('./ip-config.json');
-  configIP = ipConfig?.localIP || null;
-} catch (error) {
-  // File chưa tồn tại hoặc lỗi đọc file - sẽ dùng fallback
+if (Platform.OS !== 'web') {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const ipConfig = require('./ip-config.json');
+    configIP = ipConfig?.localIP || null;
+  } catch (error) {
+    // File chưa tồn tại hoặc lỗi đọc file - sẽ dùng fallback
+  }
 }
 
-// Hàm lấy host IP từ Metro bundler (tự động khi chạy `npm start`)
+// Hàm lấy host IP từ Metro bundler (tự động khi chạy `npm start`) - chỉ cho native
 const getHostIpFromBundle = (): string | null => {
+  if (Platform.OS === 'web') return null;
   // React Native dev mode cung cấp scriptURL, chứa host IP/port của bundler
   const scriptURL: string | undefined =
     (NativeModules as any)?.SourceCode?.scriptURL;
@@ -38,20 +44,23 @@ const FALLBACK_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
 const LOCAL_IP = configIP || getHostIpFromBundle() || FALLBACK_HOST;
 
 const getBaseURL = () => {
+  // Web: luôn dùng production URL (kể cả khi dev)
+  if (Platform.OS === 'web') {
+    return PRODUCTION_API_URL;
+  }
+
   if (__DEV__) {
-    // Development mode
+    // Development mode (native)
     if (Platform.OS === 'android') {
       // Android emulator sử dụng 10.0.2.2 để truy cập localhost của máy host
       return `http://${LOCAL_IP}:8080/api`;
     } else {
       // iOS simulator hoặc thiết bị thật: sử dụng IP thực tế
-      // Nếu bạn đang dùng iOS simulator trên Mac và backend chạy trên Mac,
-      // có thể thử 'http://localhost:8080/api' thay vì IP
       return `http://${LOCAL_IP}:8080/api`;
     }
   } else {
     // Production mode - thay đổi thành URL server thực tế
-    return 'https://your-production-server.com/api';
+    return PRODUCTION_API_URL;
   }
 };
 

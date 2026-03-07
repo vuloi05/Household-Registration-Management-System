@@ -1,6 +1,7 @@
 // src/screens/ChangePasswordScreen.tsx
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { crossPlatformAlert } from '../utils/alert';
 import { TextInput, Button, HelperText, ActivityIndicator, Text } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { appTheme as theme } from '../theme';
@@ -10,7 +11,7 @@ export default function ChangePasswordScreen() {
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
+
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -18,7 +19,7 @@ export default function ChangePasswordScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  
+
   const navigation = useNavigation();
 
   const validatePassword = () => {
@@ -46,7 +47,7 @@ export default function ChangePasswordScreen() {
     if (!validatePassword()) {
       return;
     }
-    
+
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -57,8 +58,8 @@ export default function ChangePasswordScreen() {
       await changeMyPassword({ oldPassword, newPassword });
 
       setSuccess('Đổi mật khẩu thành công!');
-      Alert.alert('Thành công', 'Mật khẩu của bạn đã được thay đổi.', [
-          { text: 'OK', onPress: () => navigation.goBack() }
+      crossPlatformAlert('Thành công', 'Mật khẩu của bạn đã được thay đổi.', [
+        { text: 'OK', onPress: () => navigation.goBack() }
       ]);
       setOldPassword('');
       setNewPassword('');
@@ -70,7 +71,7 @@ export default function ChangePasswordScreen() {
         setError(err.response?.data?.message || 'Mật khẩu cũ không chính xác.');
       } else if (err.response?.status === 404) {
         setError('API không tồn tại. Vui lòng liên hệ quản trị viên để kích hoạt tính năng này.');
-      } 
+      }
       else {
         setError('Đã xảy ra lỗi. Vui lòng thử lại.');
       }
@@ -81,15 +82,15 @@ export default function ChangePasswordScreen() {
 
   return (
     <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
     >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.title}>Bảo mật tài khoản</Text>
         <Text style={styles.subtitle}>Để đảm bảo an toàn, vui lòng không chia sẻ mật khẩu cho người khác.</Text>
-        
+
         <View style={styles.form}>
-            <TextInput
+          <TextInput
             label="Mật khẩu cũ"
             value={oldPassword}
             onChangeText={setOldPassword}
@@ -97,8 +98,8 @@ export default function ChangePasswordScreen() {
             mode="outlined"
             style={styles.input}
             right={<TextInput.Icon icon={showOldPassword ? "eye-off" : "eye"} onPress={() => setShowOldPassword(!showOldPassword)} />}
-            />
-            <TextInput
+          />
+          <TextInput
             label="Mật khẩu mới"
             value={newPassword}
             onChangeText={setNewPassword}
@@ -106,8 +107,8 @@ export default function ChangePasswordScreen() {
             mode="outlined"
             style={styles.input}
             right={<TextInput.Icon icon={showNewPassword ? "eye-off" : "eye"} onPress={() => setShowNewPassword(!showNewPassword)} />}
-            />
-            <TextInput
+          />
+          <TextInput
             label="Xác nhận mật khẩu mới"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
@@ -115,23 +116,23 @@ export default function ChangePasswordScreen() {
             mode="outlined"
             style={styles.input}
             right={<TextInput.Icon icon={showConfirmPassword ? "eye-off" : "eye"} onPress={() => setShowConfirmPassword(!showConfirmPassword)} />}
-            />
-            
-            {error && <HelperText type="error" visible={!!error} style={styles.helperText}>{error}</HelperText>}
-            {success && <HelperText type="info" visible={!!success} style={styles.helperText}>{success}</HelperText>}
-            
-            <Button
+          />
+
+          {error && <HelperText type="error" visible={!!error} style={styles.helperText}>{error}</HelperText>}
+          {success && <HelperText type="info" visible={!!success} style={styles.helperText}>{success}</HelperText>}
+
+          <Button
             mode="contained"
             onPress={handleChangePassword}
             loading={loading}
             disabled={loading}
             style={styles.button}
             labelStyle={styles.buttonLabel}
-            >
+          >
             {loading ? 'Đang xử lý...' : 'Xác nhận'}
-            </Button>
+          </Button>
         </View>
-        </ScrollView>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -142,9 +143,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   scrollContent: {
-      flexGrow: 1,
-      padding: theme.spacing.lg,
-      justifyContent: 'center',
+    flexGrow: 1,
+    padding: theme.spacing.lg,
+    justifyContent: 'center',
   },
   title: {
     fontSize: 26,
@@ -171,12 +172,12 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.medium,
   },
   buttonLabel: {
-      fontSize: 16,
-      fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   helperText: {
-      fontSize: 14,
-      textAlign: 'center',
-      marginBottom: theme.spacing.sm,
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: theme.spacing.sm,
   }
 });

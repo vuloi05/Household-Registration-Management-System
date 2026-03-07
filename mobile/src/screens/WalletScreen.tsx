@@ -8,18 +8,39 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { Card, Title, Paragraph, Divider, Avatar } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import QRCode from 'react-native-qrcode-svg';
 import { getMyNhanKhau, getMyHoKhau } from '../api/nhanKhauApi';
 import type { NhanKhau } from '../types/nhanKhau';
 import type { HoKhau } from '../types/hoKhau';
 import { useAuth } from '../context/AuthContext';
 import { appTheme as theme } from '../theme';
 
+// QRCode: dùng native lib trên mobile, dùng image API trên web
+let NativeQRCode: any = null;
+if (Platform.OS !== 'web') {
+  NativeQRCode = require('react-native-qrcode-svg').default;
+}
+
 const { width } = Dimensions.get('window');
 const QR_CODE_SIZE = width * 0.4;
+
+// Cross-platform QR Code component
+function CrossPlatformQRCode({ value, size }: { value: string; size: number }) {
+  if (Platform.OS === 'web') {
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(value)}`;
+    return (
+      <Image
+        source={{ uri: qrUrl }}
+        style={{ width: size, height: size }}
+        resizeMode="contain"
+      />
+    );
+  }
+  return <NativeQRCode value={value} size={size} backgroundColor="white" color="black" />;
+}
 
 // Component for each piece of information
 const InfoRow = ({ icon, label, value }: { icon: keyof typeof MaterialCommunityIcons.glyphMap, label: string, value?: string }) => (
@@ -43,7 +64,7 @@ export default function WalletScreen() {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Fetch concurrently
       const [nhanKhauData, hoKhauData] = await Promise.all([
         getMyNhanKhau(),
@@ -133,15 +154,13 @@ export default function WalletScreen() {
             <View style={styles.qrAndInfoContainer}>
               <View style={styles.qrCodeContainer}>
                 {nhanKhau.cmndCccd && (
-                  <QRCode
+                  <CrossPlatformQRCode
                     value={JSON.stringify({
                       hoTen: nhanKhau.hoTen,
                       cmndCccd: nhanKhau.cmndCccd,
                       ngaySinh: nhanKhau.ngaySinh,
                     })}
                     size={QR_CODE_SIZE}
-                    backgroundColor="white"
-                    color="black"
                   />
                 )}
                 <Text style={styles.qrCodeText}>Mã QR cá nhân</Text>

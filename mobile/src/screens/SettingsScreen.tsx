@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Image, TouchableOpacity, Text, Alert, ScrollView } from 'react-native';
+import { View, StyleSheet, Image, TouchableOpacity, Text, ScrollView } from 'react-native';
+import { crossPlatformAlert } from '../utils/alert';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -29,10 +30,10 @@ function SettingsItem({ title, icon, onPress, showIcon = true, isBold = false, r
         {title}
       </Text>
       {showIcon && icon && (
-        <MaterialCommunityIcons 
+        <MaterialCommunityIcons
           name="chevron-right" // Use chevron for navigation items
-          size={24} 
-          color="#BDBDBD" 
+          size={24}
+          color="#BDBDBD"
         />
       )}
     </TouchableOpacity>
@@ -45,17 +46,18 @@ export default function SettingsScreen() {
   const [headerHeight, setHeaderHeight] = useState(0);
 
   const handleLogout = async () => {
-    Alert.alert(
+    crossPlatformAlert(
       "Xác nhận đăng xuất",
       "Bạn có chắc chắn muốn đăng xuất?",
       [
         { text: "Hủy", style: "cancel" },
-        { text: "Đăng xuất", style: "destructive", onPress: async () => {
+        {
+          text: "Đăng xuất", style: "destructive", onPress: async () => {
             try {
               await logout();
             } catch (error) {
               console.error('Logout failed:', error);
-              Alert.alert('Đăng xuất thất bại', 'Vui lòng thử lại sau.');
+              crossPlatformAlert('Đăng xuất thất bại', 'Vui lòng thử lại sau.');
             }
           }
         }
@@ -73,14 +75,14 @@ export default function SettingsScreen() {
 
   const handleHeaderLayout = (event: any) => {
     const { height } = event.nativeEvent.layout;
-    const illustrationBottom = height * 0.42; 
+    const illustrationBottom = height * 0.42;
     const spacing = 16;
     setHeaderHeight(Math.max(illustrationBottom + spacing, spacing));
   };
 
   return (
     <View style={styles.container}>
-      <View 
+      <View
         style={styles.headerContainer}
         onLayout={handleHeaderLayout}
       >
@@ -90,27 +92,27 @@ export default function SettingsScreen() {
           resizeMode="contain"
         />
       </View>
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Settings List */}
         <View style={[styles.settingsList, { marginTop: headerHeight }]}>
-          <SettingsItem 
-            title="Tài khoản" 
+          <SettingsItem
+            title="Tài khoản"
             onPress={handleAccountPress}
             isBold={true}
             reducedPadding={true}
             showIcon={false}
           />
-          
-          <SettingsItem 
-            title="Thông tin cá nhân" 
+
+          <SettingsItem
+            title="Thông tin cá nhân"
             onPress={handleAccountPress}
           />
-          <SettingsItem 
-            title="Đổi mật khẩu" 
+          <SettingsItem
+            title="Đổi mật khẩu"
             onPress={handleLoginSettingsPress}
           />
         </View>
