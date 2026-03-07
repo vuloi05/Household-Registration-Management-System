@@ -210,6 +210,9 @@ export default function WalletScreen() {
                         {member.gioiTinh || ''}
                         {member.ngaySinh ? ` • ${new Date(member.ngaySinh).toLocaleDateString('vi-VN')}` : ''}
                       </Text>
+                      <Text style={styles.memberDetail}>
+                        CCCD: {member.cmndCccd || 'Chưa có'}
+                      </Text>
                     </View>
                   </View>
                 ))
