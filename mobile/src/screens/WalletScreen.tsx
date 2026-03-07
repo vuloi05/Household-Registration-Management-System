@@ -65,21 +65,33 @@ export default function WalletScreen() {
       setLoading(true);
       setError(null);
 
-      // Fetch concurrently
-      const [nhanKhauData, hoKhauData] = await Promise.all([
-        getMyNhanKhau(),
-        getMyHoKhau(),
-      ]);
+      // Fetch independently - show partial data if one fails
+      let nhanKhauData: NhanKhau | null = null;
+      let hoKhauData: HoKhau | null = null;
 
-      setNhanKhau(nhanKhauData);
-      setHoKhau(hoKhauData);
+      try {
+        nhanKhauData = await getMyNhanKhau();
+      } catch (err: any) {
+        console.error('Failed to fetch nhan khau:', err);
+      }
+
+      try {
+        hoKhauData = await getMyHoKhau();
+      } catch (err: any) {
+        console.error('Failed to fetch ho khau:', err);
+      }
+
+      if (!nhanKhauData) {
+        setError('Không tìm thấy thông tin nhân khẩu của bạn.');
+      } else {
+        setNhanKhau(nhanKhauData);
+        setHoKhau(hoKhauData); // May be null, that's OK
+      }
 
     } catch (err: any) {
       console.error('Failed to fetch wallet data:', err);
       let errorMessage = 'Không thể tải dữ liệu. Vui lòng thử lại.';
-      if (err?.response?.status === 404) {
-        errorMessage = 'Không tìm thấy thông tin nhân khẩu của bạn.';
-      } else if (err?.name === 'NetworkError') {
+      if (err?.name === 'NetworkError') {
         errorMessage = 'Lỗi kết nối, vui lòng kiểm tra mạng và thử lại.';
       }
       setError(errorMessage);
