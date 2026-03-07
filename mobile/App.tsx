@@ -5,7 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View, Platform } from 'react-native';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import LoginScreen from './src/screens/LoginScreen';
 import BottomTabNavigator from './src/navigation/BottomTabNavigator';
@@ -35,17 +35,17 @@ function AppContent() {
     <NavigationContainer>
       <RootStack.Navigator
         screenOptions={{
-            headerStyle: {
-                backgroundColor: paperTheme.colors.surface,
-            },
-            headerTintColor: paperTheme.colors.onSurface,
-            headerBackTitleVisible: false,
+          headerStyle: {
+            backgroundColor: paperTheme.colors.surface,
+          },
+          headerTintColor: paperTheme.colors.onSurface,
+          headerBackTitleVisible: false,
         }}
       >
-        <RootStack.Screen 
-            name="MainTabs" 
-            component={BottomTabNavigator} 
-            options={{ headerShown: false }}
+        <RootStack.Screen
+          name="MainTabs"
+          component={BottomTabNavigator}
+          options={{ headerShown: false }}
         />
         <RootStack.Screen
           name="NewsArticle"
@@ -56,29 +56,46 @@ function AppContent() {
           })}
         />
         <RootStack.Screen
-            name="NotificationDetail"
-            component={NotificationDetailScreen}
-            options={({ route }) => ({
-                headerShown: true,
-                title: route.params.notification.title,
-            })}
+          name="NotificationDetail"
+          component={NotificationDetailScreen}
+          options={({ route }) => ({
+            headerShown: true,
+            title: route.params.notification.title,
+          })}
         />
       </RootStack.Navigator>
     </NavigationContainer>
   );
 }
 
+// Web wrapper - giới hạn chiều rộng giống điện thoại khi xem trên desktop
+function WebResponsiveWrapper({ children }: { children: React.ReactNode }) {
+  if (Platform.OS !== 'web') {
+    return <>{children}</>;
+  }
+
+  return (
+    <View style={webStyles.outerContainer}>
+      <View style={webStyles.phoneFrame}>
+        {children}
+      </View>
+    </View>
+  );
+}
+
 export default function App() {
   return (
     <GestureHandlerRootView style={styles.container}>
-      <SafeAreaProvider>
-        <PaperProvider theme={paperTheme}>
-          <AuthProvider>
-            <AppContent />
-            <StatusBar style="auto" />
-          </AuthProvider>
-        </PaperProvider>
-      </SafeAreaProvider>
+      <WebResponsiveWrapper>
+        <SafeAreaProvider>
+          <PaperProvider theme={paperTheme}>
+            <AuthProvider>
+              <AppContent />
+              <StatusBar style="auto" />
+            </AuthProvider>
+          </PaperProvider>
+        </SafeAreaProvider>
+      </WebResponsiveWrapper>
     </GestureHandlerRootView>
   );
 }
@@ -86,5 +103,27 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    ...(Platform.OS === 'web' ? { backgroundColor: '#f0f0f5' } : {}),
+  },
+});
+
+const webStyles = StyleSheet.create({
+  outerContainer: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: '#f0f0f5',
+  },
+  phoneFrame: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 480,
+    backgroundColor: '#ffffff',
+    ...(Platform.OS === 'web'
+      ? {
+        // @ts-ignore - web-only CSS properties
+        boxShadow: '0 0 30px rgba(0,0,0,0.15)',
+        overflowY: 'auto',
+      }
+      : {}),
   },
 });
