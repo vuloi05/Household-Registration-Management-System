@@ -332,16 +332,18 @@ const FeePopupModal: React.FC<FeePopupModalProps> = ({
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-      <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
-        <Animated.View style={[styles.backdrop, animatedBackdropStyle]}>
-          <BackdropContent />
-        </Animated.View>
-      </Pressable>
+      <View style={Platform.OS === 'web' ? styles.webModalWrapper : StyleSheet.absoluteFillObject}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
+          <Animated.View style={[styles.backdrop, animatedBackdropStyle]}>
+            <BackdropContent />
+          </Animated.View>
+        </Pressable>
 
-      <Animated.View style={[styles.modalContainer, animatedModalStyle]}>
-        <View style={styles.handleBar} />
-        {renderContent()}
-      </Animated.View>
+        <Animated.View style={[styles.modalContainer, animatedModalStyle]}>
+          <View style={styles.handleBar} />
+          {renderContent()}
+        </Animated.View>
+      </View>
     </Modal>
   );
 };
@@ -350,6 +352,12 @@ const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  webModalWrapper: {
+    flex: 1,
+    maxWidth: 480,
+    alignSelf: 'center',
+    width: '100%',
   },
   modalContainer: {
     position: 'absolute',
