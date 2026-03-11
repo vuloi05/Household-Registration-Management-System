@@ -15,7 +15,8 @@ const namespaces = [
   'bienDong', 
   'tamVangTamTru', 
   'thuPhi',
-  'notifications'
+  'notifications',
+  'home'
 ];
 
 i18n
